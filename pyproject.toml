@@ -1,0 +1,22 @@
+[project]
+name = "v3x-selfbot"
+version = "1.0.0"
+description = "V3X Soroush+ Selfbot"
+requires-python = ">=3.10"
+dependencies = [
+    "flet==1.1.2",
+    "httpx",
+    "splusthon",
+]
+
+[tool.flet]
+org = "com.v3x"
+product = "V3X Selfbot"
+company = "V3X"
+copyright = "Copyright (C) 2026 V3X"
+
+[tool.flet.android]
+permission = [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_NETWORK_STATE",
+]
