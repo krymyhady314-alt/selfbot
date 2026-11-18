@@ -6,27 +6,24 @@ LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
 STORAGE_DIR = os.getenv("FLET_APP_STORAGE_DATA") or tempfile.gettempdir()
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
-DEV_FILE = os.path.join(STORAGE_DIR, "v3x_dev.txt")
 LIC_FILE = os.path.join(STORAGE_DIR, "v3x_lic.json")
 AUTH_FLAG = os.path.join(STORAGE_DIR, "v3x_authed.flag")
 SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 
 
 def get_device_id() -> str:
-    if os.path.exists(DEV_FILE):
+    """ساخت شناسه سخت‌افزاری ثابت که حتی با حذف و نصب مجدد برنامه تغییر نمی‌کند."""
+    hw_parts = [platform.machine(), str(uuid.getnode())]
+    if os.path.exists("/system/build.prop"):
         try:
-            v = open(DEV_FILE, "r", encoding="utf-8").read().strip()
-            if v:
-                return v
+            with open("/system/build.prop", "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if line.startswith(("ro.product.model=", "ro.product.device=", "ro.build.fingerprint=", "ro.serialno=")):
+                        hw_parts.append(line.strip())
         except Exception:
             pass
-    raw = f"{uuid.getnode()}-{platform.machine()}-{uuid.uuid4().hex[:10]}"
-    did = "V3X-" + uuid.uuid5(uuid.NAMESPACE_DNS, raw).hex[:16].upper()
-    try:
-        open(DEV_FILE, "w", encoding="utf-8").write(did)
-    except Exception:
-        pass
-    return did
+    raw = "|".join(hw_parts)
+    return "V3X-" + uuid.uuid5(uuid.NAMESPACE_DNS, raw).hex[:16].upper()
 
 
 def get_saved_license() -> str:
@@ -45,58 +42,135 @@ def save_license(key: str):
         pass
 
 
+def _is_truthy(val) -> bool:
+    if val is True or val == 1:
+        return True
+    if isinstance(val, str) and val.strip().lower() in ("true", "1", "valid", "ok", "active", "success", "authorized", "verified"):
+        return True
+    return False
+
+
 async def check_license(key: str, did: str) -> tuple[bool, str]:
-    payload = {"key": key, "license": key, "license_key": key, "device_id": did, "hwid": did}
-    err = "عدم پاسخ سرور"
-    async with httpx.AsyncClient(timeout=15.0) as http:
-        for url in (f"{LICENSE_URL}/verify", LICENSE_URL):
+    payload = {
+        "key": key,
+        "license": key,
+        "license_key": key,
+        "code": key,
+        "device_id": did,
+        "hwid": did,
+        "device": did,
+        "hardware_id": did,
+    }
+    base = LICENSE_URL.rstrip("/")
+    server_msg = ""
+
+    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http:
+        # ۱. بررسی با متد POST روی مسیرهای استاندارد
+        for path in ("/verify", "/check", "/api/verify", ""):
             try:
-                r = await http.post(url, json=payload)
+                r = await http.post(f"{base}{path}", json=payload)
                 if r.status_code in (404, 405):
                     continue
-                d = r.json()
-                ok = d.get("valid") is True or d.get("ok") is True or str(d.get("status", "")).lower() in ("valid", "ok", "active")
-                msg = d.get("message") or d.get("error") or ("تایید شد" if ok else "لایسنس نامعتبر است")
-                return ok, str(msg)
+                txt = r.text.strip()
+                if txt.lower() in ("valid", "ok", "true", "success"):
+                    return True, "لایسنس تایید شد"
+                try:
+                    d = r.json()
+                    if isinstance(d, dict):
+                        if any(_is_truthy(d.get(k)) for k in ("valid", "ok", "success", "authorized", "active", "allowed", "verified")):
+                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
+                        if _is_truthy(d.get("status")) or _is_truthy(d.get("result")):
+                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
+                        reason = d.get("message") or d.get("msg") or d.get("error") or d.get("reason") or d.get("detail")
+                        if reason:
+                            server_msg = str(reason)
+                except Exception:
+                    if txt and len(txt) < 120:
+                        server_msg = txt
             except Exception as e:
-                err = str(e)
-    return False, f"خطای شبکه: {err}"
+                server_msg = f"خطای شبکه: {e}"
+
+        # ۲. بررسی با متد GET در صورت تنظیم Worker روی Query Params
+        for path in ("/verify", "/check", ""):
+            try:
+                r = await http.get(f"{base}{path}", params={"key": key, "license": key, "device_id": did, "hwid": did})
+                if r.status_code in (404, 405):
+                    continue
+                txt = r.text.strip()
+                if txt.lower() in ("valid", "ok", "true", "success"):
+                    return True, "لایسنس تایید شد"
+                try:
+                    d = r.json()
+                    if isinstance(d, dict):
+                        if any(_is_truthy(d.get(k)) for k in ("valid", "ok", "success", "authorized", "active", "allowed", "verified")):
+                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
+                        if _is_truthy(d.get("status")) or _is_truthy(d.get("result")):
+                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
+                        reason = d.get("message") or d.get("msg") or d.get("error") or d.get("reason") or d.get("detail")
+                        if reason and not server_msg:
+                            server_msg = str(reason)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+    return False, (server_msg or "لایسنس نامعتبر است یا به دستگاه دیگری متصل شده است")
 
 
 def create_splus_client():
     import splusthon
-    cls = None
-    for name in ("SPlusClient", "Client", "SoroushClient", "UserClient"):
-        c = getattr(splusthon, name, None)
-        if inspect.isclass(c):
-            cls = c
-            break
-    if cls is None and hasattr(splusthon, "__path__"):
-        fallback_cls = None
+    target_methods = {"connect", "send_code", "sign_in", "send_message", "get_me", "start", "run"}
+    best_cls = None
+    best_score = -1
+
+    modules = [splusthon]
+    if hasattr(splusthon, "__path__"):
         for _, mod_name, _ in pkgutil.walk_packages(splusthon.__path__, "splusthon."):
             try:
-                m = importlib.import_module(mod_name)
-                for n, obj in inspect.getmembers(m, inspect.isclass):
-                    if obj.__module__ != mod_name:
-                        continue
-                    low = n.lower()
-                    if "client" in low and "base" not in low:
-                        cls = obj
-                        break
-                    if fallback_cls is None and any(k in low for k in ("soroush", "splus", "session", "account")):
-                        fallback_cls = obj
-                if cls:
-                    break
+                modules.append(importlib.import_module(mod_name))
             except Exception:
                 pass
-        if cls is None:
-            cls = fallback_cls
-    if cls is None:
-        raise RuntimeError(f"کلاس کلاینت یافت نشد: {dir(splusthon)}")
+
+    for mod in modules:
+        for name, obj in inspect.getmembers(mod, inspect.isclass):
+            if "base" in name.lower():
+                continue
+            attrs = set(dir(obj))
+            score = len(attrs & target_methods) * 10
+            if "client" in name.lower():
+                score += 5
+            if score > best_score and score > 0:
+                best_score = score
+                best_cls = obj
+
+    if best_cls is None:
+        raise RuntimeError(f"کلاس کلاینت در splusthon یافت نشد: {dir(splusthon)}")
+
+    sig = inspect.signature(best_cls.__init__)
+    kwargs = {}
+    session_set = False
+    for p_name, p in sig.parameters.items():
+        if p_name == "self" or p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+        if p_name in ("session", "session_name", "name", "path", "session_path"):
+            kwargs[p_name] = SESSION_PATH
+            session_set = True
+        elif p.default is inspect.Parameter.empty:
+            if not session_set:
+                kwargs[p_name] = SESSION_PATH
+                session_set = True
+            elif "id" in p_name:
+                kwargs[p_name] = 123456
+            else:
+                kwargs[p_name] = "0123456789abcdef0123456789abcdef"
+
     try:
-        return cls(SESSION_PATH)
+        return best_cls(**kwargs)
     except TypeError:
-        return cls()
+        try:
+            return best_cls(SESSION_PATH)
+        except TypeError:
+            return best_cls()
 
 
 async def call_api(obj, names: tuple, kw: dict, args: tuple = ()):
@@ -110,7 +184,8 @@ async def call_api(obj, names: tuple, kw: dict, args: tuple = ()):
         if fn:
             break
     if not fn:
-        raise AttributeError(f"متد {names[0]} در کلاینت موجود نیست")
+        avail = [m for m in dir(obj) if not m.startswith("_")]
+        raise AttributeError(f"متد {names[0]} یافت نشد. متدهای موجود: {avail[:20]}")
     sig = inspect.signature(fn).parameters
     filtered = {k: v for k, v in kw.items() if k in sig}
     try:
@@ -154,7 +229,7 @@ async def main(page: ft.Page):
     logs = ft.Column(spacing=4, height=130, scroll=ft.ScrollMode.AUTO)
 
     def log(txt: str, col: str = "#94A3B8"):
-        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col))
+        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col, selectable=True))
         logs.controls = logs.controls[:25]
         try:
             page.update()
@@ -168,8 +243,8 @@ async def main(page: ft.Page):
 
     def show_license(msg: str = ""):
         page.controls.clear()
-        info = ft.Text(msg, size=13, color="#F59E0B")
-        dev_box = ft.TextField(label="شناسه دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
+        info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
+        dev_box = ft.TextField(label="شناسه سخت‌افزاری دائمی دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
         key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def copy_id(e):
@@ -182,7 +257,7 @@ async def main(page: ft.Page):
                         await r
                 info.value, info.color = "شناسه دستگاه کپی شد ✅", "#10B981"
             except Exception:
-                info.value, info.color = "متن را انتخاب و دستی کپی کنید.", "#F59E0B"
+                info.value, info.color = "متن بالا را لمس کرده و دستی کپی کنید.", "#F59E0B"
             page.update()
 
         async def verify(e):
@@ -192,7 +267,7 @@ async def main(page: ft.Page):
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال بررسی لایسنس...", "#38BDF8"
+            info.value, info.color = "در حال استعلام از سرور لایسنس...", "#38BDF8"
             page.update()
             ok, m = await check_license(k, did)
             btn.disabled = False
@@ -241,7 +316,7 @@ async def main(page: ft.Page):
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال ارسال کد تایید...", "#38BDF8"
+            info.value, info.color = "در حال اتصال و ارسال کد تایید...", "#38BDF8"
             page.update()
             try:
                 c = get_client()
@@ -271,7 +346,7 @@ async def main(page: ft.Page):
 
     def show_otp():
         page.controls.clear()
-        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8")
+        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8", selectable=True)
         code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def confirm(e):
@@ -281,7 +356,7 @@ async def main(page: ft.Page):
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال ورود...", "#38BDF8"
+            info.value, info.color = "در حال تایید و ورود...", "#38BDF8"
             page.update()
             try:
                 c = get_client()
