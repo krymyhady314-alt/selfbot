@@ -31,7 +31,6 @@ SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 
 
 def get_device_id() -> str:
-    """شناسه سخت‌افزاری ثابت گوشی که با حذف و نصب مجدد تغییر نمی‌کند."""
     parts = [platform.system(), platform.machine(), platform.node()]
     for prop in ("ro.product.brand", "ro.product.model", "ro.product.device", "ro.build.id", "ro.hardware"):
         try:
@@ -82,7 +81,6 @@ def extract_clean_key(raw_input: str) -> str:
 
 
 async def check_license(raw_key: str, did: str) -> tuple[bool, str, str]:
-    """بررسی قطعی و آنلاین لایسنس از طریق سرور کلودفلر (بدون هیچ‌گونه میان‌بُر)."""
     clean_key = extract_clean_key(raw_key)
     if not clean_key:
         return False, "لطفاً کلید لایسنس را وارد کنید.", ""
@@ -156,7 +154,6 @@ async def check_license(raw_key: str, did: str) -> tuple[bool, str, str]:
                     msg = d.get("message") or d.get("msg") or "لایسنس تایید شد ✅"
                     return True, str(msg), clean_key
 
-                # نادیده گرفتن پاسخ سلامت پیش‌فرض سرور تا سایر مسیرها بررسی شوند
                 if status_val == "online" and len(d) <= 2 and not any(
                     k in d for k in ("valid", "ok", "error", "reason", "message")
                 ):
@@ -199,20 +196,15 @@ def create_splus_client():
                 pass
     if cls is None:
         raise RuntimeError("کلاس کلاینت در splusthon یافت نشد")
+
+    # ساخت کلاینت با قابلیت اتصال مجدد خودکار در پس‌زمینه
     try:
-        return cls(SESSION_PATH)
+        return cls(SESSION_PATH, connection_retries=-1, retry_delay=1, auto_reconnect=True)
     except TypeError:
-        return cls()
-
-
-def get_events_module():
-    try:
-        import splusthon
-        if hasattr(splusthon, "events"):
-            return splusthon.events
-        return importlib.import_module("splusthon.events")
-    except Exception:
-        return None
+        try:
+            return cls(SESSION_PATH)
+        except TypeError:
+            return cls()
 
 
 def make_btn(label: str, on_click, bgcolor: str = "#2563EB", color: str = "#FFFFFF", height: int = 44, kind: str = "filled", expand: bool = False):
@@ -265,34 +257,138 @@ async def main(page: ft.Page):
         "phone": "",
         "hash": None,
         "need_2fa": False,
-        "listener_added": False,
+        "watchdog_started": False,
+        "in_dashboard": False,
         "active_tab": "chats",
         "chat_filter": "all",
         "dialogs": [],
         "selected_targets": {},
         "active_target": "",
+        "active_target_title": "",
+        "recent_messages": [],
+        "reply_to_id": None,
+        "reply_to_preview": "",
+        "reply_chat_id": "",
         "multi_messages": ["سلام!", "چطوری؟", "پیام تست سلف‌بات V3X"],
         "multi_running": False,
+        "multi_task": None,
         "turbo_running": False,
-        "ar_enabled": False,
-        "ar_text": "سلام! در حال حاضر آفلاین هستم، پیام شما ثبت شد.",
-        "ar_pv_only": True,
-        "replied": {},
+        "turbo_task": None,
+        "entity_cache": {},
     }
-    logs = ft.Column(spacing=4, height=120, scroll=ft.ScrollMode.AUTO)
+    logs = ft.Column(spacing=4, height=115, scroll=ft.ScrollMode.AUTO)
+    conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
 
-    def log(txt: str, col: str = "#94A3B8"):
-        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col))
-        logs.controls = logs.controls[:25]
+    def safe_page_update():
         try:
             page.update()
         except Exception:
             pass
 
+    def log(txt: str, col: str = "#94A3B8"):
+        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col))
+        logs.controls = logs.controls[:25]
+        safe_page_update()
+
     def get_client():
         if st["client"] is None:
             st["client"] = create_splus_client()
         return st["client"]
+
+    async def ensure_online(c, force_reset: bool = False) -> bool:
+        """تضمین اتصال پایدار به سرور سروش‌پلاس حتی پس از رفتن برنامه به پس‌زمینه."""
+        try:
+            if force_reset:
+                try:
+                    await asyncio.wait_for(c.disconnect(), timeout=3.0)
+                except Exception:
+                    pass
+            if not c.is_connected():
+                conn_badge.value = "🟡 اتصال مجدد..."
+                conn_badge.color = "#F59E0B"
+                safe_page_update()
+                await asyncio.wait_for(c.connect(), timeout=10.0)
+            conn_badge.value = "🟢 متصل"
+            conn_badge.color = "#10B981"
+            return True
+        except Exception:
+            conn_badge.value = "🔴 قطع اتصال"
+            conn_badge.color = "#EF4444"
+            safe_page_update()
+            return False
+
+    async def resolve_peer(c, raw_target: str):
+        """کش کردن مقصد برای جلوگیری از کندی و خطا در ارسال‌های پشت‌سرهم."""
+        key = (raw_target or "").strip()
+        if not key:
+            return None
+        if key in st["entity_cache"]:
+            return st["entity_cache"][key]
+        parsed = parse_target(key)
+        try:
+            if callable(getattr(c, "get_input_entity", None)):
+                ent = await asyncio.wait_for(c.get_input_entity(parsed), timeout=8.0)
+                st["entity_cache"][key] = ent
+                return ent
+        except Exception:
+            pass
+        return parsed
+
+    async def send_reliable_message(c, raw_target: str, text: str, reply_id=None) -> bool:
+        """ارسال ضدخطا با مدیریت FloodWait، تایم‌اوت سوکت پس‌زمینه و تلاش مجدد خودکار."""
+        for attempt in range(1, 4):
+            try:
+                await ensure_online(c, force_reset=(attempt > 1))
+                peer = await resolve_peer(c, raw_target)
+                if reply_id is not None:
+                    try:
+                        await asyncio.wait_for(c.send_message(peer, text, reply_to=reply_id), timeout=12.0)
+                        return True
+                    except TypeError:
+                        await asyncio.wait_for(c.send_message(peer, text), timeout=12.0)
+                        return True
+                    except Exception as rep_ex:
+                        if "reply" in str(rep_ex).lower() or "msg_id" in str(rep_ex).lower():
+                            await asyncio.wait_for(c.send_message(peer, text), timeout=12.0)
+                            return True
+                        raise rep_ex
+                else:
+                    await asyncio.wait_for(c.send_message(peer, text), timeout=12.0)
+                    return True
+            except Exception as ex:
+                err_low = str(ex).lower()
+                wait_sec = getattr(ex, "seconds", None)
+                if wait_sec is None:
+                    m = re.search(r"wait of (\d+)", err_low)
+                    if m:
+                        wait_sec = int(m.group(1))
+                if wait_sec:
+                    sleep_t = min(int(wait_sec) + 1, 20)
+                    log(f"محدودیت سرعت سرور؛ مکث خودکار {sleep_t} ثانیه...", "#F59E0B")
+                    await asyncio.sleep(sleep_t)
+                    continue
+
+                if attempt < 3:
+                    st["entity_cache"].pop((raw_target or "").strip(), None)
+                    await asyncio.sleep(0.8)
+                else:
+                    raise ex
+        return False
+
+    # تشخیص بازگشت کاربر به برنامه در اندروید برای اتصال فوری سوکت
+    def on_lifecycle_change(e):
+        try:
+            state_str = str(getattr(e, "state", "")).lower()
+            if "resume" in state_str and st["in_dashboard"] and st["client"] is not None:
+                asyncio.create_task(ensure_online(st["client"]))
+                safe_page_update()
+        except Exception:
+            pass
+
+    try:
+        page.on_app_lifecycle_state_change = on_lifecycle_change
+    except Exception:
+        pass
 
     async def proceed_after_license():
         try:
@@ -309,6 +405,7 @@ async def main(page: ft.Page):
     # صفحه ۱: احراز هویت لایسنس
     # ==========================================
     def show_license(msg: str = ""):
+        st["in_dashboard"] = False
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         dev_box = ft.TextField(label="شناسه سخت‌افزاری دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
@@ -325,17 +422,17 @@ async def main(page: ft.Page):
                 info.value, info.color = "شناسه دستگاه کپی شد ✅", "#10B981"
             except Exception:
                 info.value, info.color = "متن را انتخاب و دستی کپی کنید.", "#F59E0B"
-            page.update()
+            safe_page_update()
 
         async def verify(e):
             btn.disabled = True
             info.value, info.color = "در حال استعلام لایسنس از سرور...", "#38BDF8"
-            page.update()
+            safe_page_update()
             ok, m, clean_k = await check_license(key_box.value or "", did)
             btn.disabled = False
             if not ok:
                 info.value, info.color = f"❌ {m}", "#EF4444"
-                page.update()
+                safe_page_update()
                 return
             save_license(clean_k)
             await proceed_after_license()
@@ -365,12 +462,13 @@ async def main(page: ft.Page):
             ),
             creator_footer(),
         )
-        page.update()
+        safe_page_update()
 
     # ==========================================
     # صفحه ۲: ورود شماره موبایل
     # ==========================================
     def show_phone(msg: str = ""):
+        st["in_dashboard"] = False
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         ph_box = ft.TextField(label="شماره موبایل سروش‌پلاس", hint_text="09123456789", keyboard_type=ft.KeyboardType.PHONE, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
@@ -385,12 +483,12 @@ async def main(page: ft.Page):
                 p98, p09 = "98" + d, "0" + d
             else:
                 info.value, info.color = "شماره موبایل معتبر وارد کنید (مثلاً 09123456789).", "#EF4444"
-                page.update()
+                safe_page_update()
                 return
 
             btn.disabled = True
             info.value, info.color = "در حال ارسال کد تایید...", "#38BDF8"
-            page.update()
+            safe_page_update()
             try:
                 c = get_client()
                 if not c.is_connected():
@@ -418,7 +516,7 @@ async def main(page: ft.Page):
             except Exception as ex:
                 btn.disabled = False
                 info.value, info.color = f"خطا: {ex}", "#EF4444"
-                page.update()
+                safe_page_update()
 
         btn, _ = make_btn("ارسال کد تایید", send_otp, bgcolor="#10B981", height=48)
         page.add(
@@ -440,12 +538,13 @@ async def main(page: ft.Page):
             ),
             creator_footer(),
         )
-        page.update()
+        safe_page_update()
 
     # ==========================================
     # صفحه ۳: کد تایید
     # ==========================================
     def show_otp():
+        st["in_dashboard"] = False
         page.controls.clear()
         info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8")
         code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
@@ -456,11 +555,11 @@ async def main(page: ft.Page):
             pwd = (pwd_box.value or "").strip()
             if not st["need_2fa"] and len(code) < 4:
                 info.value, info.color = "کد تایید را کامل وارد کنید.", "#EF4444"
-                page.update()
+                safe_page_update()
                 return
             btn.disabled = True
             info.value, info.color = "در حال ورود...", "#38BDF8"
-            page.update()
+            safe_page_update()
             try:
                 c = get_client()
                 if st["need_2fa"]:
@@ -484,7 +583,7 @@ async def main(page: ft.Page):
                     info.value, info.color = "اکانت شما رمز دومرحله‌ای دارد؛ رمز را وارد و دوباره تایید کنید.", "#F59E0B"
                 else:
                     info.value, info.color = f"خطا: {ex}", "#EF4444"
-                page.update()
+                safe_page_update()
 
         btn, _ = make_btn("تایید و ورود", confirm, bgcolor="#2563EB", height=48)
         chg_btn, _ = make_btn("تغییر شماره", lambda e: show_phone(), color="#94A3B8", kind="text")
@@ -509,57 +608,40 @@ async def main(page: ft.Page):
             ),
             creator_footer(),
         )
-        page.update()
+        safe_page_update()
 
     # ==========================================
-    # صفحه ۴: داشبورد کامل سلف‌بات
+    # صفحه ۴: داشبورد سلف‌بات (چت‌ها و پیام‌های اخیر، چندتایی، توربو)
     # ==========================================
     def show_dashboard():
+        st["in_dashboard"] = True
         page.controls.clear()
         c = get_client()
         log("سلف‌بات با موفقیت به سروش‌پلاس متصل شد ✅", "#10B981")
 
-        ev_mod = get_events_module()
-        if not st["listener_added"] and ev_mod is not None and hasattr(ev_mod, "NewMessage"):
-            st["listener_added"] = True
-
-            @c.on(ev_mod.NewMessage(incoming=True))
-            async def on_new_msg(event):
-                if not st["ar_enabled"] or getattr(event, "out", False):
-                    return
-                if st["ar_pv_only"] and not getattr(event, "is_private", True):
-                    return
-                cid = str(getattr(event, "chat_id", "") or getattr(event, "sender_id", ""))
-                if not cid or time.time() - st["replied"].get(cid, 0) < 15:
-                    return
-                st["replied"][cid] = time.time()
+        # نگهبان اتصال دائمی در پس‌زمینه برای جلوگیری از قطع/وصل و کندی هنگام خروج موقت
+        async def connection_watchdog():
+            while st["in_dashboard"]:
                 try:
-                    await event.reply(st["ar_text"])
-                    log(f"ریپلای خودکار ارسال شد به {cid}", "#10B981")
+                    await ensure_online(c)
                 except Exception:
-                    try:
-                        await c.send_message(event.chat_id, st["ar_text"])
-                        log(f"ریپلای خودکار ارسال شد به {cid}", "#10B981")
-                    except Exception as ex:
-                        log(f"خطای ریپلای: {ex}", "#EF4444")
+                    pass
+                await asyncio.sleep(7.0)
 
-        async def keep_alive():
-            try:
-                if callable(getattr(c, "run_until_disconnected", None)):
-                    await c.run_until_disconnected()
-            except Exception:
-                pass
-
-        asyncio.create_task(keep_alive())
+        if not st["watchdog_started"]:
+            st["watchdog_started"] = True
+            asyncio.create_task(connection_watchdog())
 
         body_host = ft.Column(spacing=12, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+        on_dialogs_loaded_callback = None
 
         async def fetch_dialogs_list():
             items = []
             try:
+                await ensure_online(c)
                 raw_dialogs = []
                 if callable(getattr(c, "get_dialogs", None)):
-                    raw_dialogs = await c.get_dialogs(limit=60)
+                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=60), timeout=12.0)
                 elif callable(getattr(c, "iter_dialogs", None)):
                     async for d in c.iter_dialogs(limit=60):
                         raw_dialogs.append(d)
@@ -592,28 +674,189 @@ async def main(page: ft.Page):
             except Exception as ex:
                 log(f"خطا در دریافت لیست چت‌ها: {ex}", "#EF4444")
             st["dialogs"] = items
+            if callable(on_dialogs_loaded_callback):
+                on_dialogs_loaded_callback()
 
+        async def fetch_recent_messages(raw_target: str):
+            """دریافت ۲۵ پیام اخیر از پی‌وی یا گپ انتخاب‌شده برای ریپلای."""
+            msgs = []
+            tgt_str = (raw_target or "").strip()
+            if not tgt_str:
+                st["recent_messages"] = []
+                return
+            try:
+                await ensure_online(c)
+                peer = await resolve_peer(c, tgt_str)
+                raw_msgs = []
+                if callable(getattr(c, "get_messages", None)):
+                    raw_msgs = await asyncio.wait_for(c.get_messages(peer, limit=25), timeout=12.0)
+                elif callable(getattr(c, "iter_messages", None)):
+                    async for m in c.iter_messages(peer, limit=25):
+                        raw_msgs.append(m)
+
+                for m in raw_msgs:
+                    mid = getattr(m, "id", None)
+                    if mid is None:
+                        continue
+                    txt = (
+                        getattr(m, "raw_text", None)
+                        or getattr(m, "text", None)
+                        or getattr(m, "message", None)
+                        or ""
+                    ).strip()
+                    if not txt and getattr(m, "media", None) is not None:
+                        txt = "[رسانه / فایل / استیکر]"
+                    if not txt:
+                        continue
+
+                    sender = getattr(m, "sender", None)
+                    sender_name = (
+                        getattr(sender, "first_name", None)
+                        or getattr(sender, "title", None)
+                        or ("شما" if getattr(m, "out", False) else str(getattr(m, "sender_id", "کاربر")))
+                    )
+                    msgs.append({
+                        "id": mid,
+                        "sender": str(sender_name),
+                        "text": txt,
+                        "out": bool(getattr(m, "out", False)),
+                    })
+            except Exception as ex:
+                log(f"خطا در دریافت پیام‌های اخیر: {ex}", "#EF4444")
+            st["recent_messages"] = msgs
+
+        def set_active_target_clean(new_val: str, title: str = ""):
+            val = (new_val or "").strip()
+            if st["reply_chat_id"] and st["reply_chat_id"] != val:
+                st["reply_to_id"] = None
+                st["reply_to_preview"] = ""
+                st["reply_chat_id"] = ""
+            st["active_target"] = val
+            if title:
+                st["active_target_title"] = title
+
+        def build_reply_status_banner(on_clear_callback=None):
+            if st["reply_to_id"] is None:
+                return ft.Container(visible=False)
+
+            def clear_rep(e):
+                st["reply_to_id"] = None
+                st["reply_to_preview"] = ""
+                st["reply_chat_id"] = ""
+                if callable(on_clear_callback):
+                    on_clear_callback()
+                safe_page_update()
+
+            clr_b, _ = make_btn("✖️ لغو ریپلای", clear_rep, color="#EF4444", kind="text")
+            preview = st["reply_to_preview"]
+            if len(preview) > 45:
+                preview = preview[:45] + "..."
+            return ft.Container(
+                padding=ft.Padding.symmetric(horizontal=10, vertical=8),
+                border_radius=ft.BorderRadius.all(8),
+                bgcolor="#0F172A",
+                border=ft.Border.all(1, "#10B981"),
+                content=ft.Row(
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    controls=[
+                        ft.Text(f"↩️ ریپلای فعال روی پیام #{st['reply_to_id']}: {preview}", size=12, color="#10B981", expand=True),
+                        clr_b,
+                    ],
+                ),
+            )
+
+        # ==========================================
+        # ویجت ۱: چت‌ها (پی‌وی / گپ) + پیام‌های اخیر برای ریپلای
+        # ==========================================
         def build_chats_widget():
+            nonlocal on_dialogs_loaded_callback
+
             manual_target = ft.TextField(
                 label="آیدی یا شناسه چت انتخاب‌شده",
                 hint_text="@username یا شناسه عددی",
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
                 bgcolor="#1E293B",
-                on_change=lambda e: st.update({"active_target": (e.control.value or "").strip()}),
+                on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
-            chat_list_col = ft.Column(spacing=8)
+            chat_list_col = ft.Column(spacing=6, height=180, scroll=ft.ScrollMode.AUTO)
+            recent_msgs_col = ft.Column(spacing=6, height=220, scroll=ft.ScrollMode.AUTO)
+            selected_count_lbl = ft.Text(f"چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}", size=12, color="#38BDF8")
+            reply_banner_holder = ft.Column(controls=[build_reply_status_banner(lambda: refresh_recent_msg_cards())])
 
-            def toggle_chat_item(e, cid: str, title: str):
-                st["active_target"] = cid
+            def rebuild_reply_banner():
+                reply_banner_holder.controls = [build_reply_status_banner(lambda: refresh_recent_msg_cards())]
+
+            def select_message_for_reply(e, mid, mtext):
+                st["reply_to_id"] = mid
+                st["reply_to_preview"] = mtext
+                st["reply_chat_id"] = st["active_target"]
+                rebuild_reply_banner()
+                refresh_recent_msg_cards()
+                log(f"پیام #{mid} برای ریپلای انتخاب شد ↩️", "#10B981")
+                safe_page_update()
+
+            def refresh_recent_msg_cards():
+                recent_msgs_col.controls.clear()
+                if not st["recent_messages"]:
+                    recent_msgs_col.controls.append(
+                        ft.Text("پیامی بارگذاری نشده است. روی یک پی‌وی/گپ بزنید یا دکمه دریافت پیام‌های اخیر را بزنید.", size=12, color="#94A3B8")
+                    )
+                    return
+
+                for m in st["recent_messages"]:
+                    mid = m["id"]
+                    is_rep_selected = st["reply_to_id"] == mid
+                    card = ft.Container(
+                        padding=ft.Padding.all(10),
+                        border_radius=ft.BorderRadius.all(8),
+                        bgcolor="#1E293B" if is_rep_selected else "#0F172A",
+                        border=ft.Border.all(1.5 if is_rep_selected else 1, "#10B981" if is_rep_selected else "#334155"),
+                        on_click=lambda e, m_id=mid, m_txt=m["text"]: select_message_for_reply(e, m_id, m_txt),
+                        content=ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            controls=[
+                                ft.Column(
+                                    spacing=2,
+                                    expand=True,
+                                    controls=[
+                                        ft.Text(f"{m['sender']}  (#{mid})", size=11, color="#38BDF8", weight=ft.FontWeight.W_600),
+                                        ft.Text(m["text"], size=13, color="#F8FAFC", max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                                    ],
+                                ),
+                                ft.Text("↩️ انتخاب‌شده" if is_rep_selected else "ریپلای", size=12, color="#10B981" if is_rep_selected else "#94A3B8"),
+                            ],
+                        ),
+                    )
+                    recent_msgs_col.controls.append(card)
+
+            async def load_msgs_for_current_target(e=None):
+                tgt = (manual_target.value or st["active_target"] or "").strip()
+                if not tgt:
+                    log("ابتدا یک چت را انتخاب کنید یا آیدی آن را وارد کنید.", "#EF4444")
+                    return
+                set_active_target_clean(tgt)
+                log(f"در حال دریافت پیام‌های اخیر {tgt}...", "#38BDF8")
+                await fetch_recent_messages(tgt)
+                refresh_recent_msg_cards()
+                log(f"{len(st['recent_messages'])} پیام اخیر دریافت شد ✅", "#10B981")
+                safe_page_update()
+
+            async def on_chat_card_click(e, cid: str, title: str):
+                set_active_target_clean(cid, title)
                 manual_target.value = cid
                 if cid in st["selected_targets"]:
                     del st["selected_targets"][cid]
                 else:
                     st["selected_targets"][cid] = title
-                log(f"چت انتخاب شد: {title} ({cid})", "#38BDF8")
+                selected_count_lbl.value = f"چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}"
+                rebuild_reply_banner()
                 refresh_chat_cards()
-                page.update()
+                safe_page_update()
+                # بارگذاری خودکار پیام‌های اخیر این چت برای ریپلای
+                await fetch_recent_messages(cid)
+                refresh_recent_msg_cards()
+                safe_page_update()
 
             def refresh_chat_cards():
                 chat_list_col.controls.clear()
@@ -632,11 +875,11 @@ async def main(page: ft.Page):
                     selected = cid in st["selected_targets"] or st["active_target"] == cid
                     badge = "👤 پی‌وی" if is_pv else "👥 گپ"
                     card = ft.Container(
-                        padding=ft.Padding.all(12),
+                        padding=ft.Padding.all(10),
                         border_radius=ft.BorderRadius.all(10),
                         bgcolor="#1E293B" if selected else "#0F172A",
                         border=ft.Border.all(1.5 if selected else 1, "#38BDF8" if selected else "#1E293B"),
-                        on_click=lambda e, c_id=cid, c_title=title: toggle_chat_item(e, c_id, c_title),
+                        on_click=lambda e, c_id=cid, c_title=title: page.run_task(on_chat_card_click, e, c_id, c_title),
                         content=ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
@@ -648,7 +891,7 @@ async def main(page: ft.Page):
                                         ft.Text(f"{badge}  |  ID: {cid}", size=11, color="#94A3B8"),
                                     ],
                                 ),
-                                ft.Text("✅ انتخاب شده" if selected else "انتخاب", size=12, color="#10B981" if selected else "#64748B"),
+                                ft.Text("✅ انتخاب" if selected else "انتخاب", size=12, color="#10B981" if selected else "#64748B"),
                             ],
                         ),
                     )
@@ -660,51 +903,84 @@ async def main(page: ft.Page):
                 f_pv.bgcolor = "#2563EB" if mode == "pv" else "#1E293B"
                 f_gp.bgcolor = "#2563EB" if mode == "group" else "#1E293B"
                 refresh_chat_cards()
-                page.update()
+                safe_page_update()
 
             async def reload_chats(e):
                 log("در حال دریافت لیست پی‌وی‌ها و گپ‌ها...", "#38BDF8")
                 await fetch_dialogs_list()
                 refresh_chat_cards()
                 log(f"{len(st['dialogs'])} چت بارگذاری شد ✅", "#10B981")
-                page.update()
+                safe_page_update()
 
             def clear_selected(e):
                 st["selected_targets"].clear()
-                st["active_target"] = ""
+                set_active_target_clean("")
+                st["recent_messages"].clear()
                 manual_target.value = ""
+                selected_count_lbl.value = "چت‌های انتخاب‌شده برای ارسال گروهی: 0"
+                rebuild_reply_banner()
                 refresh_chat_cards()
-                page.update()
+                refresh_recent_msg_cards()
+                safe_page_update()
+
+            on_dialogs_loaded_callback = lambda: (refresh_chat_cards(), safe_page_update())
 
             f_all, _ = make_btn("همه", lambda e: set_filter(e, "all"), bgcolor="#2563EB" if st["chat_filter"] == "all" else "#1E293B", height=38, expand=True)
             f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_filter(e, "pv"), bgcolor="#2563EB" if st["chat_filter"] == "pv" else "#1E293B", height=38, expand=True)
             f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_filter(e, "group"), bgcolor="#2563EB" if st["chat_filter"] == "group" else "#1E293B", height=38, expand=True)
-            rel_btn, _ = make_btn("🔄 بروزرسانی لیست چت‌ها", reload_chats, bgcolor="#10B981", height=40)
-            clr_btn, _ = make_btn("پاک کردن انتخاب‌ها", clear_selected, color="#EF4444", kind="text")
+            rel_btn, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats, bgcolor="#10B981", height=40, expand=True)
+            load_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_msgs_for_current_target, bgcolor="#2563EB", height=40, expand=True)
+            clr_btn, _ = make_btn("پاک کردن", clear_selected, color="#EF4444", kind="text")
 
             refresh_chat_cards()
-            return ft.Container(
-                bgcolor="#111827",
-                padding=14,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
-                content=ft.Column(
-                    spacing=10,
-                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                    controls=[
-                        ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
-                            ft.Text("💬 مدیریت پی‌وی و گپ‌ها", size=16, weight=ft.FontWeight.BOLD),
-                            clr_btn,
-                        ]),
-                        manual_target,
-                        rel_btn,
-                        ft.Row(spacing=6, controls=[f_all, f_pv, f_gp]),
-                        ft.Text(f"تعداد چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}", size=12, color="#38BDF8"),
-                        chat_list_col,
-                    ],
-                ),
+            refresh_recent_msg_cards()
+
+            return ft.Column(
+                spacing=10,
+                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                controls=[
+                    ft.Container(
+                        bgcolor="#111827",
+                        padding=14,
+                        border_radius=ft.BorderRadius.all(12),
+                        border=ft.Border.all(1, "#1E293B"),
+                        content=ft.Column(
+                            spacing=10,
+                            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                            controls=[
+                                ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
+                                    ft.Text("💬 انتخاب پی‌وی یا گپ", size=16, weight=ft.FontWeight.BOLD),
+                                    clr_btn,
+                                ]),
+                                manual_target,
+                                ft.Row(spacing=6, controls=[rel_btn, load_msg_btn]),
+                                ft.Row(spacing=6, controls=[f_all, f_pv, f_gp]),
+                                selected_count_lbl,
+                                chat_list_col,
+                            ],
+                        ),
+                    ),
+                    ft.Container(
+                        bgcolor="#111827",
+                        padding=14,
+                        border_radius=ft.BorderRadius.all(12),
+                        border=ft.Border.all(1, "#1E293B"),
+                        content=ft.Column(
+                            spacing=8,
+                            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                            controls=[
+                                ft.Text("📜 پیام‌های اخیر چت (برای انتخاب ریپلای لمس کنید)", size=15, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                                reply_banner_holder,
+                                recent_msgs_col,
+                            ],
+                        ),
+                    ),
+                ],
             )
 
+        # ==========================================
+        # ویجت ۲: ارسال چندتایی (Multi-Message) ضدخطا
+        # ==========================================
         def build_multi_msg_widget():
             target_field = ft.TextField(
                 label="مقصد ارسال (آیدی یا چت انتخاب‌شده)",
@@ -712,7 +988,7 @@ async def main(page: ft.Page):
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
                 bgcolor="#1E293B",
-                on_change=lambda e: st.update({"active_target": (e.control.value or "").strip()}),
+                on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
             use_multi_targets = ft.Switch(
                 label=f"ارسال همزمان به تمام چت‌های تیک‌خورده ({len(st['selected_targets'])} چت)",
@@ -733,7 +1009,7 @@ async def main(page: ft.Page):
             )
             delay_box = ft.TextField(
                 label="تاخیر بین پیام‌ها (ثانیه)",
-                value="0.5",
+                value="0.4",
                 keyboard_type=ft.KeyboardType.NUMBER,
                 text_align=ft.TextAlign.LEFT,
                 bgcolor="#1E293B",
@@ -746,7 +1022,7 @@ async def main(page: ft.Page):
                 if 0 <= index < len(st["multi_messages"]):
                     st["multi_messages"].pop(index)
                     render_msg_items()
-                    page.update()
+                    safe_page_update()
 
             def render_msg_items():
                 msg_items_col.controls.clear()
@@ -777,14 +1053,14 @@ async def main(page: ft.Page):
                 st["multi_messages"].append(val)
                 new_msg_input.value = ""
                 render_msg_items()
-                page.update()
+                safe_page_update()
 
             async def run_multi_sender():
                 try:
                     rounds = max(1, int(rounds_box.value or 1))
-                    dly = max(0.0, float(delay_box.value or 0.5))
+                    dly = max(0.05, float(delay_box.value or 0.4))
                 except ValueError:
-                    rounds, dly = 1, 0.5
+                    rounds, dly = 1, 0.4
 
                 targets = []
                 if use_multi_targets.value and st["selected_targets"]:
@@ -797,38 +1073,56 @@ async def main(page: ft.Page):
                     st["multi_running"] = False
                     m_lbl.value = "🚀 شروع ارسال چندتایی"
                     m_btn.bgcolor = "#10B981"
-                    page.update()
+                    safe_page_update()
                     return
 
                 messages = list(st["multi_messages"])
                 total_ops = rounds * len(targets) * len(messages)
                 done = 0
+                last_ui_tick = 0.0
 
                 try:
+                    await ensure_online(c)
+                    for t_raw in targets:
+                        await resolve_peer(c, t_raw)
+
                     for _ in range(rounds):
                         for raw_t in targets:
-                            tgt = parse_target(raw_t)
+                            rep_id = st["reply_to_id"] if (st["reply_to_id"] and st["reply_chat_id"] == raw_t) else None
                             for m_txt in messages:
                                 if not st["multi_running"]:
+                                    log(f"ارسال چندتایی متوقف شد ({done} از {total_ops}).", "#F59E0B")
                                     return
-                                await c.send_message(tgt, m_txt)
+                                await send_reliable_message(c, raw_t, m_txt, reply_id=rep_id)
                                 done += 1
-                                m_stat.value = f"ارسال شد: {done} از {total_ops}"
-                                page.update()
-                                if dly > 0:
+                                now = time.monotonic()
+                                if now - last_ui_tick >= 0.25 or done == total_ops:
+                                    last_ui_tick = now
+                                    m_stat.value = f"ارسال شد: {done} از {total_ops}"
+                                    m_stat.color = "#10B981"
+                                    safe_page_update()
+                                if dly > 0 and done < total_ops:
                                     await asyncio.sleep(dly)
-                    log(f"ارسال چندتایی با موفقیت انجام شد ({done} پیام) ✅", "#10B981")
+
+                    log(f"ارسال چندتایی با موفقیت کامل شد ({done} پیام) ✅", "#10B981")
+                except asyncio.CancelledError:
+                    log("ارسال چندتایی متوقف شد.", "#F59E0B")
                 except Exception as ex:
                     log(f"خطا در ارسال چندتایی: {ex}", "#EF4444")
+                    m_stat.value = f"توقف در {done}/{total_ops}: {ex}"
+                    m_stat.color = "#EF4444"
                 finally:
                     st["multi_running"] = False
                     m_lbl.value = "🚀 شروع ارسال چندتایی"
                     m_btn.bgcolor = "#10B981"
-                    page.update()
+                    safe_page_update()
 
             async def toggle_multi(e):
                 if st["multi_running"]:
                     st["multi_running"] = False
+                    return
+                if st["turbo_running"]:
+                    log("ابتدا ارسال توربو را متوقف کنید.", "#F59E0B")
                     return
                 if not st["multi_messages"]:
                     log("حداقل یک پیام به لیست چندتایی اضافه کنید.", "#EF4444")
@@ -836,8 +1130,8 @@ async def main(page: ft.Page):
                 st["multi_running"] = True
                 m_lbl.value = "⛔ توقف ارسال چندتایی"
                 m_btn.bgcolor = "#EF4444"
-                page.update()
-                asyncio.create_task(run_multi_sender())
+                safe_page_update()
+                st["multi_task"] = asyncio.create_task(run_multi_sender())
 
             add_btn, _ = make_btn("➕ افزودن به لیست", add_msg_item, bgcolor="#2563EB", height=40)
             m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_multi, bgcolor="#10B981", height=46)
@@ -853,6 +1147,7 @@ async def main(page: ft.Page):
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
                         ft.Text("📨 ارسال چندتایی (Multi-Message)", size=16, weight=ft.FontWeight.BOLD),
+                        build_reply_status_banner(),
                         target_field,
                         use_multi_targets,
                         new_msg_input,
@@ -865,6 +1160,9 @@ async def main(page: ft.Page):
                 ),
             )
 
+        # ==========================================
+        # ویجت ۳: ارسال توربو تکی ضدخطا
+        # ==========================================
         def build_turbo_widget():
             target_box = ft.TextField(
                 label="آیدی یا شناسه مقصد",
@@ -872,42 +1170,61 @@ async def main(page: ft.Page):
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
                 bgcolor="#1E293B",
-                on_change=lambda e: st.update({"active_target": (e.control.value or "").strip()}),
+                on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
             msg_box = ft.TextField(label="متن پیام توربو", bgcolor="#1E293B")
             cnt_box = ft.TextField(label="تعداد", value="20", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
-            dly_box = ft.TextField(label="تاخیر (ثانیه)", value="0.1", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
+            dly_box = ft.TextField(label="تاخیر (ثانیه)", value="0.2", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
             t_stat = ft.Text("آماده", size=12, color="#94A3B8")
 
             async def turbo_run():
                 sent = 0
                 try:
                     total = max(1, int(cnt_box.value or 10))
-                    dly = max(0.0, float(dly_box.value or 0.1))
+                    dly = max(0.05, float(dly_box.value or 0.2))
                 except ValueError:
-                    total, dly = 10, 0.1
-                tgt = parse_target(target_box.value or "")
+                    total, dly = 10, 0.2
+
+                raw_t = (target_box.value or "").strip()
                 txt = (msg_box.value or "").strip()
+                rep_id = st["reply_to_id"] if (st["reply_to_id"] and st["reply_chat_id"] == raw_t) else None
+                last_ui_tick = 0.0
+
                 try:
+                    await ensure_online(c)
+                    await resolve_peer(c, raw_t)
+
                     while st["turbo_running"] and sent < total:
-                        await c.send_message(tgt, txt)
+                        await send_reliable_message(c, raw_t, txt, reply_id=rep_id)
                         sent += 1
-                        t_stat.value = f"ارسال شد: {sent}/{total}"
-                        page.update()
-                        if dly > 0:
+                        now = time.monotonic()
+                        if now - last_ui_tick >= 0.25 or sent == total:
+                            last_ui_tick = now
+                            t_stat.value = f"ارسال شد: {sent}/{total}"
+                            t_stat.color = "#10B981"
+                            safe_page_update()
+                        if dly > 0 and sent < total:
                             await asyncio.sleep(dly)
-                    log(f"پایان ارسال توربو ({sent} پیام)", "#10B981")
+
+                    log(f"پایان ارسال توربو ({sent} پیام) ✅", "#10B981")
+                except asyncio.CancelledError:
+                    log("ارسال توربو متوقف شد.", "#F59E0B")
                 except Exception as ex:
                     log(f"خطای توربو: {ex}", "#EF4444")
+                    t_stat.value = f"توقف در {sent}/{total}: {ex}"
+                    t_stat.color = "#EF4444"
                 finally:
                     st["turbo_running"] = False
                     t_lbl.value = "🚀 شروع توربو"
                     t_btn.bgcolor = "#10B981"
-                    page.update()
+                    safe_page_update()
 
             async def toggle_turbo(e):
                 if st["turbo_running"]:
                     st["turbo_running"] = False
+                    return
+                if st["multi_running"]:
+                    log("ابتدا ارسال چندتایی را متوقف کنید.", "#F59E0B")
                     return
                 if not (target_box.value or "").strip() or not (msg_box.value or "").strip():
                     log("مقصد و متن را وارد کنید.", "#EF4444")
@@ -915,8 +1232,8 @@ async def main(page: ft.Page):
                 st["turbo_running"] = True
                 t_lbl.value = "⛔ توقف توربو"
                 t_btn.bgcolor = "#EF4444"
-                page.update()
-                asyncio.create_task(turbo_run())
+                safe_page_update()
+                st["turbo_task"] = asyncio.create_task(turbo_run())
 
             t_btn, t_lbl = make_btn("🚀 شروع توربو", toggle_turbo, bgcolor="#10B981", height=44)
             return ft.Container(
@@ -928,42 +1245,13 @@ async def main(page: ft.Page):
                     spacing=10,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("🚀 ارسال توربو", size=16, weight=ft.FontWeight.BOLD),
+                        ft.Text("🚀 ارسال توربو تکی", size=16, weight=ft.FontWeight.BOLD),
+                        build_reply_status_banner(),
                         target_box,
                         msg_box,
                         ft.Row(spacing=8, controls=[cnt_box, dly_box]),
                         t_btn,
                         t_stat,
-                    ],
-                ),
-            )
-
-        def build_autoreply_widget():
-            ar_sw = ft.Switch(label="فعال‌سازی ریپلای خودکار", value=st["ar_enabled"])
-            pv_sw = ft.Switch(label="فقط در پی‌وی (PV)", value=st["ar_pv_only"])
-            ar_box = ft.TextField(label="متن پاسخ خودکار", value=st["ar_text"], multiline=True, min_lines=2, bgcolor="#1E293B")
-
-            def save_ar(e):
-                st["ar_enabled"] = bool(ar_sw.value)
-                st["ar_pv_only"] = bool(pv_sw.value)
-                st["ar_text"] = (ar_box.value or "").strip() or "پاسخ خودکار"
-                log("تنظیمات ریپلای خودکار ذخیره شد ✅", "#38BDF8")
-
-            save_btn, _ = make_btn("ذخیره تنظیمات ریپلای", save_ar, bgcolor="#2563EB", height=44)
-            return ft.Container(
-                bgcolor="#111827",
-                padding=14,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
-                content=ft.Column(
-                    spacing=10,
-                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                    controls=[
-                        ft.Text("🤖 ریپلای خودکار", size=16, weight=ft.FontWeight.BOLD),
-                        ar_sw,
-                        pv_sw,
-                        ar_box,
-                        save_btn,
                     ],
                 ),
             )
@@ -977,17 +1265,16 @@ async def main(page: ft.Page):
                 body_host.controls.append(build_multi_msg_widget())
             elif tab == "turbo":
                 body_host.controls.append(build_turbo_widget())
-            elif tab == "autoreply":
-                body_host.controls.append(build_autoreply_widget())
 
         def switch_tab(e, tab_name: str):
             st["active_tab"] = tab_name
             for k, btn_ctrl in nav_buttons.items():
                 btn_ctrl.bgcolor = "#2563EB" if k == tab_name else "#1E293B"
             render_body()
-            page.update()
+            safe_page_update()
 
         async def logout(e):
+            st["in_dashboard"] = False
             st["turbo_running"] = False
             st["multi_running"] = False
             try:
@@ -998,7 +1285,7 @@ async def main(page: ft.Page):
                 except Exception:
                     pass
             st["client"] = None
-            st["listener_added"] = False
+            st["entity_cache"].clear()
             base = os.path.basename(SESSION_PATH)
             for f in os.listdir(STORAGE_DIR):
                 if f.startswith(base):
@@ -1009,11 +1296,10 @@ async def main(page: ft.Page):
             show_phone("از حساب خارج شدید.")
 
         out_btn, _ = make_btn("خروج", logout, color="#EF4444", kind="text")
-        b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor="#2563EB", height=40, expand=True)
+        b_chats, _ = make_btn("💬 چت‌ها و ریپلای", lambda e: switch_tab(e, "chats"), bgcolor="#2563EB", height=40, expand=True)
         b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor="#1E293B", height=40, expand=True)
         b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor="#1E293B", height=40, expand=True)
-        b_ar, _ = make_btn("🤖 ریپلای", lambda e: switch_tab(e, "autoreply"), bgcolor="#1E293B", height=40, expand=True)
-        nav_buttons = {"chats": b_chats, "multi": b_multi, "turbo": b_turbo, "autoreply": b_ar}
+        nav_buttons = {"chats": b_chats, "multi": b_multi, "turbo": b_turbo}
 
         render_body()
 
@@ -1026,12 +1312,15 @@ async def main(page: ft.Page):
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
-                        ft.Text("⚡ V3X Selfbot", size=18, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                        ft.Row(spacing=8, controls=[
+                            ft.Text("⚡ V3X Selfbot", size=18, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                            conn_badge,
+                        ]),
                         out_btn,
                     ],
                 ),
             ),
-            ft.Row(spacing=6, controls=[b_chats, b_multi, b_turbo, b_ar]),
+            ft.Row(spacing=6, controls=[b_chats, b_multi, b_turbo]),
             body_host,
             ft.Container(
                 bgcolor="#0F172A",
@@ -1048,10 +1337,9 @@ async def main(page: ft.Page):
             ),
             creator_footer(),
         )
-        page.update()
+        safe_page_update()
         asyncio.create_task(fetch_dialogs_list())
 
-    # بررسی اجباری لایسنس ذخیره شده با سرور هنگام هر بار اجرا
     saved = get_saved_license()
     if saved:
         ok, m, _ = await check_license(saved, did)
