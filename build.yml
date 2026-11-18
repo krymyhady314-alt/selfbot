@@ -26,18 +26,21 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          flutter-version: "3.19.x"
+          flutter-version: "3.19.6"
 
-      - name: Install Flet and Build APK
-        env:
-          FLET_NON_INTERACTIVE: "true"
+      - name: Build with Flutter directly
         run: |
           python -m pip install --upgrade pip
-          pip install flet==1.1.2
-          flet build apk --verbose
+          pip install flet==1.1.2 httpx splusthon
+          
+          # ساخت پکیج فلت به صورت مستقیم بدون خطای interactive
+          flet pack main.py --pirate
+          
+          # ساخت مستقیم APK با خود فلاتر
+          flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: V3X-Selfbot-APK
-          path: build/apk/*.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
