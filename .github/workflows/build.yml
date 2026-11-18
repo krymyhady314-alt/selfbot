@@ -16,20 +16,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Flet and Build APK
         run: |
+          unset ANDROID_HOME ANDROID_SDK_ROOT JAVA_HOME
           python -m pip install --upgrade pip
           pip install flet==1.1.2
-          printf "y\n" | flet build apk --verbose
+          printf "y\ny\ny\n" | flet build apk --verbose
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
