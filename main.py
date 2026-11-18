@@ -1,7 +1,9 @@
 import asyncio
+import importlib
 import inspect
 import json
 import os
+import pkgutil
 import platform
 import tempfile
 import time
@@ -9,12 +11,6 @@ import uuid
 
 import flet as ft
 import httpx
-
-try:
-    from splusthon import Client, events
-except ImportError:
-    from splusthon.client import Client
-    events = None
 
 LICENSE_SERVER_URL = "https://selfbot-license.krymyhady314.workers.dev"
 
@@ -25,6 +21,116 @@ os.makedirs(STORAGE_DIR, exist_ok=True)
 DEVICE_ID_FILE = os.path.join(STORAGE_DIR, "v3x_device_id.txt")
 LICENSE_FILE = os.path.join(STORAGE_DIR, "v3x_license.json")
 SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_soroush_session")
+
+
+def resolve_client_class():
+    """کلاس اصلی کلاینت را به‌صورت خودکار از داخل پکیج splusthon پیدا می‌کند."""
+    import splusthon
+
+    for direct_name in ("SPlusClient", "Client", "SoroushClient", "UserClient"):
+        cls = getattr(splusthon, direct_name, None)
+        if inspect.isclass(cls):
+            return cls
+
+    candidates = []
+    if hasattr(splusthon, "__path__"):
+        for _, mod_name, _ in pkgutil.walk_packages(splusthon.__path__, prefix="splusthon."):
+            try:
+                mod = importlib.import_module(mod_name)
+                for attr_name, obj in inspect.getmembers(mod, inspect.isclass):
+                    if obj.__module__ != mod_name:
+                        continue
+                    low = attr_name.lower()
+                    if "client" in low and not any(x in low for x in ("base", "http", "abstract", "bot")):
+                        candidates.append((attr_name, obj))
+            except Exception:
+                continue
+
+    priority = ("SPlusClient", "Client", "SoroushClient", "UserClient")
+    for p in priority:
+        for name, obj in candidates:
+            if name == p:
+                return obj
+
+    if candidates:
+        return candidates[0][1]
+
+    raise RuntimeError(f"کلاس کلاینت در splusthon پیدا نشد. محتویات: {dir(splusthon)}")
+
+
+def instantiate_client(session_path: str):
+    """ساخت نمونه کلاینت با تطبیق خودکار آرگومان‌های سازنده."""
+    cls = resolve_client_class()
+    sig = inspect.signature(cls.__init__)
+    params = [p for name, p in sig.parameters.items() if name != "self"]
+
+    if not params:
+        return cls()
+
+    kwargs = {}
+    session_assigned = False
+    for p in params:
+        if p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+        if p.name in ("name", "session", "session_name", "path", "session_path"):
+            kwargs[p.name] = session_path
+            session_assigned = True
+        elif p.default is inspect.Parameter.empty and not session_assigned:
+            kwargs[p.name] = session_path
+            session_assigned = True
+
+    try:
+        return cls(**kwargs)
+    except TypeError:
+        return cls(session_path)
+
+
+async def invoke_smart(obj, method_names: tuple, kwargs_pool: dict, positional_fallback: tuple = ()):
+    """متد مناسب را در کلاینت پیدا کرده و با پارامترهای سازگار اجرا می‌کند."""
+    targets = [obj]
+    for sub in ("auth", "account", "messages", "methods"):
+        if hasattr(obj, sub):
+            targets.append(getattr(obj, sub))
+
+    fn = None
+    for target in targets:
+        for m_name in method_names:
+            cand = getattr(target, m_name, None)
+            if callable(cand):
+                fn = cand
+                break
+        if fn is not None:
+            break
+
+    if fn is None:
+        avail = [m for m in dir(obj) if not m.startswith("_")]
+        raise AttributeError(f"متد {method_names} یافت نشد. متدهای موجود: {avail[:25]}")
+
+    sig = inspect.signature(fn)
+    params = sig.parameters
+    has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
+
+    call_kwargs = {}
+    for p_name, p_obj in params.items():
+        if p_name == "self":
+            continue
+        if p_name in kwargs_pool:
+            call_kwargs[p_name] = kwargs_pool[p_name]
+
+    try:
+        if call_kwargs or not positional_fallback:
+            res = fn(**call_kwargs)
+        else:
+            res = fn(*positional_fallback)
+    except TypeError:
+        if has_var_kw:
+            res = fn(**kwargs_pool)
+        else:
+            res = fn(*positional_fallback)
+
+    if inspect.isawaitable(res):
+        return await res
+    return res
 
 
 def get_device_id() -> str:
@@ -104,21 +210,23 @@ async def verify_license_online(license_key: str, device_id: str) -> tuple[bool,
     return False, last_err, {}
 
 
-def normalize_phone(raw: str) -> str:
+def normalize_phone(raw: str) -> tuple[str, str]:
     digits = "".join(ch for ch in raw if ch.isdigit())
     if digits.startswith("09") and len(digits) == 11:
-        return "98" + digits[1:]
+        return "98" + digits[1:], digits
+    if digits.startswith("989") and len(digits) == 12:
+        return digits, "0" + digits[2:]
     if digits.startswith("9") and len(digits) == 10:
-        return "98" + digits
-    return digits
+        return "98" + digits, "0" + digits
+    return digits, digits
 
 
 def session_exists() -> bool:
-    return (
-        os.path.exists(SESSION_PATH)
-        or os.path.exists(f"{SESSION_PATH}.session")
-        or os.path.exists(f"{SESSION_PATH}.json")
-    )
+    try:
+        base_name = os.path.basename(SESSION_PATH)
+        return any(f.startswith(base_name) for f in os.listdir(STORAGE_DIR))
+    except Exception:
+        return False
 
 
 async def main(page: ft.Page):
@@ -135,6 +243,7 @@ async def main(page: ft.Page):
         "license_info": {},
         "client": None,
         "phone": "",
+        "phone_local": "",
         "phone_code_hash": None,
         "client_task": None,
         "turbo_running": False,
@@ -174,41 +283,93 @@ async def main(page: ft.Page):
             status_ctrl.color = "#F59E0B"
         page.update()
 
-    def build_client() -> Client:
+    def build_client():
         if state["client"] is not None:
             return state["client"]
-        client = Client(SESSION_PATH)
+        client = instantiate_client(SESSION_PATH)
         state["client"] = client
         return client
 
-    async def start_listener(client: Client):
-        if events is not None:
-            @client.on(events.NewMessage(incoming=True))
-            async def on_new_message(event):
-                if not state["auto_reply_enabled"]:
-                    return
-                try:
-                    if getattr(event, "out", False):
-                        return
-                    if state["auto_reply_pv_only"] and not getattr(event, "is_private", True):
-                        return
-                    sender_id = str(getattr(event, "sender_id", "") or getattr(event, "chat_id", "unknown"))
-                    now = time.time()
-                    if now - state["last_replied"].get(sender_id, 0) < 15:
-                        return
-                    state["last_replied"][sender_id] = now
-                    await event.reply(state["auto_reply_text"])
-                    add_log(f"ریپلای خودکار ارسال شد به: {sender_id}", "#10B981")
-                except Exception as ex:
-                    add_log(f"خطای ریپلای خودکار: {ex}", "#EF4444")
+    async def ensure_connected(client):
+        for m in ("connect", "initialize", "init"):
+            fn = getattr(client, m, None)
+            if callable(fn):
+                res = fn()
+                if inspect.isawaitable(res):
+                    await res
+                return
 
+    async def check_authorized(client) -> bool:
         try:
-            if hasattr(client, "run_until_disconnected"):
-                await client.run_until_disconnected()
+            await ensure_connected(client)
+            for m in ("is_user_authorized", "is_authorized", "check_auth"):
+                fn = getattr(client, m, None)
+                if callable(fn):
+                    res = fn()
+                    if inspect.isawaitable(res):
+                        res = await res
+                    return bool(res)
+            me = await invoke_smart(client, ("get_me", "get_self"), {})
+            return me is not None
+        except Exception:
+            return False
+
+    async def start_listener(client):
+        try:
+            if hasattr(client, "on_message"):
+                @client.on_message()
+                async def on_new_msg(update):
+                    if not state["auto_reply_enabled"]:
+                        return
+                    try:
+                        if getattr(update, "is_outgoing", False) or getattr(update, "out", False):
+                            return
+                        chat_id = (
+                            getattr(update, "object_guid", None)
+                            or getattr(update, "chat_id", None)
+                            or getattr(update, "author_guid", None)
+                        )
+                        if not chat_id:
+                            return
+                        if state["auto_reply_pv_only"] and not str(chat_id).startswith("u0"):
+                            return
+                        now = time.time()
+                        if now - state["last_replied"].get(str(chat_id), 0) < 15:
+                            return
+                        state["last_replied"][str(chat_id)] = now
+                        await send_soroush_message(client, str(chat_id), state["auto_reply_text"])
+                        add_log(f"ریپلای خودکار ارسال شد به: {chat_id}", "#10B981")
+                    except Exception as ex:
+                        add_log(f"خطای ریپلای خودکار: {ex}", "#EF4444")
+
+            for runner in ("run_until_disconnected", "run", "idle"):
+                fn = getattr(client, runner, None)
+                if callable(fn):
+                    res = fn()
+                    if inspect.isawaitable(res):
+                        await res
+                    break
         except asyncio.CancelledError:
             pass
         except Exception as ex:
-            add_log(f"قطع ارتباط پس‌زمینه: {ex}", "#F59E0B")
+            add_log(f"وضعیت پس‌زمینه: {ex}", "#F59E0B")
+
+    async def send_soroush_message(client, target: str, text: str):
+        await invoke_smart(
+            client,
+            ("send_message", "send_text", "send_msg"),
+            {
+                "object_guid": target,
+                "chat_id": target,
+                "peer": target,
+                "guid": target,
+                "user_id": target,
+                "text": text,
+                "message": text,
+                "msg": text,
+            },
+            positional_fallback=(target, text),
+        )
 
     # ==========================================
     # صفحه ۱: فعال‌سازی لایسنس
@@ -260,17 +421,11 @@ async def main(page: ft.Page):
             state["license_key"] = key
             state["license_info"] = info
             save_license_local(key, info)
-            status_text.value = "✅ لایسنس تایید شد! در حال بررسی وضعیت اکانت..."
-            status_text.color = "#10B981"
-            page.update()
 
-            # بررسی دقیق نشست قبلی؛ اگر سشن واقعی وجود نداشت حتماً به صفحه شماره می‌رود
             if session_exists():
                 try:
                     client = build_client()
-                    await client.connect()
-                    authorized = await client.is_user_authorized()
-                    if authorized is True:
+                    if await check_authorized(client):
                         show_dashboard()
                         return
                 except Exception:
@@ -318,7 +473,7 @@ async def main(page: ft.Page):
     # ==========================================
     def show_phone_screen(initial_msg: str = ""):
         page.clean()
-        status_text = ft.Text(initial_msg, size=13, color="#F59E0B")
+        status_text = ft.Text(initial_msg, size=13, color="#F59E0B", selectable=True)
         phone_input = ft.TextField(
             label="شماره موبایل سروش‌پلاس",
             hint_text="09123456789",
@@ -331,8 +486,8 @@ async def main(page: ft.Page):
 
         async def on_send_code(e):
             raw_phone = (phone_input.value or "").strip()
-            phone = normalize_phone(raw_phone)
-            if len(phone) < 10:
+            phone_intl, phone_local = normalize_phone(raw_phone)
+            if len(phone_intl) < 10:
                 status_text.value = "لطفاً یک شماره موبایل معتبر وارد کنید (مثلاً 09123456789)."
                 status_text.color = "#EF4444"
                 page.update()
@@ -345,15 +500,51 @@ async def main(page: ft.Page):
 
             try:
                 client = build_client()
-                await client.connect()
-                res = await client.send_code(phone)
-                state["phone"] = phone
+                await ensure_connected(client)
+
+                used_phone = phone_intl
+                try:
+                    res = await invoke_smart(
+                        client,
+                        ("send_code", "request_code", "send_verification_code", "send_otp"),
+                        {
+                            "phone_number": phone_intl,
+                            "phone": phone_intl,
+                            "mobile": phone_intl,
+                            "number": phone_intl,
+                        },
+                        positional_fallback=(phone_intl,),
+                    )
+                except Exception:
+                    used_phone = phone_local
+                    res = await invoke_smart(
+                        client,
+                        ("send_code", "request_code", "send_verification_code", "send_otp"),
+                        {
+                            "phone_number": phone_local,
+                            "phone": phone_local,
+                            "mobile": phone_local,
+                            "number": phone_local,
+                        },
+                        positional_fallback=(phone_local,),
+                    )
+
+                state["phone"] = used_phone
+                state["phone_local"] = phone_local
                 if isinstance(res, str):
                     state["phone_code_hash"] = res
                 elif isinstance(res, dict):
-                    state["phone_code_hash"] = res.get("phone_code_hash")
+                    state["phone_code_hash"] = (
+                        res.get("phone_code_hash")
+                        or res.get("code_hash")
+                        or res.get("hash")
+                    )
                 else:
-                    state["phone_code_hash"] = getattr(res, "phone_code_hash", None)
+                    state["phone_code_hash"] = (
+                        getattr(res, "phone_code_hash", None)
+                        or getattr(res, "code_hash", None)
+                        or getattr(res, "hash", None)
+                    )
 
                 send_btn.disabled = False
                 show_otp_screen()
@@ -383,345 +574,4 @@ async def main(page: ft.Page):
                         ft.Text("ورود به حساب سروش‌پلاس", size=20, weight=ft.FontWeight.BOLD, color="#F9FAFB"),
                         ft.Text("شماره خود را وارد کنید تا کد تایید ارسال شود:", size=13, color="#94A3B8"),
                         phone_input,
-                        send_btn,
-                        status_text,
-                    ],
-                ),
-            )
-        )
-        page.update()
-
-    # ==========================================
-    # صفحه ۳: ورود کد تایید (OTP)
-    # ==========================================
-    def show_otp_screen():
-        page.clean()
-        status_text = ft.Text(f"کد تایید به شماره {state['phone']} ارسال شد.", size=13, color="#38BDF8")
-        code_input = ft.TextField(
-            label="کد تایید پیامک / سروش‌پلاس",
-            hint_text="12345",
-            keyboard_type=ft.KeyboardType.NUMBER,
-            text_align=ft.TextAlign.LEFT,
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-        )
-
-        async def on_confirm_code(e):
-            code = (code_input.value or "").strip()
-            if len(code) < 4:
-                status_text.value = "لطفاً کد تایید را کامل وارد کنید."
-                status_text.color = "#EF4444"
-                page.update()
-                return
-
-            confirm_btn.disabled = True
-            status_text.value = "در حال تایید کد و ورود..."
-            status_text.color = "#38BDF8"
-            page.update()
-
-            try:
-                client = build_client()
-                sig = inspect.signature(client.sign_in)
-                params = sig.parameters
-
-                if "phone_code_hash" in params and state["phone_code_hash"]:
-                    await client.sign_in(
-                        phone=state["phone"],
-                        code=code,
-                        phone_code_hash=state["phone_code_hash"],
-                    )
-                else:
-                    await client.sign_in(state["phone"], code)
-
-                authorized = await client.is_user_authorized()
-                if authorized is not True:
-                    raise RuntimeError("احراز هویت کامل نشد؛ کد را دوباره بررسی کنید.")
-
-                confirm_btn.disabled = False
-                show_dashboard()
-            except Exception as ex:
-                confirm_btn.disabled = False
-                status_text.value = f"خطا در تایید کد: {ex}"
-                status_text.color = "#EF4444"
-                page.update()
-
-        confirm_btn = ft.ElevatedButton(
-            "تایید کد و ورود به سلف‌بات",
-            bgcolor="#2563EB",
-            color="#FFFFFF",
-            height=48,
-            on_click=on_confirm_code,
-        )
-        back_btn = ft.TextButton(
-            "تغییر شماره موبایل",
-            on_click=lambda e: show_phone_screen(),
-        )
-
-        page.add(
-            ft.Container(
-                bgcolor="#111827",
-                padding=20,
-                border_radius=14,
-                content=ft.Column(
-                    spacing=14,
-                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                    controls=[
-                        ft.Text("تایید کد ورود", size=20, weight=ft.FontWeight.BOLD, color="#F9FAFB"),
-                        code_input,
-                        confirm_btn,
-                        back_btn,
-                        status_text,
-                    ],
-                ),
-            )
-        )
-        page.update()
-
-    # ==========================================
-    # صفحه ۴: پنل اصلی مدیریت سلف‌بات
-    # ==========================================
-    def show_dashboard():
-        page.clean()
-        client = build_client()
-
-        if state["client_task"] is None or state["client_task"].done():
-            state["client_task"] = asyncio.create_task(start_listener(client))
-
-        add_log("سلف‌بات با موفقیت به سروش‌پلاس متصل شد ✅", "#10B981")
-
-        # --- بخش ریپلای خودکار ---
-        ar_switch = ft.Switch(
-            label="فعال‌سازی ریپلای خودکار",
-            value=state["auto_reply_enabled"],
-        )
-        ar_pv_switch = ft.Switch(
-            label="فقط در چت خصوصی (PV)",
-            value=state["auto_reply_pv_only"],
-        )
-        ar_text_input = ft.TextField(
-            label="متن پاسخ خودکار",
-            value=state["auto_reply_text"],
-            multiline=True,
-            min_lines=2,
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-        )
-
-        def save_auto_reply(e):
-            state["auto_reply_enabled"] = bool(ar_switch.value)
-            state["auto_reply_pv_only"] = bool(ar_pv_switch.value)
-            state["auto_reply_text"] = (ar_text_input.value or "").strip() or "پاسخ خودکار"
-            status_str = "روشن" if state["auto_reply_enabled"] else "خاموش"
-            add_log(f"تنظیمات ریپلای خودکار ذخیره شد ({status_str})", "#38BDF8")
-
-        # --- بخش موتور ارسال توربو ---
-        target_input = ft.TextField(
-            label="شناسه چت / آیدی مقصد (Chat ID / GUID)",
-            hint_text="مثال: u0XXXX... یا @username",
-            text_align=ft.TextAlign.LEFT,
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-        )
-        turbo_msg_input = ft.TextField(
-            label="متن پیام توربو",
-            hint_text="متن مورد نظر برای ارسال سریع...",
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-        )
-        count_input = ft.TextField(
-            label="تعداد ارسال",
-            value="20",
-            keyboard_type=ft.KeyboardType.NUMBER,
-            text_align=ft.TextAlign.LEFT,
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-            expand=True,
-        )
-        delay_input = ft.TextField(
-            label="تاخیر (ثانیه)",
-            value="0.1",
-            keyboard_type=ft.KeyboardType.NUMBER,
-            text_align=ft.TextAlign.LEFT,
-            bgcolor="#1E293B",
-            border_color="#334155",
-            border_radius=10,
-            expand=True,
-        )
-        turbo_counter = ft.Text("آماده ارسال", size=13, color="#94A3B8")
-
-        async def run_turbo_loop(target: str, text: str, total: int, delay: float):
-            sent = 0
-            add_log(f"شروع ارسال توربو ({total} پیام) به {target}", "#38BDF8")
-            try:
-                while state["turbo_running"] and sent < total:
-                    await client.send_message(target, text)
-                    sent += 1
-                    turbo_counter.value = f"ارسال شده: {sent} از {total}"
-                    turbo_counter.color = "#10B981"
-                    page.update()
-                    if delay > 0:
-                        await asyncio.sleep(delay)
-                add_log(f"عملیات توربو پایان یافت ({sent} پیام ارسال شد)", "#10B981")
-            except asyncio.CancelledError:
-                add_log("ارسال توربو متوقف شد.", "#F59E0B")
-            except Exception as ex:
-                add_log(f"خطا در ارسال توربو: {ex}", "#EF4444")
-                turbo_counter.value = f"خطا: {ex}"
-                turbo_counter.color = "#EF4444"
-            finally:
-                state["turbo_running"] = False
-                turbo_btn.text = "🚀 شروع ارسال توربو"
-                turbo_btn.bgcolor = "#10B981"
-                page.update()
-
-        async def toggle_turbo(e):
-            if state["turbo_running"]:
-                state["turbo_running"] = False
-                if state["turbo_task"]:
-                    state["turbo_task"].cancel()
-                return
-
-            target = (target_input.value or "").strip()
-            msg_txt = (turbo_msg_input.value or "").strip()
-            if not target or not msg_txt:
-                add_log("مقصد و متن پیام توربو را وارد کنید.", "#EF4444")
-                return
-
-            try:
-                total = max(1, int(count_input.value or "10"))
-                delay = max(0.0, float(delay_input.value or "0.1"))
-            except ValueError:
-                add_log("تعداد یا تاخیر نامعتبر است.", "#EF4444")
-                return
-
-            state["turbo_running"] = True
-            turbo_btn.text = "⛔ توقف فوری توربو"
-            turbo_btn.bgcolor = "#EF4444"
-            page.update()
-            state["turbo_task"] = asyncio.create_task(run_turbo_loop(target, msg_txt, total, delay))
-
-        turbo_btn = ft.ElevatedButton(
-            "🚀 شروع ارسال توربو",
-            bgcolor="#10B981",
-            color="#FFFFFF",
-            height=46,
-            on_click=toggle_turbo,
-        )
-
-        async def logout_account(e):
-            state["turbo_running"] = False
-            if state["client_task"]:
-                state["client_task"].cancel()
-            try:
-                await client.disconnect()
-            except Exception:
-                pass
-            state["client"] = None
-            for ext in ("", ".session", ".json"):
-                p = f"{SESSION_PATH}{ext}"
-                if os.path.exists(p):
-                    try:
-                        os.remove(p)
-                    except Exception:
-                        pass
-            show_phone_screen("از حساب خارج شدید. شماره جدید وارد کنید.")
-
-        page.add(
-            ft.Container(
-                bgcolor="#111827",
-                padding=16,
-                border_radius=14,
-                content=ft.Column(
-                    spacing=10,
-                    controls=[
-                        ft.Row(
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                            controls=[
-                                ft.Text("⚡ V3X Selfbot Panel", size=20, weight=ft.FontWeight.BOLD, color="#38BDF8"),
-                                ft.TextButton("خروج از اکانت", on_click=logout_account),
-                            ],
-                        ),
-                        ft.Text(f"شناسه دستگاه: {device_id}", size=12, color="#94A3B8"),
-                    ],
-                ),
-            ),
-            ft.Container(
-                bgcolor="#111827",
-                padding=16,
-                border_radius=14,
-                content=ft.Column(
-                    spacing=10,
-                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                    controls=[
-                        ft.Text("🚀 موتور ارسال توربو", size=16, weight=ft.FontWeight.BOLD, color="#F9FAFB"),
-                        target_input,
-                        turbo_msg_input,
-                        ft.Row(spacing=10, controls=[count_input, delay_input]),
-                        turbo_btn,
-                        turbo_counter,
-                    ],
-                ),
-            ),
-            ft.Container(
-                bgcolor="#111827",
-                padding=16,
-                border_radius=14,
-                content=ft.Column(
-                    spacing=10,
-                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-                    controls=[
-                        ft.Text("🤖 ریپلای خودکار", size=16, weight=ft.FontWeight.BOLD, color="#F9FAFB"),
-                        ar_switch,
-                        ar_pv_switch,
-                        ar_text_input,
-                        ft.ElevatedButton("ذخیره تنظیمات ریپلای", bgcolor="#2563EB", color="#FFFFFF", on_click=save_auto_reply),
-                    ],
-                ),
-            ),
-            ft.Container(
-                bgcolor="#0F172A",
-                padding=14,
-                border_radius=14,
-                content=ft.Column(
-                    spacing=8,
-                    controls=[
-                        ft.Text("📜 گزارش زنده عملکرد (Logs)", size=14, weight=ft.FontWeight.BOLD, color="#94A3B8"),
-                        log_view,
-                    ],
-                ),
-            ),
-        )
-        page.update()
-
-    # شروع برنامه با بررسی خودکار لایسنس ذخیره شده
-    saved_key = load_license_local()
-    if saved_key:
-        ok, msg, info = await verify_license_online(saved_key, device_id)
-        if ok:
-            state["license_key"] = saved_key
-            state["license_info"] = info
-            if session_exists():
-                try:
-                    c = build_client()
-                    await c.connect()
-                    if await c.is_user_authorized() is True:
-                        show_dashboard()
-                        return
-                except Exception:
-                    pass
-            show_phone_screen()
-            return
-        else:
-            show_license_screen(f"وضعیت لایسنس قبلی: {msg}")
-            return
-
-    show_license_screen()
-
-
-if __name__ == "__main__":
-    ft.app(target=main)
+                    
