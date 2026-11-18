@@ -8,6 +8,7 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +35,7 @@ jobs:
           mkdir -p /tmp/wheels
           pip wheel pyaes splusthon --no-deps -w /tmp/wheels
           export PIP_FIND_LINKS=/tmp/wheels
-          yes | flet build apk --verbose 2>&1 | sed 's/::group::/=== /g; s/::endgroup::/---/g'
+          printf "y\ny\ny\ny\ny\n" | flet build apk --arch arm64-v8a --verbose 2>&1 | sed 's/::group::/=== /g; s/::endgroup::/---/g'
           exit ${PIPESTATUS[1]}
 
       - name: Upload APK
