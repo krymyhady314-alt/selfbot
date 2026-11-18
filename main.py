@@ -1,4 +1,4 @@
-import asyncio, importlib, inspect, json, os, pkgutil, platform, tempfile, time, uuid
+import asyncio, hashlib, importlib, inspect, json, os, pkgutil, platform, subprocess, tempfile, time
 import flet as ft
 import httpx
 
@@ -12,15 +12,17 @@ SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 
 
 def get_device_id() -> str:
-    if os.path.exists(DEV_FILE):
+    """تولید شناسه سخت‌افزاری ثابت گوشی که با حذف و نصب مجدد برنامه تغییر نمی‌کند."""
+    parts = [platform.system(), platform.machine(), platform.node()]
+    for prop in ("ro.product.brand", "ro.product.model", "ro.product.device", "ro.build.id", "ro.hardware"):
         try:
-            v = open(DEV_FILE, "r", encoding="utf-8").read().strip()
-            if v:
-                return v
+            out = subprocess.check_output(["getprop", prop], stderr=subprocess.DEVNULL, timeout=1).decode().strip()
+            if out:
+                parts.append(out)
         except Exception:
             pass
-    raw = f"{uuid.getnode()}-{platform.machine()}-{uuid.uuid4().hex[:10]}"
-    did = "V3X-" + uuid.uuid5(uuid.NAMESPACE_DNS, raw).hex[:16].upper()
+    raw = "|".join(parts)
+    did = "V3X-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16].upper()
     try:
         open(DEV_FILE, "w", encoding="utf-8").write(did)
     except Exception:
@@ -53,9 +55,28 @@ async def check_license(key: str, did: str) -> tuple[bool, str]:
                 r = await http.post(url, json=payload)
                 if r.status_code in (404, 405):
                     continue
-                d = r.json()
-                ok = d.get("valid") is True or d.get("ok") is True or str(d.get("status", "")).lower() in ("valid", "ok", "active")
-                msg = d.get("message") or d.get("error") or ("تایید شد" if ok else "لایسنس نامعتبر است")
+                try:
+                    d = r.json()
+                except Exception:
+                    txt = r.text.strip()
+                    if any(w in txt.lower() for w in ("valid", "ok", "active", "success")):
+                        return True, "تایید شد"
+                    return False, f"پاسخ سرور ({r.status_code}): {txt[:80]}"
+
+                ok = (
+                    d.get("valid") is True
+                    or d.get("ok") is True
+                    or d.get("success") is True
+                    or str(d.get("status", "")).lower() in ("valid", "ok", "active", "success")
+                )
+                msg = (
+                    d.get("message")
+                    or d.get("error")
+                    or d.get("reason")
+                    or d.get("detail")
+                    or d.get("msg")
+                    or ("تایید شد" if ok else "لایسنس نامعتبر یا روی دستگاه دیگری ثبت شده است")
+                )
                 return ok, str(msg)
             except Exception as e:
                 err = str(e)
@@ -150,8 +171,8 @@ async def main(page: ft.Page):
 
     def show_license(msg: str = ""):
         page.controls.clear()
-        info = ft.Text(msg, size=13, color="#F59E0B")
-        dev_box = ft.TextField(label="شناسه دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
+        info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
+        dev_box = ft.TextField(label="شناسه سخت‌افزاری ثابت (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
         key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def copy_id(e):
@@ -209,11 +230,17 @@ async def main(page: ft.Page):
 
         async def send_otp(e):
             d = "".join(c for c in (ph_box.value or "") if c.isdigit())
-            phone = "98" + d[1:] if d.startswith("09") else ("98" + d if d.startswith("9") and len(d) == 10 else d)
-            if len(phone) < 10:
-                info.value, info.color = "شماره موبایل معتبر وارد کنید.", "#EF4444"
+            if d.startswith("09") and len(d) == 11:
+                p98, p09 = "98" + d[1:], d
+            elif d.startswith("989") and len(d) == 12:
+                p98, p09 = d, "0" + d[2:]
+            elif d.startswith("9") and len(d) == 10:
+                p98, p09 = "98" + d, "0" + d
+            else:
+                info.value, info.color = "شماره موبایل معتبر وارد کنید (مثلاً 09123456789).", "#EF4444"
                 page.update()
                 return
+
             btn.disabled = True
             info.value, info.color = "در حال ارسال کد تایید...", "#38BDF8"
             page.update()
@@ -221,8 +248,22 @@ async def main(page: ft.Page):
                 c = get_client()
                 if not c.is_connected():
                     await c.connect()
-                res = await c.send_code_request(phone)
-                st["phone"] = phone
+
+                res = None
+                used_phone = p98
+                last_err = None
+                for fmt in (p98, f"+{p98}", p09):
+                    try:
+                        res = await c.send_code_request(fmt)
+                        used_phone = fmt
+                        last_err = None
+                        break
+                    except Exception as ex:
+                        last_err = ex
+                if last_err is not None:
+                    raise last_err
+
+                st["phone"] = used_phone
                 st["hash"] = getattr(res, "phone_code_hash", None)
                 st["need_2fa"] = False
                 btn.disabled = False
@@ -314,7 +355,8 @@ async def main(page: ft.Page):
 
         async def keep_alive():
             try:
-                await c.run_until_disconnected()
+                if callable(getattr(c, "run_until_disconnected", None)):
+                    await c.run_until_disconnected()
             except Exception:
                 pass
 
