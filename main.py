@@ -1,8 +1,8 @@
-import asyncio, hashlib, importlib, inspect, json, os, pkgutil, platform, subprocess, tempfile, time
+import asyncio, hashlib, importlib, inspect, json, os, pkgutil, platform, re, subprocess, tempfile, time
 import flet as ft
 import httpx
 
-# لایه سازگاری کامل با Flet 1.1.2 برای جلوگیری از هرگونه خطای border / padding / radius
+# لایه سازگاری کامل با Flet 1.1.2
 if hasattr(ft, "border") and hasattr(ft, "Border") and not hasattr(ft.border, "all"):
     ft.border.all = ft.Border.all
     ft.border.only = ft.Border.only
@@ -20,7 +20,6 @@ if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(
     ft.border_radius.only = ft.BorderRadius.only
 
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
-OWNER_TEST_KEY = "V3X-OWNER-2026"
 CREATOR_ID = "@V3XSYS"
 
 STORAGE_DIR = os.getenv("FLET_APP_STORAGE_DATA") or tempfile.gettempdir()
@@ -32,6 +31,7 @@ SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 
 
 def get_device_id() -> str:
+    """شناسه سخت‌افزاری ثابت گوشی که با حذف و نصب مجدد تغییر نمی‌کند."""
     parts = [platform.system(), platform.machine(), platform.node()]
     for prop in ("ro.product.brand", "ro.product.model", "ro.product.device", "ro.build.id", "ro.hardware"):
         try:
@@ -65,12 +65,30 @@ def save_license(key: str):
         pass
 
 
-async def check_license(key: str, did: str) -> tuple[bool, str]:
-    clean_key = key.strip()
-    if clean_key.upper() == OWNER_TEST_KEY:
-        return True, "ورود با کلید مدیریت تایید شد"
+def clear_saved_license():
+    try:
+        if os.path.exists(LIC_FILE):
+            os.remove(LIC_FILE)
+    except Exception:
+        pass
 
-    params = {
+
+def extract_clean_key(raw_input: str) -> str:
+    txt = (raw_input or "").strip().replace("`", "").replace('"', "").replace("'", "")
+    m = re.search(r"(V3X-[A-Za-z0-9\-_]{3,})", txt, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+    return txt
+
+
+async def check_license(raw_key: str, did: str) -> tuple[bool, str, str]:
+    """بررسی قطعی و آنلاین لایسنس از طریق سرور کلودفلر (بدون هیچ‌گونه میان‌بُر)."""
+    clean_key = extract_clean_key(raw_key)
+    if not clean_key:
+        return False, "لطفاً کلید لایسنس را وارد کنید.", ""
+
+    payload = {
+        "action": "verify",
         "key": clean_key,
         "license": clean_key,
         "license_key": clean_key,
@@ -81,34 +99,46 @@ async def check_license(key: str, did: str) -> tuple[bool, str]:
     }
     base = LICENSE_URL.rstrip("/")
     routes = [
-        ("POST", f"{base}/check"),
-        ("GET", f"{base}/check"),
-        ("POST", f"{base}/verify"),
+        ("POST_JSON", f"{base}/verify"),
         ("GET", f"{base}/verify"),
-        ("POST", f"{base}/validate"),
+        ("POST_JSON", f"{base}/check"),
+        ("GET", f"{base}/check"),
+        ("POST_JSON", f"{base}/validate"),
         ("GET", f"{base}/validate"),
-        ("POST", f"{base}/activate"),
-        ("GET", f"{base}/activate"),
+        ("POST_JSON", f"{base}/activate"),
+        ("POST_JSON", f"{base}/api/verify"),
+        ("POST_JSON", f"{base}/api/check"),
         ("GET", base),
-        ("POST", base),
+        ("POST_JSON", base),
+        ("POST_FORM", f"{base}/verify"),
+        ("POST_FORM", base),
     ]
 
-    last_err = "پاسخ معتبری از سرور لایسنس دریافت نشد"
+    saw_only_online = False
+    last_err = "پاسخی از سرور لایسنس دریافت نشد. اتصال اینترنت را بررسی کنید."
+
     async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http:
-        for method, url in routes:
+        for mode, url in routes:
             try:
-                r = await http.post(url, params=params, json=params) if method == "POST" else await http.get(url, params=params)
+                if mode == "POST_JSON":
+                    r = await http.post(url, params=payload, json=payload)
+                elif mode == "POST_FORM":
+                    r = await http.post(url, params=payload, data=payload)
+                else:
+                    r = await http.get(url, params=payload)
+
                 if r.status_code in (404, 405):
                     continue
+
                 try:
                     d = r.json()
                 except Exception:
                     txt = r.text.strip()
                     low = txt.lower()
-                    if any(w in low for w in ("valid", "active", "success", "authorized")):
-                        return True, "لایسنس تایید شد"
-                    if txt and "online" not in low:
-                        last_err = txt[:100]
+                    if any(w in low for w in ("valid", "active", "success", "authorized")) and "invalid" not in low:
+                        return True, "لایسنس تایید شد ✅", clean_key
+                    if txt:
+                        last_err = f"پاسخ سرور ({r.status_code}): {txt[:90]}"
                     continue
 
                 if not isinstance(d, dict):
@@ -123,18 +153,28 @@ async def check_license(key: str, did: str) -> tuple[bool, str]:
                     or status_val in ("valid", "ok", "active", "success", "activated", "true")
                 )
                 if is_ok:
-                    return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
+                    msg = d.get("message") or d.get("msg") or "لایسنس تایید شد ✅"
+                    return True, str(msg), clean_key
 
-                if status_val == "online" and len(d) <= 2 and not any(k in d for k in ("valid", "ok", "error", "reason", "message")):
+                # نادیده گرفتن پاسخ سلامت پیش‌فرض سرور تا سایر مسیرها بررسی شوند
+                if status_val == "online" and len(d) <= 2 and not any(
+                    k in d for k in ("valid", "ok", "error", "reason", "message")
+                ):
+                    saw_only_online = True
                     continue
 
                 msg = d.get("message") or d.get("error") or d.get("reason") or d.get("detail") or d.get("msg")
                 if msg:
-                    return False, str(msg)
-            except Exception as e:
-                last_err = f"خطای شبکه: {e}"
+                    return False, str(msg), clean_key
 
-    return False, last_err
+                last_err = f"لایسنس نامعتبر است ({json.dumps(d, ensure_ascii=False)})"
+            except Exception as e:
+                last_err = f"خطای اتصال به سرور لایسنس: {e}"
+
+    if saw_only_online:
+        return False, "سرور کلودفلر آنلاین است اما مسیر بررسی لایسنس (/verify) در Worker پاسخ نداد.", clean_key
+
+    return False, last_err, clean_key
 
 
 def create_splus_client():
@@ -226,10 +266,10 @@ async def main(page: ft.Page):
         "hash": None,
         "need_2fa": False,
         "listener_added": False,
-        "active_tab": "chats",  # chats | multi | turbo | autoreply
-        "chat_filter": "all",   # all | pv | group
+        "active_tab": "chats",
+        "chat_filter": "all",
         "dialogs": [],
-        "selected_targets": {},  # {id_str: title}
+        "selected_targets": {},
         "active_target": "",
         "multi_messages": ["سلام!", "چطوری؟", "پیام تست سلف‌بات V3X"],
         "multi_running": False,
@@ -254,14 +294,25 @@ async def main(page: ft.Page):
             st["client"] = create_splus_client()
         return st["client"]
 
+    async def proceed_after_license():
+        try:
+            c = get_client()
+            await c.connect()
+            if await c.is_user_authorized():
+                show_dashboard()
+                return
+        except Exception:
+            pass
+        show_phone()
+
     # ==========================================
-    # صفحه ۱: لایسنس
+    # صفحه ۱: احراز هویت لایسنس
     # ==========================================
     def show_license(msg: str = ""):
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
-        dev_box = ft.TextField(label="شناسه سخت‌افزاری (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
-        key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        dev_box = ft.TextField(label="شناسه سخت‌افزاری دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
+        key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def copy_id(e):
             try:
@@ -277,33 +328,21 @@ async def main(page: ft.Page):
             page.update()
 
         async def verify(e):
-            k = (key_box.value or "").strip()
-            if not k:
-                info.value, info.color = "کلید لایسنس را وارد کنید.", "#EF4444"
-                page.update()
-                return
             btn.disabled = True
-            info.value, info.color = "در حال بررسی لایسنس...", "#38BDF8"
+            info.value, info.color = "در حال استعلام لایسنس از سرور...", "#38BDF8"
             page.update()
-            ok, m = await check_license(k, did)
+            ok, m, clean_k = await check_license(key_box.value or "", did)
             btn.disabled = False
             if not ok:
                 info.value, info.color = f"❌ {m}", "#EF4444"
                 page.update()
                 return
-            save_license(k)
-            try:
-                c = get_client()
-                await c.connect()
-                if await c.is_user_authorized():
-                    show_dashboard()
-                    return
-            except Exception:
-                pass
-            show_phone()
+            save_license(clean_k)
+            await proceed_after_license()
 
-        btn, _ = make_btn("بررسی و ورود", verify, bgcolor="#2563EB")
+        btn, _ = make_btn("بررسی لایسنس و ورود", verify, bgcolor="#2563EB", height=48)
         copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color="#38BDF8", kind="outlined")
+
         page.add(
             ft.Container(
                 bgcolor="#111827",
@@ -315,6 +354,7 @@ async def main(page: ft.Page):
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
                         ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                        ft.Text("فعال‌سازی لایسنس اختصاصی", size=13, color="#94A3B8"),
                         dev_box,
                         copy_btn,
                         key_box,
@@ -328,7 +368,7 @@ async def main(page: ft.Page):
         page.update()
 
     # ==========================================
-    # صفحه ۲: شماره موبایل
+    # صفحه ۲: ورود شماره موبایل
     # ==========================================
     def show_phone(msg: str = ""):
         page.controls.clear()
@@ -380,7 +420,7 @@ async def main(page: ft.Page):
                 info.value, info.color = f"خطا: {ex}", "#EF4444"
                 page.update()
 
-        btn, _ = make_btn("ارسال کد تایید", send_otp, bgcolor="#10B981")
+        btn, _ = make_btn("ارسال کد تایید", send_otp, bgcolor="#10B981", height=48)
         page.add(
             ft.Container(
                 bgcolor="#111827",
@@ -446,7 +486,7 @@ async def main(page: ft.Page):
                     info.value, info.color = f"خطا: {ex}", "#EF4444"
                 page.update()
 
-        btn, _ = make_btn("تایید و ورود", confirm, bgcolor="#2563EB")
+        btn, _ = make_btn("تایید و ورود", confirm, bgcolor="#2563EB", height=48)
         chg_btn, _ = make_btn("تغییر شماره", lambda e: show_phone(), color="#94A3B8", kind="text")
         page.add(
             ft.Container(
@@ -472,7 +512,7 @@ async def main(page: ft.Page):
         page.update()
 
     # ==========================================
-    # صفحه ۴: داشبورد کامل سلف‌بات (چت‌ها، چندتایی، توربو، ریپلای)
+    # صفحه ۴: داشبورد کامل سلف‌بات
     # ==========================================
     def show_dashboard():
         page.controls.clear()
@@ -553,7 +593,6 @@ async def main(page: ft.Page):
                 log(f"خطا در دریافت لیست چت‌ها: {ex}", "#EF4444")
             st["dialogs"] = items
 
-        # --- ویجت بخش چت‌ها (پی‌وی و گپ) ---
         def build_chats_widget():
             manual_target = ft.TextField(
                 label="آیدی یا شناسه چت انتخاب‌شده",
@@ -617,6 +656,9 @@ async def main(page: ft.Page):
 
             def set_filter(e, mode: str):
                 st["chat_filter"] = mode
+                f_all.bgcolor = "#2563EB" if mode == "all" else "#1E293B"
+                f_pv.bgcolor = "#2563EB" if mode == "pv" else "#1E293B"
+                f_gp.bgcolor = "#2563EB" if mode == "group" else "#1E293B"
                 refresh_chat_cards()
                 page.update()
 
@@ -663,7 +705,6 @@ async def main(page: ft.Page):
                 ),
             )
 
-        # --- ویجت بخش ارسال چندتایی (Multi-Message) ---
         def build_multi_msg_widget():
             target_field = ft.TextField(
                 label="مقصد ارسال (آیدی یا چت انتخاب‌شده)",
@@ -824,7 +865,6 @@ async def main(page: ft.Page):
                 ),
             )
 
-        # --- ویجت بخش ارسال توربو ---
         def build_turbo_widget():
             target_box = ft.TextField(
                 label="آیدی یا شناسه مقصد",
@@ -898,7 +938,6 @@ async def main(page: ft.Page):
                 ),
             )
 
-        # --- ویجت بخش ریپلای خودکار ---
         def build_autoreply_widget():
             ar_sw = ft.Switch(label="فعال‌سازی ریپلای خودکار", value=st["ar_enabled"])
             pv_sw = ft.Switch(label="فقط در پی‌وی (PV)", value=st["ar_pv_only"])
@@ -1012,20 +1051,14 @@ async def main(page: ft.Page):
         page.update()
         asyncio.create_task(fetch_dialogs_list())
 
+    # بررسی اجباری لایسنس ذخیره شده با سرور هنگام هر بار اجرا
     saved = get_saved_license()
     if saved:
-        ok, m = await check_license(saved, did)
+        ok, m, _ = await check_license(saved, did)
         if ok:
-            try:
-                c = get_client()
-                await c.connect()
-                if await c.is_user_authorized():
-                    show_dashboard()
-                    return
-            except Exception:
-                pass
-            show_phone()
+            await proceed_after_license()
             return
+        clear_saved_license()
         show_license(m)
         return
     show_license()
