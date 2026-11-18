@@ -16,7 +16,7 @@ company = "V3X"
 copyright = "Copyright (C) 2026 V3X"
 
 [tool.flet.android]
-permission = [
-    "android.permission.INTERNET",
-    "android.permission.ACCESS_NETWORK_STATE",
+permissions = [
+    "INTERNET",
+    "ACCESS_NETWORK_STATE"
 ]
