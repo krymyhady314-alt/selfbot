@@ -25,12 +25,15 @@ jobs:
             cp -f /usr/local/lib/android/sdk/licenses/* "$HOME/Android/sdk/licenses/"
           fi
 
-      - name: Install Flet and Build APK
+      - name: Build Pure-Python Wheels & APK
         run: |
           set +o pipefail
           unset ANDROID_HOME ANDROID_SDK_ROOT JAVA_HOME
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip wheel
           pip install flet==1.1.2
+          mkdir -p /tmp/wheels
+          pip wheel pyaes splusthon --no-deps -w /tmp/wheels
+          export PIP_FIND_LINKS=/tmp/wheels
           yes | flet build apk --verbose 2>&1 | sed 's/::group::/=== /g; s/::endgroup::/---/g'
           exit ${PIPESTATUS[1]}
 
