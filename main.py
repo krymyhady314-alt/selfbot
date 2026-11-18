@@ -6,24 +6,26 @@ LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
 STORAGE_DIR = os.getenv("FLET_APP_STORAGE_DATA") or tempfile.gettempdir()
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
+DEV_FILE = os.path.join(STORAGE_DIR, "v3x_dev.txt")
 LIC_FILE = os.path.join(STORAGE_DIR, "v3x_lic.json")
-AUTH_FLAG = os.path.join(STORAGE_DIR, "v3x_authed.flag")
 SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 
 
 def get_device_id() -> str:
-    """ساخت شناسه سخت‌افزاری ثابت که حتی با حذف و نصب مجدد برنامه تغییر نمی‌کند."""
-    hw_parts = [platform.machine(), str(uuid.getnode())]
-    if os.path.exists("/system/build.prop"):
+    if os.path.exists(DEV_FILE):
         try:
-            with open("/system/build.prop", "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if line.startswith(("ro.product.model=", "ro.product.device=", "ro.build.fingerprint=", "ro.serialno=")):
-                        hw_parts.append(line.strip())
+            v = open(DEV_FILE, "r", encoding="utf-8").read().strip()
+            if v:
+                return v
         except Exception:
             pass
-    raw = "|".join(hw_parts)
-    return "V3X-" + uuid.uuid5(uuid.NAMESPACE_DNS, raw).hex[:16].upper()
+    raw = f"{uuid.getnode()}-{platform.machine()}-{uuid.uuid4().hex[:10]}"
+    did = "V3X-" + uuid.uuid5(uuid.NAMESPACE_DNS, raw).hex[:16].upper()
+    try:
+        open(DEV_FILE, "w", encoding="utf-8").write(did)
+    except Exception:
+        pass
+    return did
 
 
 def get_saved_license() -> str:
@@ -42,157 +44,60 @@ def save_license(key: str):
         pass
 
 
-def _is_truthy(val) -> bool:
-    if val is True or val == 1:
-        return True
-    if isinstance(val, str) and val.strip().lower() in ("true", "1", "valid", "ok", "active", "success", "authorized", "verified"):
-        return True
-    return False
-
-
 async def check_license(key: str, did: str) -> tuple[bool, str]:
-    payload = {
-        "key": key,
-        "license": key,
-        "license_key": key,
-        "code": key,
-        "device_id": did,
-        "hwid": did,
-        "device": did,
-        "hardware_id": did,
-    }
-    base = LICENSE_URL.rstrip("/")
-    server_msg = ""
-
-    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http:
-        # ۱. بررسی با متد POST روی مسیرهای استاندارد
-        for path in ("/verify", "/check", "/api/verify", ""):
+    payload = {"key": key, "license": key, "license_key": key, "device_id": did, "hwid": did}
+    err = "عدم پاسخ سرور"
+    async with httpx.AsyncClient(timeout=15.0) as http:
+        for url in (f"{LICENSE_URL}/verify", LICENSE_URL):
             try:
-                r = await http.post(f"{base}{path}", json=payload)
+                r = await http.post(url, json=payload)
                 if r.status_code in (404, 405):
                     continue
-                txt = r.text.strip()
-                if txt.lower() in ("valid", "ok", "true", "success"):
-                    return True, "لایسنس تایید شد"
-                try:
-                    d = r.json()
-                    if isinstance(d, dict):
-                        if any(_is_truthy(d.get(k)) for k in ("valid", "ok", "success", "authorized", "active", "allowed", "verified")):
-                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
-                        if _is_truthy(d.get("status")) or _is_truthy(d.get("result")):
-                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
-                        reason = d.get("message") or d.get("msg") or d.get("error") or d.get("reason") or d.get("detail")
-                        if reason:
-                            server_msg = str(reason)
-                except Exception:
-                    if txt and len(txt) < 120:
-                        server_msg = txt
+                d = r.json()
+                ok = d.get("valid") is True or d.get("ok") is True or str(d.get("status", "")).lower() in ("valid", "ok", "active")
+                msg = d.get("message") or d.get("error") or ("تایید شد" if ok else "لایسنس نامعتبر است")
+                return ok, str(msg)
             except Exception as e:
-                server_msg = f"خطای شبکه: {e}"
-
-        # ۲. بررسی با متد GET در صورت تنظیم Worker روی Query Params
-        for path in ("/verify", "/check", ""):
-            try:
-                r = await http.get(f"{base}{path}", params={"key": key, "license": key, "device_id": did, "hwid": did})
-                if r.status_code in (404, 405):
-                    continue
-                txt = r.text.strip()
-                if txt.lower() in ("valid", "ok", "true", "success"):
-                    return True, "لایسنس تایید شد"
-                try:
-                    d = r.json()
-                    if isinstance(d, dict):
-                        if any(_is_truthy(d.get(k)) for k in ("valid", "ok", "success", "authorized", "active", "allowed", "verified")):
-                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
-                        if _is_truthy(d.get("status")) or _is_truthy(d.get("result")):
-                            return True, str(d.get("message") or d.get("msg") or "لایسنس تایید شد")
-                        reason = d.get("message") or d.get("msg") or d.get("error") or d.get("reason") or d.get("detail")
-                        if reason and not server_msg:
-                            server_msg = str(reason)
-                except Exception:
-                    pass
-            except Exception:
-                pass
-
-    return False, (server_msg or "لایسنس نامعتبر است یا به دستگاه دیگری متصل شده است")
+                err = str(e)
+    return False, f"خطای شبکه: {err}"
 
 
 def create_splus_client():
     import splusthon
-    target_methods = {"connect", "send_code", "sign_in", "send_message", "get_me", "start", "run"}
-    best_cls = None
-    best_score = -1
-
-    modules = [splusthon]
-    if hasattr(splusthon, "__path__"):
+    cls = None
+    for name in ("SPlusClient", "Client", "SoroushClient", "UserClient"):
+        c = getattr(splusthon, name, None)
+        if inspect.isclass(c):
+            cls = c
+            break
+    if cls is None and hasattr(splusthon, "__path__"):
         for _, mod_name, _ in pkgutil.walk_packages(splusthon.__path__, "splusthon."):
             try:
-                modules.append(importlib.import_module(mod_name))
+                m = importlib.import_module(mod_name)
+                for n, obj in inspect.getmembers(m, inspect.isclass):
+                    if obj.__module__ == mod_name and "client" in n.lower() and "base" not in n.lower():
+                        cls = obj
+                        break
+                if cls:
+                    break
             except Exception:
                 pass
-
-    for mod in modules:
-        for name, obj in inspect.getmembers(mod, inspect.isclass):
-            if "base" in name.lower():
-                continue
-            attrs = set(dir(obj))
-            score = len(attrs & target_methods) * 10
-            if "client" in name.lower():
-                score += 5
-            if score > best_score and score > 0:
-                best_score = score
-                best_cls = obj
-
-    if best_cls is None:
-        raise RuntimeError(f"کلاس کلاینت در splusthon یافت نشد: {dir(splusthon)}")
-
-    sig = inspect.signature(best_cls.__init__)
-    kwargs = {}
-    session_set = False
-    for p_name, p in sig.parameters.items():
-        if p_name == "self" or p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
-            continue
-        if p_name in ("session", "session_name", "name", "path", "session_path"):
-            kwargs[p_name] = SESSION_PATH
-            session_set = True
-        elif p.default is inspect.Parameter.empty:
-            if not session_set:
-                kwargs[p_name] = SESSION_PATH
-                session_set = True
-            elif "id" in p_name:
-                kwargs[p_name] = 123456
-            else:
-                kwargs[p_name] = "0123456789abcdef0123456789abcdef"
-
+    if cls is None:
+        raise RuntimeError("کلاس کلاینت در splusthon یافت نشد")
     try:
-        return best_cls(**kwargs)
+        return cls(SESSION_PATH)
     except TypeError:
-        try:
-            return best_cls(SESSION_PATH)
-        except TypeError:
-            return best_cls()
+        return cls()
 
 
-async def call_api(obj, names: tuple, kw: dict, args: tuple = ()):
-    targets = [obj] + [getattr(obj, s) for s in ("auth", "account", "messages", "methods") if hasattr(obj, s)]
-    fn = None
-    for t in targets:
-        for n in names:
-            if callable(getattr(t, n, None)):
-                fn = getattr(t, n)
-                break
-        if fn:
-            break
-    if not fn:
-        avail = [m for m in dir(obj) if not m.startswith("_")]
-        raise AttributeError(f"متد {names[0]} یافت نشد. متدهای موجود: {avail[:20]}")
-    sig = inspect.signature(fn).parameters
-    filtered = {k: v for k, v in kw.items() if k in sig}
+def get_events_module():
     try:
-        res = fn(**filtered) if (filtered or not args) else fn(*args)
-    except TypeError:
-        res = fn(*args)
-    return await res if inspect.isawaitable(res) else res
+        import splusthon
+        if hasattr(splusthon, "events"):
+            return splusthon.events
+        return importlib.import_module("splusthon.events")
+    except Exception:
+        return None
 
 
 def make_btn(label: str, on_click, bgcolor: str = "#2563EB", color: str = "#FFFFFF", height: int = 46, kind: str = "filled"):
@@ -220,16 +125,18 @@ async def main(page: ft.Page):
         "client": None,
         "phone": "",
         "hash": None,
+        "need_2fa": False,
+        "listener_added": False,
         "turbo": False,
         "ar": False,
-        "ar_text": "آفلاین هستم، پیام شما ثبت شد.",
+        "ar_text": "سلام! در حال حاضر آفلاین هستم، پیام شما ثبت شد.",
         "pv_only": True,
         "replied": {},
     }
     logs = ft.Column(spacing=4, height=130, scroll=ft.ScrollMode.AUTO)
 
     def log(txt: str, col: str = "#94A3B8"):
-        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col, selectable=True))
+        logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col))
         logs.controls = logs.controls[:25]
         try:
             page.update()
@@ -243,8 +150,8 @@ async def main(page: ft.Page):
 
     def show_license(msg: str = ""):
         page.controls.clear()
-        info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
-        dev_box = ft.TextField(label="شناسه سخت‌افزاری دائمی دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
+        info = ft.Text(msg, size=13, color="#F59E0B")
+        dev_box = ft.TextField(label="شناسه دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
         key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def copy_id(e):
@@ -257,7 +164,7 @@ async def main(page: ft.Page):
                         await r
                 info.value, info.color = "شناسه دستگاه کپی شد ✅", "#10B981"
             except Exception:
-                info.value, info.color = "متن بالا را لمس کرده و دستی کپی کنید.", "#F59E0B"
+                info.value, info.color = "متن را انتخاب و دستی کپی کنید.", "#F59E0B"
             page.update()
 
         async def verify(e):
@@ -267,7 +174,7 @@ async def main(page: ft.Page):
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال استعلام از سرور لایسنس...", "#38BDF8"
+            info.value, info.color = "در حال بررسی لایسنس...", "#38BDF8"
             page.update()
             ok, m = await check_license(k, did)
             btn.disabled = False
@@ -276,30 +183,22 @@ async def main(page: ft.Page):
                 page.update()
                 return
             save_license(k)
-            if os.path.exists(AUTH_FLAG):
-                try:
-                    c = get_client()
-                    await call_api(c, ("connect", "initialize"), {})
+            try:
+                c = get_client()
+                await c.connect()
+                if await c.is_user_authorized():
                     show_dashboard()
                     return
-                except Exception:
-                    pass
+            except Exception:
+                pass
             show_phone()
 
         btn, _ = make_btn("بررسی و ورود", verify, bgcolor="#2563EB")
         copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color="#38BDF8", kind="outlined")
-
         page.add(ft.Container(bgcolor="#111827", padding=18, border_radius=12, content=ft.Column(
             spacing=12,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            controls=[
-                ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color="#38BDF8"),
-                dev_box,
-                copy_btn,
-                key_box,
-                btn,
-                info,
-            ],
+            controls=[ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color="#38BDF8"), dev_box, copy_btn, key_box, btn, info],
         )))
         page.update()
 
@@ -316,14 +215,16 @@ async def main(page: ft.Page):
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال اتصال و ارسال کد تایید...", "#38BDF8"
+            info.value, info.color = "در حال ارسال کد تایید...", "#38BDF8"
             page.update()
             try:
                 c = get_client()
-                await call_api(c, ("connect", "initialize"), {})
-                res = await call_api(c, ("send_code", "request_code", "send_otp"), {"phone_number": phone, "phone": phone, "mobile": phone}, (phone,))
+                if not c.is_connected():
+                    await c.connect()
+                res = await c.send_code_request(phone)
                 st["phone"] = phone
-                st["hash"] = res if isinstance(res, str) else (res.get("phone_code_hash") if isinstance(res, dict) else getattr(res, "phone_code_hash", None))
+                st["hash"] = getattr(res, "phone_code_hash", None)
+                st["need_2fa"] = False
                 btn.disabled = False
                 show_otp()
             except Exception as ex:
@@ -335,39 +236,46 @@ async def main(page: ft.Page):
         page.add(ft.Container(bgcolor="#111827", padding=18, border_radius=12, content=ft.Column(
             spacing=12,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            controls=[
-                ft.Text("ورود به سروش‌پلاس", size=20, weight=ft.FontWeight.BOLD),
-                ph_box,
-                btn,
-                info,
-            ],
+            controls=[ft.Text("ورود به سروش‌پلاس", size=20, weight=ft.FontWeight.BOLD), ph_box, btn, info],
         )))
         page.update()
 
     def show_otp():
         page.controls.clear()
-        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8", selectable=True)
+        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8")
         code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        pwd_box = ft.TextField(label="رمز تایید دومرحله‌ای (در صورت داشتن)", password=True, can_reveal_password=True, visible=st["need_2fa"], text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
 
         async def confirm(e):
             code = (code_box.value or "").strip()
-            if len(code) < 4:
+            pwd = (pwd_box.value or "").strip()
+            if not st["need_2fa"] and len(code) < 4:
                 info.value, info.color = "کد تایید را کامل وارد کنید.", "#EF4444"
                 page.update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال تایید و ورود...", "#38BDF8"
+            info.value, info.color = "در حال ورود...", "#38BDF8"
             page.update()
             try:
                 c = get_client()
-                args = (st["phone"], st["hash"], code) if st["hash"] else (st["phone"], code)
-                await call_api(c, ("sign_in", "verify_code", "login"), {"phone_number": st["phone"], "phone": st["phone"], "phone_code": code, "code": code, "phone_code_hash": st["hash"]}, args)
-                open(AUTH_FLAG, "w", encoding="utf-8").write("1")
+                if st["need_2fa"]:
+                    await c.sign_in(password=pwd)
+                else:
+                    if st["hash"]:
+                        await c.sign_in(phone=st["phone"], code=code, phone_code_hash=st["hash"])
+                    else:
+                        await c.sign_in(st["phone"], code)
                 btn.disabled = False
                 show_dashboard()
             except Exception as ex:
                 btn.disabled = False
-                info.value, info.color = f"خطا: {ex}", "#EF4444"
+                err_str = str(ex)
+                if "password" in err_str.lower() or "2fa" in err_str.lower():
+                    st["need_2fa"] = True
+                    pwd_box.visible = True
+                    info.value, info.color = "اکانت شما رمز دومرحله‌ای دارد؛ رمز را وارد و دوباره تایید کنید.", "#F59E0B"
+                else:
+                    info.value, info.color = f"خطا: {ex}", "#EF4444"
                 page.update()
 
         btn, _ = make_btn("تایید و ورود", confirm, bgcolor="#2563EB")
@@ -375,48 +283,44 @@ async def main(page: ft.Page):
         page.add(ft.Container(bgcolor="#111827", padding=18, border_radius=12, content=ft.Column(
             spacing=12,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            controls=[
-                ft.Text("تایید کد", size=20, weight=ft.FontWeight.BOLD),
-                code_box,
-                btn,
-                chg_btn,
-                info,
-            ],
+            controls=[ft.Text("تایید کد", size=20, weight=ft.FontWeight.BOLD), code_box, pwd_box, btn, chg_btn, info],
         )))
         page.update()
 
     def show_dashboard():
         page.controls.clear()
         c = get_client()
-        log("سلف‌بات آماده به کار است ✅", "#10B981")
+        log("سلف‌بات با موفقیت به سروش‌پلاس متصل شد ✅", "#10B981")
 
-        async def bg_worker():
+        ev_mod = get_events_module()
+        if not st["listener_added"] and ev_mod is not None and hasattr(ev_mod, "NewMessage"):
+            st["listener_added"] = True
+
+            @c.on(ev_mod.NewMessage(incoming=True))
+            async def on_new_msg(event):
+                if not st["ar"] or getattr(event, "out", False):
+                    return
+                if st["pv_only"] and not getattr(event, "is_private", True):
+                    return
+                cid = str(getattr(event, "chat_id", "") or getattr(event, "sender_id", ""))
+                if not cid or time.time() - st["replied"].get(cid, 0) < 15:
+                    return
+                st["replied"][cid] = time.time()
+                try:
+                    await event.reply(st["ar_text"])
+                    log(f"ریپلای خودکار ارسال شد به {cid}", "#10B981")
+                except Exception as ex:
+                    log(f"خطای ریپلای: {ex}", "#EF4444")
+
+        async def keep_alive():
             try:
-                if hasattr(c, "on_message"):
-                    @c.on_message()
-                    async def on_msg(u):
-                        if not st["ar"] or getattr(u, "is_outgoing", False):
-                            return
-                        cid = str(getattr(u, "object_guid", "") or getattr(u, "chat_id", ""))
-                        if not cid or (st["pv_only"] and not cid.startswith("u0")):
-                            return
-                        if time.time() - st["replied"].get(cid, 0) < 15:
-                            return
-                        st["replied"][cid] = time.time()
-                        await call_api(c, ("send_message", "send_text"), {"object_guid": cid, "chat_id": cid, "text": st["ar_text"], "message": st["ar_text"]}, (cid, st["ar_text"]))
-                        log(f"ریپلای خودکار به {cid}", "#10B981")
-                for r in ("run_until_disconnected", "run", "idle"):
-                    if callable(getattr(c, r, None)):
-                        res = getattr(c, r)()
-                        if inspect.isawaitable(res):
-                            await res
-                        break
+                await c.run_until_disconnected()
             except Exception:
                 pass
 
-        asyncio.create_task(bg_worker())
+        asyncio.create_task(keep_alive())
 
-        target_box = ft.TextField(label="آیدی یا GUID مقصد", hint_text="u0XXXX...", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        target_box = ft.TextField(label="آیدی (@username) یا شناسه عددی مقصد", hint_text="@username یا 12345678", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
         msg_box = ft.TextField(label="متن پیام توربو", bgcolor="#1E293B")
         cnt_box = ft.TextField(label="تعداد", value="20", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
         dly_box = ft.TextField(label="تاخیر (ثانیه)", value="0.1", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
@@ -429,16 +333,18 @@ async def main(page: ft.Page):
                 dly = max(0.0, float(dly_box.value or 0.1))
             except ValueError:
                 total, dly = 10, 0.1
-            tgt, txt = (target_box.value or "").strip(), (msg_box.value or "").strip()
+            raw_tgt = (target_box.value or "").strip()
+            tgt = int(raw_tgt) if raw_tgt.lstrip("-").isdigit() else raw_tgt
+            txt = (msg_box.value or "").strip()
             try:
                 while st["turbo"] and sent < total:
-                    await call_api(c, ("send_message", "send_text"), {"object_guid": tgt, "chat_id": tgt, "text": txt, "message": txt}, (tgt, txt))
+                    await c.send_message(tgt, txt)
                     sent += 1
                     t_stat.value = f"ارسال شد: {sent}/{total}"
                     page.update()
                     if dly > 0:
                         await asyncio.sleep(dly)
-                log(f"پایان توربو ({sent} پیام)", "#10B981")
+                log(f"پایان ارسال توربو ({sent} پیام)", "#10B981")
             except Exception as ex:
                 log(f"خطای توربو: {ex}", "#EF4444")
             finally:
@@ -471,12 +377,15 @@ async def main(page: ft.Page):
 
         async def logout(e):
             st["turbo"] = False
-            st["client"] = None
-            if os.path.exists(AUTH_FLAG):
+            try:
+                await c.log_out()
+            except Exception:
                 try:
-                    os.remove(AUTH_FLAG)
+                    await c.disconnect()
                 except Exception:
                     pass
+            st["client"] = None
+            st["listener_added"] = False
             base = os.path.basename(SESSION_PATH)
             for f in os.listdir(STORAGE_DIR):
                 if f.startswith(base):
@@ -484,7 +393,7 @@ async def main(page: ft.Page):
                         os.remove(os.path.join(STORAGE_DIR, f))
                     except Exception:
                         pass
-            show_phone("خارج شدید.")
+            show_phone("از حساب خارج شدید.")
 
         save_btn, _ = make_btn("ذخیره ریپلای", save_ar, bgcolor="#2563EB", height=42)
         out_btn, _ = make_btn("خروج", logout, color="#EF4444", kind="text")
@@ -515,14 +424,14 @@ async def main(page: ft.Page):
     if saved:
         ok, m = await check_license(saved, did)
         if ok:
-            if os.path.exists(AUTH_FLAG):
-                try:
-                    c = get_client()
-                    await call_api(c, ("connect", "initialize"), {})
+            try:
+                c = get_client()
+                await c.connect()
+                if await c.is_user_authorized():
                     show_dashboard()
                     return
-                except Exception:
-                    pass
+            except Exception:
+                pass
             show_phone()
             return
         show_license(m)
