@@ -28,16 +28,19 @@ jobs:
           channel: "stable"
           flutter-version: "3.19.6"
 
-      - name: Build with Flutter directly
+      - name: Build APK Directly
         run: |
           python -m pip install --upgrade pip
           pip install flet==1.1.2 httpx splusthon
           
-          # ساخت پکیج فلت به صورت مستقیم بدون خطای interactive
-          flet pack main.py --pirate
+          # ساخت مستقیم بدون واسطه فلت کلی
+          python -c "import flet; print('Flet Version:', flet.__version__)"
           
-          # ساخت مستقیم APK با خود فلاتر
-          flutter build apk --release
+          # ساخت پکیج پروژه بدون پرامپت
+          flet pack main.py --name V3X_Selfbot
+          
+          # کامپایل نهایی APK با خود فلاتر
+          cd build && flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
