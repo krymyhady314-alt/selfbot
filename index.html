@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V3X Soroush+ Selfbot | پورتال رسمی دانلود و پشتیبانی</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+      background-color: #09090B;
+      color: #F4F4F5;
+      overflow-x: hidden;
+    }
+    .cyber-grid {
+      background-image:
+        linear-gradient(to right, rgba(239, 68, 68, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #09090B;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272A;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #DC2626;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#09090B] text-[#F4F4F5] selection:bg-[#DC2626] selection:text-white">
+
+  <!-- نوار ناوبری بالای صفحه -->
+  <header class="sticky top-0 z-40 border-b border-[#27272A] bg-[#09090B]/90 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- لوگو و عنوان -->
+      <a href="#download" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] flex items-center justify-center font-black text-white text-sm shadow-lg shadow-red-600/25 border border-red-400/30">
+          V3X
+        </div>
+        <div class="flex flex-col">
+          <span class="font-black text-base tracking-tight text-[#F4F4F5] leading-none">V3X SELFBOT</span>
+          <span class="text-[11px] text-sky-400 font-semibold mt-0.5">نسخه سروش‌پلاس • v2.0.0</span>
+        </div>
+      </a>
+
+      <!-- لینک‌های دسکتاپ -->
+      <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-[#A1A1AA]">
+        <a href="#download" class="hover:text-[#F4F4F5] transition-colors">دانلود مستقیم</a>
+        <a href="#features" class="hover:text-[#F4F4F5] transition-colors">امکانات نسخه ۲.۰</a>
+        <a href="#support" class="hover:text-[#F4F4F5] transition-colors">تیکت و پشتیبانی</a>
+      </nav>
+
+      <!-- وضعیت حساب کاربری و دکمه منوی موبایل -->
+      <div class="flex items-center gap-2">
+        <button
+          id="nav-login-btn"
+          type="button"
+          class="px-3.5 py-2 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold transition-all shadow-md shadow-red-600/20 cursor-pointer"
+        >
+          ورود / ثبت‌نام
+        </button>
+
+        <div id="nav-user-area" class="hidden items-center gap-2">
+          <span id="nav-user-email" dir="ltr" class="hidden sm:inline-block max-w-[160px] truncate px-2.5 py-1.5 rounded-lg bg-[#121217] border border-[#27272A] text-xs text-sky-300 font-medium"></span>
+          <button
+            id="nav-logout-btn"
+            type="button"
+            class="px-3 py-2 rounded-xl bg-[#121217] hover:bg-red-950/50 border border-[#27272A] hover:border-red-500/50 text-xs font-semibold text-red-400 transition-all cursor-pointer"
+          >
+            خروج
+          </button>
+        </div>
+
+        <button
+          id="mobile-menu-toggle"
+          type="button"
+          aria-label="باز کردن منو"
+          class="md:hidden p-2.5 rounded-xl bg-[#121217] border border-[#27272A] text-[#F4F4F5] hover:border-[#DC2626]/60 cursor-pointer"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- منوی کشویی موبایل -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-[#27272A] bg-[#121217] px-4 py-3 space-y-2 text-xs font-semibold">
+      <a href="#download" class="block py-2 px-3 rounded-lg hover:bg-[#1E1E26] text-[#F4F4F5]">⬇️ دانلود مستقیم APK</a>
+      <a href="#features" class="block py-2 px-3 rounded-lg hover:bg-[#1E1E26] text-[#F4F4F5]">⚡ امکانات و قابلیت‌ها</a>
+      <a href="#support" class="block py-2 px-3 rounded-lg hover:bg-[#1E1E26] text-[#F4F4F5]">🎫 پشتیبانی و تیکت لایسنس</a>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <!-- بخش اول: هیرو و دانلود مستقیم -->
+    <section id="download" class="relative cyber-grid border-b border-[#27272A] overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-b from-[#DC2626]/10 via-transparent to-[#09090B] pointer-events-none"></div>
+
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 relative z-10">
+        <div class="max-w-3xl mx-auto text-center space-y-6">
+          <!-- نشان وضعیت بالای تیتر -->
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#121217] border border-[#27272A] text-xs font-medium text-[#A1A1AA]">
+            <span class="w-2 h-2 rounded-full bg-[#EF4444]"></span>
+            <span>نسخه رسمی اندروید (ARM64) • توسعه اختصاصی <span class="text-[#F4F4F5] font-bold" dir="ltr">@V3XSYS</span> <span class="text-sky-400 font-semibold">(سروش‌پلاس)</span></span>
+          </div>
+
+          <!-- تیتر اصلی -->
+          <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-[#F4F4F5] leading-tight">
+            سلف‌بات فوق‌سریع <span class="text-transparent bg-clip-text bg-gradient-to-l from-[#EF4444] to-sky-400">V3X Soroush+</span>
+          </h1>
+
+          <p class="text-sm sm:text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
+            ارسال توربو و چندتایی بدون تاخیر، نمایش ساعت زنده به افق تهران کنار اسم پروفایل، مشاهده پیام‌های اخیر پی‌وی و گپ برای ریپلای سریع و اتصال پایدار در پس‌زمینه.
+          </p>
+
+          <!-- باکس دانلود مستقیم -->
+          <div class="max-w-xl mx-auto p-5 sm:p-6 rounded-2xl bg-[#121217] border border-[#27272A] shadow-2xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-[#A1A1AA] border-b border-[#27272A] pb-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">نسخه 2.0.0</span>
+                <span>معماری: arm64-v8a</span>
+              </div>
+              <span class="text-sky-400 font-semibold">اندروید 7.0 به بالا</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              <a
+                id="direct-apk-link"
+                href="https://github.com/krymyhady314-alt/selfbot/releases/latest/download/V3X-Selfbot.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="sm:col-span-3 py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#DC2626] to-[#B91C1C] hover:from-[#EF4444] hover:to-[#DC2626] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 transition-all"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                <span>دانلود مستقیم فایل APK</span>
+              </a>
+
+              <button
+                id="copy-dl-btn"
+                type="button"
+                class="sm:col-span-2 py-3.5 px-4 rounded-xl bg-[#09090B] hover:bg-[#1A1A22] border border-[#27272A] hover:border-sky-500/50 text-sky-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>📋 کپی لینک دانلود</span>
+              </button>
+            </div>
+
+            <!-- راهنمای بازشونده نصب و تنظیم باتری -->
+            <div class="pt-1 text-right">
+              <button
+                id="guide-toggle-btn"
+                type="button"
+                class="w-full py-2.5 px-3.5 rounded-xl bg-[#09090B]/80 hover:bg-[#09090B] border border-[#27272A] flex items-center justify-between text-xs font-semibold text-[#F4F4F5] transition-colors cursor-pointer"
+              >
+                <span>📖 راهنمای نصب و جلوگیری از قطع شدن در پس‌زمینه</span>
+                <svg id="guide-chevron" class="w-4 h-4 text-[#A1A1AA] transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <div id="guide-content" class="hidden mt-2.5 p-3.5 rounded-xl bg-[#09090B] border border-[#27272A] text-xs text-[#A1A1AA] space-y-2 leading-relaxed">
+                <p>۱. پس از دانلود فایل <span class="text-[#F4F4F5] font-mono" dir="ltr">V3X-Selfbot.apk</span>، آن را نصب و اجرا کنید.</p>
+                <p>۲. شناسه دستگاه (Device ID) را کپی کرده و از طریق بخش تیکت همین سایت یا آیدی سروش‌پلاس <span class="text-sky-400 font-bold" dir="ltr">@V3XSYS</span> لایسنس خود را فعال کنید.</p>
+                <p>۳. برای جلوگیری از بسته شدن سلف‌بات هنگام خروج از برنامه، وارد <span class="text-[#F4F4F5] font-semibold">تنظیمات گوشی &gt; برنامه‌ها &gt; V3X Selfbot &gt; باتری</span> شوید و گزینه <span class="text-emerald-400 font-semibold">بدون محدودیت (Unrestricted)</span> را انتخاب کنید.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش امکانات کلیدی -->
+    <section id="features" class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 border-b border-[#27272A]">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <h2 class="text-2xl sm:text-3xl font-black text-[#F4F4F5]">امکانات اختصاصی نسخه 2.0.0</h2>
+        <p class="text-xs sm:text-sm text-[#A1A1AA] mt-2">طراحی‌شده برای سرعت بالا، پایداری اتصال و مدیریت حرفه‌ای حساب سروش‌پلاس</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-5 rounded-2xl bg-[#121217] border border-[#27272A] hover:border-[#DC2626]/50 transition-all space-y-2.5">
+          <div class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-lg">🚀</div>
+          <h3 class="font-bold text-base text-[#F4F4F5]">توربو و چندتایی پرسرعت</h3>
+          <p class="text-xs text-[#A1A1AA] leading-relaxed">ارسال دسته‌ای با تاخیر صفر، کش هوشمند مقصد و مدیریت خودکار محدودیت سرعت سرور.</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-[#121217] border border-[#27272A] hover:border-sky-500/50 transition-all space-y-2.5">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-lg">⏰</div>
+          <h3 class="font-bold text-base text-[#F4F4F5]">ساعت زنده افق تهران</h3>
+          <p class="text-xs text-[#A1A1AA] leading-relaxed">نمایش خودکار ساعت تهران با فونت‌های متنوع کنار نام پروفایل و به‌روزرسانی دقیق در هر دقیقه.</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-[#121217] border border-[#27272A] hover:border-emerald-500/50 transition-all space-y-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-lg">↩️</div>
+          <h3 class="font-bold text-base text-[#F4F4F5]">ریپلای روی پیام‌های اخیر</h3>
+          <p class="text-xs text-[#A1A1AA] leading-relaxed">مشاهده ۲۵ پیام آخر هر پی‌وی یا گپ و انتخاب پیام دلخواه برای ریپلای تکی یا چندتایی.</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-[#121217] border border-[#27272A] hover:border-amber-500/50 transition-all space-y-2.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-lg">💾</div>
+          <h3 class="font-bold text-base text-[#F4F4F5]">حافظه ذخیره پیام‌ها</h3>
+          <p class="text-xs text-[#A1A1AA] leading-relaxed">ذخیره دائم لیست پیام‌های چندتایی روی حافظه گوشی برای دسترسی فوری در هر بار اجرا.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش دوم: سیستم پشتیبانی و تیکت لایسنس -->
+    <section id="support" class="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <h2 class="text-2xl sm:text-3xl font-black text-[#F4F4F5]">پشتیبانی و سیستم تیکت</h2>
+            <span id="admin-active-badge" class="hidden px-2.5 py-1 rounded-lg bg-[#DC2626]/20 border border-[#DC2626]/50 text-[#EF4444] text-xs font-bold">
+              پنل مدیریت فعال (@V3XSYS)
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-[#A1A1AA] mt-1">
+            درخواست فعال‌سازی لایسنس، ریست شناسه سخت‌افزاری (Device ID) و ارتباط مستقیم با آیدی سروش‌پلاس <span class="text-sky-400 font-bold" dir="ltr">@V3XSYS</span>
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            id="support-copy-soroush-btn"
+            type="button"
+            class="px-3.5 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>📋 کپی آیدی سروش:</span>
+            <span class="font-bold" dir="ltr">@V3XSYS</span>
+          </button>
+
+          <button
+            id="admin-mode-btn"
+            type="button"
+            class="px-3.5 py-2.5 rounded-xl bg-[#121217] hover:bg-[#1E1E26] border border-[#27272A] hover:border-[#DC2626]/60 text-[#A1A1AA] hover:text-[#F4F4F5] text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-[#EF4444]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span id="admin-mode-btn-text">ورود مدیریت (@V3XSYS)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- کارت راهنمای ورود (نمایش در زمان خارج بودن کاربر) -->
+      <div id="ticket-logged-out-card" class="p-8 sm:p-10 rounded-2xl bg-[#121217] border border-[#27272A] text-center max-w-2xl mx-auto space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-[#DC2626]/15 border border-[#DC2626]/40 text-[#EF4444] flex items-center justify-center mx-auto text-2xl">
+          🎫
+        </div>
+        <h3 class="text-lg sm:text-xl font-bold text-[#F4F4F5]">برای ارسال و پیگیری تیکت وارد شوید</h3>
+        <p class="text-xs sm:text-sm text-[#A1A1AA] leading-relaxed">
+          برای ثبت درخواست لایسنس جدید، ریست کد سخت‌افزاری یا ارتباط با پشتیبانی <span class="text-sky-400 font-bold" dir="ltr">@V3XSYS</span>، ابتدا با ایمیل خود وارد حساب کاربری شوید یا در چند ثانیه ثبت‌نام کنید.
+        </p>
+        <div class="pt-2">
+          <button
+            id="prompt-login-btn"
+            type="button"
+            class="px-6 py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all shadow-lg shadow-red-600/25 cursor-pointer"
+          >
+            ورود یا ثبت‌نام با ایمیل
+          </button>
+        </div>
+      </div>
+
+      <!-- داشبورد تیکت‌ها (نمایش پس از ورود) -->
+      <div id="ticket-dashboard" class="hidden grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- ستون ثبت تیکت جدید -->
+        <div class="lg:col-span-5 p-5 sm:p-6 rounded-2xl bg-[#121217] border border-[#27272A] space-y-4">
+          <h3 class="text-base sm:text-lg font-bold text-[#F4F4F5] flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#DC2626]"></span>
+            <span>ارسال تیکت جدید</span>
+          </h3>
+
+          <form id="new-ticket-form" class="space-y-3.5">
+            <div>
+              <label for="ticket-subject" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">موضوع تیکت</label>
+              <input
+                id="ticket-subject"
+                type="text"
+                required
+                placeholder="مثلاً: درخواست فعال‌سازی لایسنس نسخه 2.0"
+                class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5]"
+              />
+            </div>
+
+            <div>
+              <label for="ticket-category" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">دسته‌بندی درخواست</label>
+              <select
+                id="ticket-category"
+                class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5]"
+              >
+                <option value="درخواست لایسنس جدید">درخواست لایسنس جدید</option>
+                <option value="ریست شناسه دستگاه (Device ID)">ریست شناسه دستگاه (Device ID)</option>
+                <option value="پشتیبانی فنی و گزارش مشکل">پشتیبانی فنی و گزارش مشکل</option>
+                <option value="سایر موارد">سایر موارد</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="ticket-device-id" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">شناسه دستگاه (Device ID - اختیاری)</label>
+              <input
+                id="ticket-device-id"
+                type="text"
+                dir="ltr"
+                placeholder="V3X-XXXXXXXXXXXXXXXX"
+                class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left font-mono"
+              />
+            </div>
+
+            <div>
+              <label for="ticket-message" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">متن پیام</label>
+              <textarea
+                id="ticket-message"
+                rows="4"
+                required
+                placeholder="توضیحات یا آیدی سروش‌پلاس خود را بنویسید..."
+                class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5]"
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all shadow-lg shadow-red-600/20 cursor-pointer"
+            >
+              ثبت و ارسال تیکت
+            </button>
+          </form>
+        </div>
+
+        <!-- ستون لیست تیکت‌ها -->
+        <div class="lg:col-span-7 p-5 sm:p-6 rounded-2xl bg-[#121217] border border-[#27272A] space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#27272A] pb-3.5">
+            <div id="tickets-list-heading" class="flex items-center gap-2">
+              <h3 class="text-base sm:text-lg font-bold text-[#F4F4F5]">تیکت‌های من</h3>
+              <span id="tickets-count-pill" class="px-2 py-0.5 rounded-full bg-[#09090B] border border-[#27272A] text-xs font-bold text-sky-400">0</span>
+            </div>
+
+            <!-- فیلتر وضعیت -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+              <button type="button" data-filter="all" class="ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#DC2626] text-white font-semibold cursor-pointer">همه</button>
+              <button type="button" data-filter="open" class="ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#09090B] border border-[#27272A] text-[#A1A1AA] hover:text-white cursor-pointer">باز</button>
+              <button type="button" data-filter="answered" class="ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#09090B] border border-[#27272A] text-[#A1A1AA] hover:text-white cursor-pointer">پاسخ داده‌شده</button>
+              <button type="button" data-filter="closed" class="ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#09090B] border border-[#27272A] text-[#A1A1AA] hover:text-white cursor-pointer">بسته</button>
+            </div>
+          </div>
+
+          <div id="tickets-list-container" class="space-y-3 max-h-[540px] overflow-y-auto pl-1"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- فوتر سایت -->
+  <footer class="border-t border-[#27272A] bg-[#09090B] py-8 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-right">
+      <div class="space-y-1">
+        <p class="text-xs sm:text-sm text-[#F4F4F5] font-semibold">
+          طراحی و توسعه: <span class="text-[#EF4444] font-black" dir="ltr">@V3XSYS</span> <span class="text-sky-400 font-bold">(سروش‌پلاس)</span>
+        </p>
+        <p class="text-xs text-[#A1A1AA]">
+          آیدی بالا مربوط به پیام‌رسان سروش‌پلاس است • تمامی حقوق برای تیم V3X محفوظ است.
+        </p>
+      </div>
+
+      <button
+        id="copy-soroush-btn"
+        type="button"
+        class="px-4 py-2.5 rounded-xl bg-[#121217] hover:bg-[#1A1A22] border border-sky-500/40 hover:border-sky-400 text-sky-300 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+      >
+        <span>📋 کپی آیدی سروش (@V3XSYS)</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- مودال ۱: ورود / ثبت‌نام / بازیابی رمز عبور -->
+  <!-- ========================================================= -->
+  <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-4 items-center justify-center">
+    <div class="w-full max-w-md rounded-2xl bg-[#121217] border border-[#27272A] shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#27272A]">
+        <span class="font-bold text-sm text-[#F4F4F5]">حساب کاربری V3X Portal</span>
+        <button id="close-auth-modal" type="button" class="text-[#A1A1AA] hover:text-white text-lg px-2 cursor-pointer">✕</button>
+      </div>
+
+      <div id="auth-tabs" class="grid grid-cols-2 border-b border-[#27272A] text-center">
+        <button id="tab-login" type="button" class="py-3 text-sm font-bold text-[#EF4444] border-b-2 border-[#EF4444] cursor-pointer">ورود با ایمیل</button>
+        <button id="tab-register" type="button" class="py-3 text-sm font-medium text-[#A1A1AA] hover:text-[#F4F4F5] border-b-2 border-transparent cursor-pointer">ثبت‌نام جدید</button>
+      </div>
+
+      <div class="p-5">
+        <div id="auth-feedback" class="hidden"></div>
+
+        <!-- فرم ۱: ورود -->
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label for="login-email" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">ایمیل</label>
+            <input id="login-email" type="email" dir="ltr" required placeholder="name@example.com" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="login-password" class="block text-xs font-medium text-[#A1A1AA]">رمز عبور</label>
+              <button id="forgot-password-link" type="button" class="text-[11px] text-sky-400 hover:underline cursor-pointer">فراموشی رمز عبور؟</button>
+            </div>
+            <input id="login-password" type="password" dir="ltr" required placeholder="••••••••" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all cursor-pointer">
+            ورود به پنل تیکت
+          </button>
+        </form>
+
+        <!-- فرم ۲: ثبت‌نام -->
+        <form id="register-form" class="hidden space-y-4">
+          <div>
+            <label for="reg-email" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">ایمیل</label>
+            <input id="reg-email" type="email" dir="ltr" required placeholder="name@example.com" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <div>
+            <label for="reg-password" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">رمز عبور (حداقل ۶ کاراکتر)</label>
+            <input id="reg-password" type="password" dir="ltr" minlength="6" required placeholder="••••••••" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <div>
+            <label for="reg-password-confirm" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">تکرار رمز عبور</label>
+            <input id="reg-password-confirm" type="password" dir="ltr" minlength="6" required placeholder="••••••••" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all cursor-pointer">
+            ساخت حساب کاربری
+          </button>
+        </form>
+
+        <!-- فرم ۳: فراموشی رمز عبور -->
+        <form id="reset-form" class="hidden space-y-4">
+          <p class="text-xs text-[#A1A1AA] leading-relaxed">
+            ایمیل ثبت‌شده و رمز عبور جدید خود را وارد کنید تا رمز حساب شما بلافاصله بازنشانی شود.
+          </p>
+          <div>
+            <label for="reset-email" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">ایمیل ثبت‌شده</label>
+            <input id="reset-email" type="email" dir="ltr" required placeholder="name@example.com" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <div>
+            <label for="reset-new-password" class="block text-xs font-medium text-[#A1A1AA] mb-1.5">رمز عبور جدید (حداقل ۶ کاراکتر)</label>
+            <input id="reset-new-password" type="password" dir="ltr" minlength="6" required placeholder="••••••••" class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-left" />
+          </div>
+          <button id="reset-submit-btn" type="submit" class="w-full py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all cursor-pointer">
+            تغییر و ثبت رمز عبور جدید
+          </button>
+          <button id="back-to-login-btn" type="button" class="w-full py-2 text-xs text-[#A1A1AA] hover:text-white cursor-pointer">
+            بازگشت به صفحه ورود
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- مودال ۲: ورود مدیریت (@V3XSYS) -->
+  <!-- ========================================================= -->
+  <div id="admin-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-4 items-center justify-center">
+    <div class="w-full max-w-sm rounded-2xl bg-[#121217] border border-[#27272A] shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#27272A]">
+        <span class="font-bold text-sm text-[#EF4444]">احراز هویت مدیریت (@V3XSYS)</span>
+        <button id="close-admin-modal" type="button" class="text-[#A1A1AA] hover:text-white text-lg px-2 cursor-pointer">✕</button>
+      </div>
+      <form id="admin-code-form" class="p-5 space-y-4">
+        <p class="text-xs text-[#A1A1AA] leading-relaxed">
+          کد اختصاصی مدیریت را وارد کنید تا به تمام تیکت‌های کاربران دسترسی داشته باشید.
+        </p>
+        <input
+          id="admin-code-input"
+          type="password"
+          dir="ltr"
+          required
+          placeholder="کد مدیریت را وارد کنید"
+          class="w-full px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5] text-center font-mono"
+        />
+        <button type="submit" class="w-full py-3 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all cursor-pointer">
+          فعال‌سازی پنل مدیریت
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- مودال ۳: گفتگوی کامل تیکت و ارسال پاسخ -->
+  <!-- ========================================================= -->
+  <div id="thread-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-3 sm:p-4 items-center justify-center">
+    <div class="w-full max-w-2xl rounded-2xl bg-[#121217] border border-[#27272A] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <!-- هدر تیکت -->
+      <div class="p-4 sm:p-5 border-b border-[#27272A] space-y-2">
+        <div class="flex items-start justify-between gap-3">
+          <h3 id="thread-subject" class="font-bold text-base sm:text-lg text-[#F4F4F5]"></h3>
+          <button id="close-thread-modal" type="button" class="text-[#A1A1AA] hover:text-white text-lg px-2 cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="thread-status-badge"></span>
+            <span id="thread-category" class="px-2.5 py-0.5 rounded-md bg-[#09090B] border border-[#27272A] text-[#A1A1AA]"></span>
+            <span id="thread-device-info" dir="ltr" class="hidden px-2.5 py-0.5 rounded-md bg-[#09090B] border border-[#27272A] text-sky-400 font-mono"></span>
+            <span id="thread-user-info" dir="ltr" class="hidden px-2.5 py-0.5 rounded-md bg-red-950/40 border border-red-500/30 text-red-300"></span>
+          </div>
+
+          <!-- دکمه‌های تغییر وضعیت توسط مدیریت -->
+          <div id="admin-ticket-controls" class="hidden items-center gap-1.5">
+            <button id="admin-set-answered" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-semibold cursor-pointer">
+              پاسخ داده شد
+            </button>
+            <button id="admin-set-closed" type="button" class="px-2.5 py-1 rounded-lg bg-zinc-700/30 hover:bg-zinc-700/50 border border-zinc-500/40 text-zinc-300 font-semibold cursor-pointer">
+              بستن تیکت
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- لیست پیام‌های تیکت -->
+      <div id="thread-messages-list" class="flex-1 p-4 sm:p-5 space-y-3 overflow-y-auto bg-[#09090B]/60"></div>
+
+      <!-- فرم ارسال پاسخ جدید -->
+      <form id="thread-reply-form" class="p-3.5 sm:p-4 border-t border-[#27272A] bg-[#121217] flex items-center gap-2">
+        <input
+          id="thread-reply-input"
+          type="text"
+          required
+          placeholder="پاسخ خود را بنویسید..."
+          class="flex-1 px-3.5 py-3 rounded-xl bg-[#09090B] border border-[#27272A] focus:border-[#EF4444] focus:outline-none text-sm text-[#F4F4F5]"
+        />
+        <button
+          type="submit"
+          class="px-5 py-3 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-xs sm:text-sm transition-all shrink-0 cursor-pointer"
+        >
+          ارسال پاسخ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- کانتینر اعلان‌های شناور (Toast) -->
+  <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-80 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- اسکریپت کامل و خودکفا (بدون نیاز به سرور خارجی - سازگار با GitHub Pages) -->
+  <script>
+    function initV3XPortal() {
+      const STORAGE_KEYS = {
+        USERS: "v3x_portal_users_v2",
+        SESSION: "v3x_portal_session_v2",
+        TICKETS: "v3x_portal_tickets_v2"
+      };
+
+      const state = {
+        user: null,
+        isAdmin: false,
+        tickets: [],
+        filter: "all",
+        activeTicketId: null
+      };
+
+      // اتصال ایمن رویدادها برای جلوگیری از خطای null
+      function bindEvent(id, eventName, handler) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener(eventName, handler);
+        }
+        return el;
+      }
+
+      // خواندن و نوشتن امن در حافظه مرورگر (localStorage)
+      function loadJSON(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (err) {
+          console.error("Storage error:", err);
+        }
+      }
+
+      // نمایش اعلان شناور (Toast) بدون استفاده از alert()
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+        const toast = document.createElement("div");
+        const styles = {
+          success: "bg-[#121217] border-emerald-500/60 text-emerald-300",
+          error: "bg-[#121217] border-[#EF4444]/70 text-[#EF4444]",
+          info: "bg-[#121217] border-[#27272A] text-[#F4F4F5]"
+        };
+        toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 ${styles[type] || styles.info}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(8px)";
+          setTimeout(() => toast.remove(), 300);
+        }, 3500);
+      }
+
+      // تابع عمومی کپی متن در کلیپ‌بورد سازگار با موبایل و iframe
+      function copyTextToClipboard(text, successMsg) {
+        const tempInput = document.createElement("textarea");
+        tempInput.value = text;
+        tempInput.style.position = "fixed";
+        tempInput.style.opacity = "0";
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+          document.execCommand("copy");
+          showToast(successMsg, "success");
+        } catch {
+          showToast("خطا در کپی کردن؛ متن را دستی کپی کنید.", "error");
+        }
+        document.body.removeChild(tempInput);
+      }
+
+      // قالب‌بندی تاریخ و زمان فارسی
+      function formatPersianDate(ts) {
+        if (!ts) return "لحظاتی پیش";
+        try {
+          return new Date(ts).toLocaleString("fa-IR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch {
+          return "ثبت شده";
+        }
+      }
+
+      // دریافت اطلاعات نمایش وضعیت تیکت
+      function getStatusBadgeMeta(status) {
+        if (status === "answered") {
+          return {
+            label: "پاسخ داده شده",
+            classes: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+          };
+        }
+        if (status === "closed") {
+          return {
+            label: "بسته شده",
+            classes: "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30"
+          };
+        }
+        return {
+          label: "در انتظار پاسخ",
+          classes: "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+        };
+      }
+
+      // جلوگیری از تزریق HTML در متن پیام‌ها
+      function escapeHtml(str) {
+        return String(str || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // دکمه‌های کپی لینک دانلود و کپی آیدی سروش‌پلاس (@V3XSYS)
+      bindEvent("copy-dl-btn", "click", () => {
+        const linkEl = document.getElementById("direct-apk-link");
+        const url = linkEl ? linkEl.href : "https://github.com/krymyhady314-alt/selfbot/releases/latest/download/V3X-Selfbot.apk";
+        copyTextToClipboard(url, "لینک دانلود مستقیم نسخه v2.0.0 کپی شد ✅");
+      });
+
+      bindEvent("copy-soroush-btn", "click", () => {
+        copyTextToClipboard("@V3XSYS", "آیدی سروش‌پلاس @V3XSYS کپی شد ✅");
+      });
+
+      bindEvent("support-copy-soroush-btn", "click", () => {
+        copyTextToClipboard("@V3XSYS", "آیدی سروش‌پلاس @V3XSYS کپی شد ✅");
+      });
+
+      // باز و بسته کردن راهنمای نصب و تنظیمات باتری
+      const guideContent = document.getElementById("guide-content");
+      const guideChevron = document.getElementById("guide-chevron");
+      bindEvent("guide-toggle-btn", "click", () => {
+        if (!guideContent) return;
+        const isHidden = guideContent.classList.contains("hidden");
+        guideContent.classList.toggle("hidden", !isHidden);
+        if (guideChevron) {
+          guideChevron.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+        }
+      });
+
+      // منوی موبایل
+      const mobileMenu = document.getElementById("mobile-menu");
+      bindEvent("mobile-menu-toggle", "click", () => {
+        if (mobileMenu) mobileMenu.classList.toggle("hidden");
+      });
+      if (mobileMenu) {
+        mobileMenu.querySelectorAll("a").forEach((link) => {
+          link.addEventListener("click", () => mobileMenu.classList.add("hidden"));
+        });
+      }
+
+      // ==========================================
+      // مدیریت مودال احراز هویت (ورود / ثبت‌نام / بازیابی رمز)
+      // ==========================================
+      const authModal = document.getElementById("auth-modal");
+      const authFeedback = document.getElementById("auth-feedback");
+      const tabLogin = document.getElementById("tab-login");
+      const tabRegister = document.getElementById("tab-register");
+      const authTabs = document.getElementById("auth-tabs");
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+      const resetForm = document.getElementById("reset-form");
+
+      function setAuthFeedback(msg, isError = true) {
+        if (!authFeedback) return;
+        if (!msg) {
+          authFeedback.classList.add("hidden");
+          return;
+        }
+        authFeedback.textContent = msg;
+        authFeedback.className = `mb-4 p-3 rounded-xl text-xs leading-relaxed border ${
+          isError
+            ? "bg-[#EF4444]/10 border-[#EF4444]/40 text-[#EF4444]"
+            : "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+        }`;
+      }
+
+      function switchAuthView(view) {
+        setAuthFeedback("");
+        if (loginForm) loginForm.classList.add("hidden");
+        if (registerForm) registerForm.classList.add("hidden");
+        if (resetForm) resetForm.classList.add("hidden");
+        if (authTabs) authTabs.classList.remove("hidden");
+
+        if (view === "login") {
+          if (loginForm) loginForm.classList.remove("hidden");
+          if (tabLogin) tabLogin.className = "py-3 text-sm font-bold text-[#EF4444] border-b-2 border-[#EF4444] cursor-pointer";
+          if (tabRegister) tabRegister.className = "py-3 text-sm font-medium text-[#A1A1AA] hover:text-[#F4F4F5] border-b-2 border-transparent cursor-pointer";
+        } else if (view === "register") {
+          if (registerForm) registerForm.classList.remove("hidden");
+          if (tabRegister) tabRegister.className = "py-3 text-sm font-bold text-[#EF4444] border-b-2 border-[#EF4444] cursor-pointer";
+          if (tabLogin) tabLogin.className = "py-3 text-sm font-medium text-[#A1A1AA] hover:text-[#F4F4F5] border-b-2 border-transparent cursor-pointer";
+        } else if (view === "reset") {
+          if (authTabs) authTabs.classList.add("hidden");
+          if (resetForm) resetForm.classList.remove("hidden");
+        }
+      }
+
+      function openAuthModal(defaultView = "login") {
+        switchAuthView(defaultView);
+        if (authModal) {
+          authModal.classList.remove("hidden");
+          authModal.classList.add("flex");
+        }
+      }
+
+      function closeAuthModal() {
+        if (authModal) {
+          authModal.classList.add("hidden");
+          authModal.classList.remove("flex");
+        }
+      }
+
+      bindEvent("nav-login-btn", "click", () => openAuthModal("login"));
+      bindEvent("prompt-login-btn", "click", () => openAuthModal("login"));
+      bindEvent("close-auth-modal", "click", closeAuthModal);
+      bindEvent("tab-login", "click", () => switchAuthView("login"));
+      bindEvent("tab-register", "click", () => switchAuthView("register"));
+      bindEvent("forgot-password-link", "click", () => switchAuthView("reset"));
+      bindEvent("back-to-login-btn", "click", () => switchAuthView("login"));
+
+      // به‌روزرسانی رابط کاربری پس از تغییر وضعیت ورود
+      function syncAuthUI() {
+        const navLoginBtn = document.getElementById("nav-login-btn");
+        const navUserArea = document.getElementById("nav-user-area");
+        const navUserEmail = document.getElementById("nav-user-email");
+        const loggedOutCard = document.getElementById("ticket-logged-out-card");
+        const ticketDashboard = document.getElementById("ticket-dashboard");
+
+        if (state.user && state.user.email) {
+          if (navLoginBtn) navLoginBtn.classList.add("hidden");
+          if (navUserArea) {
+            navUserArea.classList.remove("hidden");
+            navUserArea.classList.add("flex");
+          }
+          if (navUserEmail) navUserEmail.textContent = state.user.email;
+
+          if (loggedOutCard) loggedOutCard.classList.add("hidden");
+          if (ticketDashboard) {
+            ticketDashboard.classList.remove("hidden");
+            ticketDashboard.classList.add("grid");
+          }
+
+          state.tickets = loadJSON(STORAGE_KEYS.TICKETS, []);
+          state.tickets.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          updateAdminUI();
+        } else {
+          if (navLoginBtn) navLoginBtn.classList.remove("hidden");
+          if (navUserArea) {
+            navUserArea.classList.add("hidden");
+            navUserArea.classList.remove("flex");
+          }
+
+          if (loggedOutCard) loggedOutCard.classList.remove("hidden");
+          if (ticketDashboard) {
+            ticketDashboard.classList.add("hidden");
+            ticketDashboard.classList.remove("grid");
+          }
+          updateAdminUI();
+        }
+      }
+
+      function applyUserSession(userObj, forceAdmin = false) {
+        const isManagerEmail = userObj.email.toLowerCase().includes("krymyhady314");
+        const isAdmin = Boolean(forceAdmin || isManagerEmail);
+        state.user = { uid: userObj.uid, email: userObj.email };
+        state.isAdmin = isAdmin;
+        saveJSON(STORAGE_KEYS.SESSION, { uid: userObj.uid, email: userObj.email, isAdmin });
+        syncAuthUI();
+      }
+
+      // ارسال فرم ورود با ایمیل
+      bindEvent("login-form", "submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value.trim().toLowerCase();
+        const password = document.getElementById("login-password").value;
+
+        const users = loadJSON(STORAGE_KEYS.USERS, []);
+        const found = users.find((u) => u.email.toLowerCase() === email);
+
+        if (!found) {
+          setAuthFeedback("حسابی با این ایمیل یافت نشد. ابتدا از تب «ثبت‌نام جدید» حساب بسازید.", true);
+          return;
+        }
+        if (found.password !== password) {
+          setAuthFeedback("رمز عبور اشتباه است.", true);
+          return;
+        }
+
+        applyUserSession(found);
+        closeAuthModal();
+        loginForm.reset();
+        showToast("با موفقیت وارد حساب کاربری شدید ✅", "success");
+      });
+
+      // ارسال فرم ثبت‌نام جدید
+      bindEvent("register-form", "submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("reg-email").value.trim().toLowerCase();
+        const password = document.getElementById("reg-password").value;
+        const confirm = document.getElementById("reg-password-confirm").value;
+
+        if (password !== confirm) {
+          setAuthFeedback("رمز عبور و تکرار آن یکسان نیستند.", true);
+          return;
+        }
+
+        const users = loadJSON(STORAGE_KEYS.USERS, []);
+        if (users.some((u) => u.email.toLowerCase() === email)) {
+          setAuthFeedback("این ایمیل قبلاً ثبت‌نام شده است. از تب ورود وارد شوید.", true);
+          return;
+        }
+
+        const newUser = {
+          uid: "usr-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+          email,
+          password,
+          createdAt: Date.now()
+        };
+        users.push(newUser);
+        saveJSON(STORAGE_KEYS.USERS, users);
+
+        applyUserSession(newUser);
+        closeAuthModal();
+        registerForm.reset();
+        showToast("حساب کاربری شما با موفقیت ساخته شد ✅", "success");
+      });
+
+      // بازنشانی رمز عبور
+      bindEvent("reset-form", "submit", (e) => {
+        e.preventDefault();
+        const email = document.getElementById("reset-email").value.trim().toLowerCase();
+        const newPassword = document.getElementById("reset-new-password").value;
+
+        const users = loadJSON(STORAGE_KEYS.USERS, []);
+        const idx = users.findIndex((u) => u.email.toLowerCase() === email);
+        if (idx === -1) {
+          setAuthFeedback("حسابی با این ایمیل پیدا نشد.", true);
+          return;
+        }
+
+        users[idx].password = newPassword;
+        saveJSON(STORAGE_KEYS.USERS, users);
+        resetForm.reset();
+        switchAuthView("login");
+        setAuthFeedback("رمز عبور شما با موفقیت تغییر یافت. اکنون وارد شوید.", false);
+      });
+
+      // خروج از حساب
+      bindEvent("nav-logout-btn", "click", () => {
+        state.user = null;
+        state.isAdmin = false;
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+        syncAuthUI();
+        showToast("از حساب کاربری خارج شدید.", "info");
+      });
+
+      // ==========================================
+      // مدیریت پنل ادمین (@V3XSYS)
+      // ==========================================
+      const adminModal = document.getElementById("admin-modal");
+      const adminModeBtnText = document.getElementById("admin-mode-btn-text");
+      const adminActiveBadge = document.getElementById("admin-active-badge");
+      const ticketsListHeading = document.getElementById("tickets-list-heading");
+
+      function updateAdminUI() {
+        if (state.isAdmin) {
+          if (adminActiveBadge) adminActiveBadge.classList.remove("hidden");
+          if (adminModeBtnText) adminModeBtnText.textContent = "خروج از حالت مدیریت";
+          if (ticketsListHeading && ticketsListHeading.firstElementChild) {
+            ticketsListHeading.firstElementChild.textContent = "تمام تیکت‌های کاربران (مدیریت)";
+          }
+        } else {
+          if (adminActiveBadge) adminActiveBadge.classList.add("hidden");
+          if (adminModeBtnText) adminModeBtnText.textContent = "ورود مدیریت (@V3XSYS)";
+          if (ticketsListHeading && ticketsListHeading.firstElementChild) {
+            ticketsListHeading.firstElementChild.textContent = "تیکت‌های من";
+          }
+        }
+        renderTicketsList();
+        if (state.activeTicketId) {
+          renderActiveThreadModal();
+        }
+      }
+
+      bindEvent("admin-mode-btn", "click", () => {
+        if (state.isAdmin) {
+          state.isAdmin = false;
+          if (state.user) {
+            saveJSON(STORAGE_KEYS.SESSION, { uid: state.user.uid, email: state.user.email, isAdmin: false });
+          }
+          updateAdminUI();
+          showToast("حالت مدیریت غیرفعال شد.", "info");
+          return;
+        }
+        if (adminModal) {
+          adminModal.classList.remove("hidden");
+          adminModal.classList.add("flex");
+        }
+      });
+
+      bindEvent("close-admin-modal", "click", () => {
+        if (adminModal) {
+          adminModal.classList.add("hidden");
+          adminModal.classList.remove("flex");
+        }
+      });
+
+      bindEvent("admin-code-form", "submit", (e) => {
+        e.preventDefault();
+        const codeInput = document.getElementById("admin-code-input");
+        const code = codeInput ? codeInput.value.trim() : "";
+        if (code === "V3XSYS") {
+          if (codeInput) codeInput.value = "";
+          if (adminModal) {
+            adminModal.classList.add("hidden");
+            adminModal.classList.remove("flex");
+          }
+          if (!state.user) {
+            applyUserSession({ uid: "admin-v3xsys", email: "admin@v3xsys.soroush" }, true);
+          } else {
+            state.isAdmin = true;
+            saveJSON(STORAGE_KEYS.SESSION, { uid: state.user.uid, email: state.user.email, isAdmin: true });
+            updateAdminUI();
+          }
+          showToast("دسترسی مدیریت @V3XSYS (سروش‌پلاس) فعال شد ✅", "success");
+        } else {
+          showToast("کد مدیریت نامعتبر است.", "error");
+        }
+      });
+
+      // ==========================================
+      // سیستم تیکت‌ها و گفتگوی زنده (ذخیره‌سازی داخلی)
+      // ==========================================
+      bindEvent("new-ticket-form", "submit", (e) => {
+        e.preventDefault();
+        if (!state.user) {
+          openAuthModal("login");
+          return;
+        }
+
+        const subject = document.getElementById("ticket-subject").value.trim();
+        const category = document.getElementById("ticket-category").value;
+        const deviceId = document.getElementById("ticket-device-id").value.trim();
+        const messageText = document.getElementById("ticket-message").value.trim();
+
+        if (!subject || !messageText) return;
+
+        const now = Date.now();
+        const newTicket = {
+          id: "TKT-" + now.toString().slice(-6),
+          userId: state.user.uid,
+          userEmail: state.user.email,
+          subject,
+          category,
+          deviceId,
+          status: "open",
+          createdAt: now,
+          messages: [
+            {
+              sender: state.user.email,
+              role: "user",
+              text: messageText,
+              timestamp: now
+            }
+          ]
+        };
+
+        state.tickets.unshift(newTicket);
+        saveJSON(STORAGE_KEYS.TICKETS, state.tickets);
+        document.getElementById("new-ticket-form").reset();
+        renderTicketsList();
+        showToast("تیکت شما با موفقیت ثبت شد ✅", "success");
+      });
+
+      // فیلتر کردن لیست تیکت‌ها
+      document.querySelectorAll(".ticket-filter-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.filter = btn.dataset.filter;
+          document.querySelectorAll(".ticket-filter-btn").forEach((b) => {
+            if (b.dataset.filter === state.filter) {
+              b.className = "ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#DC2626] text-white font-semibold cursor-pointer";
+            } else {
+              b.className = "ticket-filter-btn px-2.5 py-1.5 rounded-lg bg-[#09090B] border border-[#27272A] text-[#A1A1AA] hover:text-white cursor-pointer";
+            }
+          });
+          renderTicketsList();
+        });
+      });
+
+      // رندر لیست تیکت‌ها
+      function renderTicketsList() {
+        const container = document.getElementById("tickets-list-container");
+        const countPill = document.getElementById("tickets-count-pill");
+        if (!container || !state.user) return;
+
+        let visibleTickets = state.isAdmin
+          ? state.tickets
+          : state.tickets.filter((t) => t.userId === state.user.uid);
+
+        if (state.filter !== "all") {
+          visibleTickets = visibleTickets.filter((t) => (t.status || "open") === state.filter);
+        }
+
+        if (countPill) countPill.textContent = String(visibleTickets.length);
+
+        if (visibleTickets.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 px-4 rounded-xl bg-[#09090B]/60 border border-dashed border-[#27272A]">
+              <p class="text-sm font-medium text-[#A1A1AA]">هنوز تیکتی در این بخش ثبت نشده است.</p>
+              <p class="text-xs text-[#A1A1AA]/70 mt-1">می‌توانید از فرم کنار صفحه یک تیکت جدید ثبت کنید یا به آیدی سروش‌پلاس @V3XSYS پیام دهید.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = visibleTickets
+          .map((ticket) => {
+            const badge = getStatusBadgeMeta(ticket.status);
+            const msgCount = Array.isArray(ticket.messages) ? ticket.messages.length : 1;
+            return `
+              <div data-ticket-id="${escapeHtml(ticket.id)}" class="ticket-item-card p-4 rounded-xl bg-[#09090B] hover:bg-[#17171F] border border-[#27272A] hover:border-[#DC2626]/50 transition-all cursor-pointer">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                  <h4 class="font-bold text-sm sm:text-base text-[#F4F4F5] line-clamp-1">${escapeHtml(ticket.subject)}</h4>
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold shrink-0 ${badge.classes}">
+                    ${badge.label}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-[#A1A1AA]">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2 py-0.5 rounded bg-[#121217] border border-[#27272A] text-[#F4F4F5]">${escapeHtml(ticket.category)}</span>
+                    ${state.isAdmin ? `<span class="text-[#EF4444]" dir="ltr">${escapeHtml(ticket.userEmail)}</span>` : ""}
+                    ${ticket.deviceId ? `<span class="text-zinc-400" dir="ltr">${escapeHtml(ticket.deviceId)}</span>` : ""}
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span>${msgCount} پیام</span>
+                    <span>${formatPersianDate(ticket.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        container.querySelectorAll(".ticket-item-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            state.activeTicketId = card.dataset.ticketId;
+            openThreadModal();
+          });
+        });
+      }
+
+      // ==========================================
+      // مودال گفتگوی کامل تیکت و ارسال پاسخ
+      // ==========================================
+      const threadModal = document.getElementById("thread-modal");
+
+      function openThreadModal() {
+        renderActiveThreadModal();
+        if (threadModal) {
+          threadModal.classList.remove("hidden");
+          threadModal.classList.add("flex");
+        }
+      }
+
+      function closeThreadModal() {
+        state.activeTicketId = null;
+        if (threadModal) {
+          threadModal.classList.add("hidden");
+          threadModal.classList.remove("flex");
+        }
+      }
+
+      bindEvent("close-thread-modal", "click", closeThreadModal);
+
+      function renderActiveThreadModal() {
+        const ticket = state.tickets.find((t) => t.id === state.activeTicketId);
+        if (!ticket) {
+          closeThreadModal();
+          return;
+        }
+
+        const subjectEl = document.getElementById("thread-subject");
+        const categoryEl = document.getElementById("thread-category");
+        if (subjectEl) subjectEl.textContent = ticket.subject;
+        if (categoryEl) categoryEl.textContent = ticket.category;
+
+        const badge = getStatusBadgeMeta(ticket.status);
+        const statusEl = document.getElementById("thread-status-badge");
+        if (statusEl) {
+          statusEl.textContent = badge.label;
+          statusEl.className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.classes}`;
+        }
+
+        const devEl = document.getElementById("thread-device-info");
+        if (devEl) {
+          if (ticket.deviceId) {
+            devEl.textContent = ticket.deviceId;
+            devEl.classList.remove("hidden");
+          } else {
+            devEl.classList.add("hidden");
+          }
+        }
+
+        const userEl = document.getElementById("thread-user-info");
+        if (userEl) {
+          if (state.isAdmin) {
+            userEl.textContent = ticket.userEmail;
+            userEl.classList.remove("hidden");
+          } else {
+            userEl.classList.add("hidden");
+          }
+        }
+
+        const adminControls = document.getElementById("admin-ticket-controls");
+        if (adminControls) {
+          if (state.isAdmin) {
+            adminControls.classList.remove("hidden");
+            adminControls.classList.add("flex");
+          } else {
+            adminControls.classList.add("hidden");
+            adminControls.classList.remove("flex");
+          }
+        }
+
+        const messagesList = document.getElementById("thread-messages-list");
+        if (!messagesList) return;
+        const msgs = Array.isArray(ticket.messages) ? ticket.messages : [];
+        messagesList.innerHTML = msgs
+          .map((m) => {
+            const isAdminMsg = m.role === "admin";
+            return `
+              <div class="flex flex-col ${isAdminMsg ? "items-end" : "items-start"}">
+                <div class="max-w-[88%] sm:max-w-[78%] rounded-2xl p-3.5 border ${
+                  isAdminMsg
+                    ? "bg-[#DC2626]/15 border-[#DC2626]/50 text-[#F4F4F5]"
+                    : "bg-[#121217] border-[#27272A] text-[#F4F4F5]"
+                }">
+                  <div class="flex items-center justify-between gap-4 mb-1.5 text-[11px]">
+                    <span class="font-bold ${isAdminMsg ? "text-[#EF4444]" : "text-[#A1A1AA]"}" dir="ltr">
+                      ${escapeHtml(m.sender)}
+                    </span>
+                    <span class="text-[#A1A1AA]/70">${formatPersianDate(m.timestamp)}</span>
+                  </div>
+                  <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(m.text)}</p>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        messagesList.scrollTop = messagesList.scrollHeight;
+      }
+
+      // تغییر وضعیت تیکت توسط مدیریت
+      function updateTicketStatus(newStatus) {
+        if (!state.user || !state.isAdmin || !state.activeTicketId) return;
+        const ticket = state.tickets.find((t) => t.id === state.activeTicketId);
+        if (!ticket) return;
+        ticket.status = newStatus;
+        saveJSON(STORAGE_KEYS.TICKETS, state.tickets);
+        renderTicketsList();
+        renderActiveThreadModal();
+        showToast("وضعیت تیکت به‌روزرسانی شد ✅", "success");
+      }
+
+      bindEvent("admin-set-answered", "click", () => updateTicketStatus("answered"));
+      bindEvent("admin-set-closed", "click", () => updateTicketStatus("closed"));
+
+      // ارسال پیام جدید داخل رشته تیکت
+      bindEvent("thread-reply-form", "submit", (e) => {
+        e.preventDefault();
+        if (!state.user || !state.activeTicketId) return;
+
+        const input = document.getElementById("thread-reply-input");
+        const text = input ? input.value.trim() : "";
+        if (!text) return;
+
+        const ticket = state.tickets.find((t) => t.id === state.activeTicketId);
+        if (!ticket) return;
+
+        if (!Array.isArray(ticket.messages)) {
+          ticket.messages = [];
+        }
+        ticket.messages.push({
+          sender: state.isAdmin ? "@V3XSYS (مدیریت سروش‌پلاس)" : state.user.email,
+          role: state.isAdmin ? "admin" : "user",
+          text,
+          timestamp: Date.now()
+        });
+        ticket.status = state.isAdmin ? "answered" : "open";
+
+        saveJSON(STORAGE_KEYS.TICKETS, state.tickets);
+        if (input) input.value = "";
+        renderTicketsList();
+        renderActiveThreadModal();
+        showToast("پاسخ شما ارسال شد ✅", "success");
+      });
+
+      // بازیابی نشست قبلی کاربر هنگام باز شدن صفحه
+      const savedSession = loadJSON(STORAGE_KEYS.SESSION, null);
+      if (savedSession && savedSession.email) {
+        state.user = { uid: savedSession.uid, email: savedSession.email };
+        state.isAdmin = Boolean(savedSession.isAdmin);
+      }
+      syncAuthUI();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initV3XPortal);
+    } else {
+      initV3XPortal();
+    }
+  </script>
+</body>
+</html>
