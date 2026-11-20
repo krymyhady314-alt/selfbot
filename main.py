@@ -155,7 +155,7 @@ def format_tehran_clock(style: str = "bold") -> str:
 
 def strip_clock_suffix(name: str) -> str:
     txt = (name or "").strip()
-    txt = re.sub(r"\s*[\|•\-–—]?\s*[0-9𝟎-𝟗𝟶-𝟿⓪-⑨]{2}:[0-9𝟎-𝟗𝟶-𝟿⓪-⑨]{2}\s*$", "", txt)
+    txt = re.sub(r"\s*[\|•\-–—]?\s*[0-9𝟎-𝟗𝟶-𝟿⓪①-⑨]{2}:[0-9𝟎-𝟗𝟶-𝟿⓪①-⑨]{2}\s*$", "", txt)
     return txt.strip()
 
 
@@ -191,6 +191,7 @@ async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
     }
     base = LICENSE_URL.rstrip("/")
     routes = [
+        ("POST_JSON", f"{base}/api/verify"),
         ("POST_JSON", f"{base}/verify"),
         ("GET", f"{base}/verify"),
         ("POST_JSON", f"{base}/check"),
@@ -367,7 +368,7 @@ async def main(page: ft.Page):
     page.title = "V3X Selfbot"
     page.bgcolor = BG_GALAXY
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 14
+    page.padding = ft.Padding.only(top=36, left=14, right=14, bottom=14)
     page.scroll = ft.ScrollMode.AUTO
     page.rtl = True
 
