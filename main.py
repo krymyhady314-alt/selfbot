@@ -19,10 +19,24 @@ if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(
     ft.border_radius.all = ft.BorderRadius.all
     ft.border_radius.only = ft.BorderRadius.only
 
-APP_VERSION = "2.0.0"
-DEFAULT_UPDATE_URL = "https://github.com/krymyhady314-alt/selfbot/releases/latest/download/V3X-Selfbot.apk"
+APP_VERSION = "2.1.0"
+WEBSITE_URL = "https://v3xsys.pages.dev/"
+DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
 CREATOR_ID = "@V3XSYS"
+
+# پالت رنگی مشکی کهکشانی و قرمز نئونی (هماهنگ با سایت)
+BG_GALAXY = "#030306"
+BG_CARD = "#0A0A12"
+BG_INPUT = "#12121D"
+RED_PRIMARY = "#DC2626"
+RED_DARK = "#991B1B"
+RED_NEON = "#FF1E42"
+RED_LIGHT = "#EF4444"
+BORDER_CRIMSON = "#450A0A"
+BORDER_ACTIVE = "#EF4444"
+TEXT_WHITE = "#FFFFFF"
+TEXT_MUTED = "#CBD5E1"
 
 TEHRAN_TZ = datetime.timezone(datetime.timedelta(hours=3, minutes=30))
 
@@ -146,21 +160,25 @@ def strip_clock_suffix(name: str) -> str:
 
 
 def extract_clean_key(raw_input: str) -> str:
-    txt = (raw_input or "").strip().replace("`", "").replace('"', "").replace("'", "")
+    txt = str(raw_input or "")
+    # تبدیل اعداد فارسی و عربی به انگلیسی و حذف کاراکترهای مخفی
+    txt = txt.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩–—−", "01234567890123456789---"))
+    txt = re.sub(r"[\u200b-\u200f\ufeff`\"'\s]", "", txt)
     m = re.search(r"(V3X-[A-Za-z0-9\-_]{3,})", txt, re.IGNORECASE)
     if m:
         return m.group(1).upper()
-    return txt
+    return txt.upper()
 
 
 async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
-    """خروجی: (وضعیت: OK | OUTDATED | ERROR, پیام, کلید تمیز, لینک آپدیت)"""
+    """خروجی: (وضعیت: OK | OUTDATED | ERROR, پیام, کلید تمیز, لینک سایت/آپدیت)"""
     clean_key = extract_clean_key(raw_key)
     if not clean_key:
         return "ERROR", "لطفاً کلید لایسنس را وارد کنید.", "", DEFAULT_UPDATE_URL
 
     payload = {
         "action": "verify",
+        "source": "app",
         "key": clean_key,
         "license": clean_key,
         "license_key": clean_key,
@@ -185,7 +203,7 @@ async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
     ]
 
     saw_only_online = False
-    last_err = "پاسخی از سرور لایسنس دریافت نشد. اتصال اینترنت را بررسی کنید."
+    last_err = "عدم اتصال به سرور لایسنس؛ اینترنت یا فیلترشکن خود را بررسی کنید."
 
     async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as http:
         for mode, url in routes:
@@ -219,7 +237,7 @@ async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
                     or status_val in ("outdated", "update_required", "deprecated", "disabled")
                     or (min_ver and parse_version_tuple(APP_VERSION) < parse_version_tuple(min_ver))
                 ):
-                    msg = d.get("message") or f"نسخه فعلی ({APP_VERSION}) غیرفعال شده است. لطفاً نسخه جدید ({min_ver or 'جدید'}) را نصب کنید."
+                    msg = d.get("message") or f"نسخه فعلی ({APP_VERSION}) غیرفعال شده است. برای دانلود نسخه جدید ({min_ver or 'جدید'}) وارد سایت زیر شوید:"
                     return "OUTDATED", str(msg), clean_key, upd_url
 
                 is_ok = (
@@ -244,11 +262,13 @@ async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
                     return "ERROR", str(msg), clean_key, upd_url
 
                 last_err = f"لایسنس نامعتبر است ({json.dumps(d, ensure_ascii=False)})"
+            except (httpx.ConnectError, httpx.TimeoutException):
+                last_err = "خطا در ارتباط با سرور؛ در صورت فعال بودن محدودیت اینترنت، فیلترشکن را روشن کنید."
             except Exception as e:
                 last_err = f"خطای اتصال به سرور لایسنس: {e}"
 
     if saw_only_online:
-        return "ERROR", "سرور کلودفلر آنلاین است اما مسیر بررسی لایسنس (/verify) در Worker پاسخ نداد.", clean_key, DEFAULT_UPDATE_URL
+        return "ERROR", "سرور آنلاین است اما مسیر بررسی لایسنس (/verify) در Worker تنظیم نشده است.", clean_key, DEFAULT_UPDATE_URL
 
     return "ERROR", last_err, clean_key, DEFAULT_UPDATE_URL
 
@@ -307,7 +327,7 @@ async def apply_profile_name(c, first_name: str, last_name: str) -> bool:
     raise RuntimeError("متد تغییر نام پروفایل در این نسخه کتابخانه یافت نشد.")
 
 
-def make_btn(label: str, on_click, bgcolor: str = "#2563EB", color: str = "#FFFFFF", height: int = 44, kind: str = "filled", expand: bool = False):
+def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 44, kind: str = "filled", expand: bool = False):
     lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12)
     if kind == "outlined":
         btn_cls = getattr(ft, "OutlinedButton", ft.Button)
@@ -323,14 +343,14 @@ def creator_footer():
     return ft.Container(
         margin=ft.Margin.only(top=8),
         padding=ft.Padding.symmetric(vertical=10, horizontal=14),
-        border_radius=ft.BorderRadius.all(10),
-        bgcolor="#0F172A",
-        border=ft.Border.all(1, "#1E293B"),
+        border_radius=ft.BorderRadius.all(12),
+        bgcolor=BG_CARD,
+        border=ft.Border.all(1, BORDER_CRIMSON),
         content=ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             controls=[
-                ft.Text(f"نسخه {APP_VERSION}  |  طراحی و توسعه: ", size=12, color="#94A3B8"),
-                ft.Text(CREATOR_ID, size=13, weight=ft.FontWeight.BOLD, color="#38BDF8", selectable=True),
+                ft.Text(f"نسخه {APP_VERSION}  |  طراحی و توسعه: ", size=12, color=TEXT_MUTED),
+                ft.Text(CREATOR_ID, size=13, weight=ft.FontWeight.BOLD, color=RED_NEON, selectable=True),
             ],
         ),
     )
@@ -345,7 +365,7 @@ def parse_target(raw: str):
 
 async def main(page: ft.Page):
     page.title = "V3X Selfbot"
-    page.bgcolor = "#0B1120"
+    page.bgcolor = BG_GALAXY
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 14
     page.scroll = ft.ScrollMode.AUTO
@@ -387,7 +407,7 @@ async def main(page: ft.Page):
         except Exception:
             pass
 
-    def log(txt: str, col: str = "#94A3B8"):
+    def log(txt: str, col: str = TEXT_MUTED):
         logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=12, color=col))
         logs.controls = logs.controls[:25]
         safe_page_update()
@@ -414,7 +434,7 @@ async def main(page: ft.Page):
             return True
         except Exception:
             conn_badge.value = "🔴 قطع اتصال"
-            conn_badge.color = "#EF4444"
+            conn_badge.color = RED_NEON
             safe_page_update()
             return False
 
@@ -488,49 +508,51 @@ async def main(page: ft.Page):
         pass
 
     # ==========================================
-    # صفحه توقف نسخه قدیمی (Force Update)
+    # صفحه توقف نسخه قدیمی و هدایت به سایت
     # ==========================================
     def show_update_required(msg: str, update_url: str):
         st["in_dashboard"] = False
+        target_site = update_url or WEBSITE_URL
         page.controls.clear()
         url_box = ft.TextField(
-            label="لینک دانلود مستقیم نسخه جدید",
-            value=update_url,
+            label="آدرس سایت رسمی جهت دانلود نسخه جدید",
+            value=target_site,
             read_only=True,
             text_align=ft.TextAlign.LEFT,
-            bgcolor="#0F172A",
+            bgcolor=BG_INPUT,
+            border_color=BORDER_ACTIVE,
         )
         copy_stat = ft.Text("", size=12, color="#10B981")
 
         async def open_dl(e):
             try:
                 if hasattr(page, "launch_url"):
-                    r = page.launch_url(update_url)
+                    r = page.launch_url(target_site)
                     if inspect.isawaitable(r):
                         await r
             except Exception:
                 pass
             try:
                 if hasattr(ft, "Clipboard"):
-                    await ft.Clipboard().set(update_url)
-                copy_stat.value = "لینک دانلود کپی شد؛ در مرورگر باز کنید ✅"
+                    await ft.Clipboard().set(target_site)
+                copy_stat.value = "لینک سایت کپی شد؛ در مرورگر باز کنید ✅"
             except Exception:
                 copy_stat.value = "لینک بالا را کپی و در مرورگر باز کنید."
             safe_page_update()
 
-        dl_btn, _ = make_btn("⬇️ دانلود نسخه جدید برنامه", open_dl, bgcolor="#10B981", height=48)
+        dl_btn, _ = make_btn("🌐 ورود به سایت و دانلود نسخه جدید", open_dl, bgcolor=RED_PRIMARY, height=48)
         page.add(
             ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=20,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1.5, "#EF4444"),
+                border_radius=ft.BorderRadius.all(14),
+                border=ft.Border.all(1.5, RED_NEON),
                 content=ft.Column(
                     spacing=14,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("⚠️ این نسخه غیرفعال شده است", size=20, weight=ft.FontWeight.BOLD, color="#EF4444"),
-                        ft.Text(msg, size=14, color="#F8FAFC"),
+                        ft.Text("⚠️ این نسخه غیرفعال شده است", size=20, weight=ft.FontWeight.BOLD, color=RED_NEON),
+                        ft.Text(msg, size=14, color=TEXT_WHITE),
                         url_box,
                         dl_btn,
                         copy_stat,
@@ -559,8 +581,22 @@ async def main(page: ft.Page):
         st["in_dashboard"] = False
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
-        dev_box = ft.TextField(label="شناسه سخت‌افزاری دستگاه (Device ID)", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor="#0F172A")
-        key_box = ft.TextField(label="کلید لایسنس", value=get_saved_license(), hint_text="V3X-XXXX-XXXX", text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        dev_box = ft.TextField(
+            label="شناسه سخت‌افزاری دستگاه (Device ID)",
+            value=did,
+            read_only=True,
+            text_align=ft.TextAlign.LEFT,
+            bgcolor=BG_INPUT,
+            border_color=BORDER_CRIMSON,
+        )
+        key_box = ft.TextField(
+            label="کلید لایسنس",
+            value=get_saved_license(),
+            hint_text="V3X-XXXX-XXXX",
+            text_align=ft.TextAlign.LEFT,
+            bgcolor=BG_INPUT,
+            border_color=BORDER_ACTIVE,
+        )
 
         async def copy_id(e):
             try:
@@ -577,7 +613,7 @@ async def main(page: ft.Page):
 
         async def verify(e):
             btn.disabled = True
-            info.value, info.color = "در حال استعلام لایسنس و بررسی نسخه...", "#38BDF8"
+            info.value, info.color = "در حال استعلام لایسنس و بررسی نسخه...", RED_LIGHT
             safe_page_update()
             status, m, clean_k, upd_url = await check_license(key_box.value or "", did)
             btn.disabled = False
@@ -585,27 +621,27 @@ async def main(page: ft.Page):
                 show_update_required(m, upd_url)
                 return
             if status != "OK":
-                info.value, info.color = f"❌ {m}", "#EF4444"
+                info.value, info.color = f"❌ {m}", RED_NEON
                 safe_page_update()
                 return
             save_license(clean_k)
             await proceed_after_license()
 
-        btn, _ = make_btn("بررسی لایسنس و ورود", verify, bgcolor="#2563EB", height=48)
-        copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color="#38BDF8", kind="outlined")
+        btn, _ = make_btn("بررسی لایسنس و ورود", verify, bgcolor=RED_PRIMARY, height=48)
+        copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color=RED_LIGHT, kind="outlined")
 
         page.add(
             ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=18,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border_radius=ft.BorderRadius.all(14),
+                border=ft.Border.all(1.2, BORDER_ACTIVE),
                 content=ft.Column(
                     spacing=12,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color="#38BDF8"),
-                        ft.Text(f"نسخه {APP_VERSION}  |  فعال‌سازی لایسنس", size=13, color="#94A3B8"),
+                        ft.Text("V3X SELFBOT", size=24, weight=ft.FontWeight.BOLD, color=RED_NEON),
+                        ft.Text(f"نسخه {APP_VERSION}  |  فعال‌سازی اشتراک اختصاصی", size=13, color=TEXT_MUTED),
                         dev_box,
                         copy_btn,
                         key_box,
@@ -625,7 +661,14 @@ async def main(page: ft.Page):
         st["in_dashboard"] = False
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
-        ph_box = ft.TextField(label="شماره موبایل سروش‌پلاس", hint_text="09123456789", keyboard_type=ft.KeyboardType.PHONE, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        ph_box = ft.TextField(
+            label="شماره موبایل سروش‌پلاس",
+            hint_text="09123456789",
+            keyboard_type=ft.KeyboardType.PHONE,
+            text_align=ft.TextAlign.LEFT,
+            bgcolor=BG_INPUT,
+            border_color=BORDER_ACTIVE,
+        )
 
         async def send_otp(e):
             d = "".join(c for c in (ph_box.value or "") if c.isdigit())
@@ -636,12 +679,12 @@ async def main(page: ft.Page):
             elif d.startswith("9") and len(d) == 10:
                 p98, p09 = "98" + d, "0" + d
             else:
-                info.value, info.color = "شماره موبایل معتبر وارد کنید (مثلاً 09123456789).", "#EF4444"
+                info.value, info.color = "شماره موبایل معتبر وارد کنید (مثلاً 09123456789).", RED_NEON
                 safe_page_update()
                 return
 
             btn.disabled = True
-            info.value, info.color = "در حال ارسال کد تایید...", "#38BDF8"
+            info.value, info.color = "در حال ارسال کد تایید...", RED_LIGHT
             safe_page_update()
             try:
                 c = get_client()
@@ -669,21 +712,21 @@ async def main(page: ft.Page):
                 show_otp()
             except Exception as ex:
                 btn.disabled = False
-                info.value, info.color = f"خطا: {ex}", "#EF4444"
+                info.value, info.color = f"خطا: {ex}", RED_NEON
                 safe_page_update()
 
-        btn, _ = make_btn("ارسال کد تایید", send_otp, bgcolor="#10B981", height=48)
+        btn, _ = make_btn("ارسال کد تایید", send_otp, bgcolor=RED_PRIMARY, height=48)
         page.add(
             ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=18,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border_radius=ft.BorderRadius.all(14),
+                border=ft.Border.all(1.2, BORDER_ACTIVE),
                 content=ft.Column(
                     spacing=12,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("ورود به سروش‌پلاس", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("ورود به سروش‌پلاس", size=20, weight=ft.FontWeight.BOLD, color=RED_NEON),
                         ph_box,
                         btn,
                         info,
@@ -700,19 +743,34 @@ async def main(page: ft.Page):
     def show_otp():
         st["in_dashboard"] = False
         page.controls.clear()
-        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color="#38BDF8")
-        code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
-        pwd_box = ft.TextField(label="رمز تایید دومرحله‌ای (در صورت داشتن)", password=True, can_reveal_password=True, visible=st["need_2fa"], text_align=ft.TextAlign.LEFT, bgcolor="#1E293B")
+        info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color=RED_LIGHT)
+        code_box = ft.TextField(
+            label="کد تایید",
+            hint_text="12345",
+            keyboard_type=ft.KeyboardType.NUMBER,
+            text_align=ft.TextAlign.LEFT,
+            bgcolor=BG_INPUT,
+            border_color=BORDER_ACTIVE,
+        )
+        pwd_box = ft.TextField(
+            label="رمز تایید دومرحله‌ای (در صورت داشتن)",
+            password=True,
+            can_reveal_password=True,
+            visible=st["need_2fa"],
+            text_align=ft.TextAlign.LEFT,
+            bgcolor=BG_INPUT,
+            border_color=BORDER_ACTIVE,
+        )
 
         async def confirm(e):
             code = (code_box.value or "").strip()
             pwd = (pwd_box.value or "").strip()
             if not st["need_2fa"] and len(code) < 4:
-                info.value, info.color = "کد تایید را کامل وارد کنید.", "#EF4444"
+                info.value, info.color = "کد تایید را کامل وارد کنید.", RED_NEON
                 safe_page_update()
                 return
             btn.disabled = True
-            info.value, info.color = "در حال ورود...", "#38BDF8"
+            info.value, info.color = "در حال ورود...", RED_LIGHT
             safe_page_update()
             try:
                 c = get_client()
@@ -736,22 +794,22 @@ async def main(page: ft.Page):
                     pwd_box.visible = True
                     info.value, info.color = "اکانت شما رمز دومرحله‌ای دارد؛ رمز را وارد و دوباره تایید کنید.", "#F59E0B"
                 else:
-                    info.value, info.color = f"خطا: {ex}", "#EF4444"
+                    info.value, info.color = f"خطا: {ex}", RED_NEON
                 safe_page_update()
 
-        btn, _ = make_btn("تایید و ورود", confirm, bgcolor="#2563EB", height=48)
-        chg_btn, _ = make_btn("تغییر شماره", lambda e: show_phone(), color="#94A3B8", kind="text")
+        btn, _ = make_btn("تایید و ورود", confirm, bgcolor=RED_PRIMARY, height=48)
+        chg_btn, _ = make_btn("تغییر شماره", lambda e: show_phone(), color=TEXT_MUTED, kind="text")
         page.add(
             ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=18,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border_radius=ft.BorderRadius.all(14),
+                border=ft.Border.all(1.2, BORDER_ACTIVE),
                 content=ft.Column(
                     spacing=12,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("تایید کد", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("تایید کد", size=20, weight=ft.FontWeight.BOLD, color=RED_NEON),
                         code_box,
                         pwd_box,
                         btn,
@@ -802,9 +860,9 @@ async def main(page: ft.Page):
 
                 await apply_profile_name(c, new_first, new_last)
                 st["last_clock_min"] = now_min
-                log(f"ساعت پروفایل آپدیت شد: {new_first} {new_last}".strip(), "#38BDF8")
+                log(f"ساعت پروفایل آپدیت شد: {new_first} {new_last}".strip(), RED_LIGHT)
             except Exception as ex:
-                log(f"خطا در آپدیت ساعت پروفایل: {ex}", "#EF4444")
+                log(f"خطا در آپدیت ساعت پروفایل: {ex}", RED_NEON)
 
         async def connection_and_clock_watchdog():
             while st["in_dashboard"]:
@@ -860,7 +918,7 @@ async def main(page: ft.Page):
 
                     items.append({"id": cid_str, "title": str(title), "kind": kind})
             except Exception as ex:
-                log(f"خطا در دریافت لیست چت‌ها: {ex}", "#EF4444")
+                log(f"خطا در دریافت لیست چت‌ها: {ex}", RED_NEON)
             st["dialogs"] = items
             if callable(on_dialogs_loaded_callback):
                 on_dialogs_loaded_callback()
@@ -908,7 +966,7 @@ async def main(page: ft.Page):
                         "text": txt,
                     })
             except Exception as ex:
-                log(f"خطا در دریافت پیام‌های اخیر: {ex}", "#EF4444")
+                log(f"خطا در دریافت پیام‌های اخیر: {ex}", RED_NEON)
             st["recent_messages"] = msgs
 
         def set_active_target_clean(new_val: str, title: str = ""):
@@ -933,19 +991,19 @@ async def main(page: ft.Page):
                     on_clear_callback()
                 safe_page_update()
 
-            clr_b, _ = make_btn("✖️ لغو", clear_rep, color="#EF4444", kind="text")
+            clr_b, _ = make_btn("✖️ لغو", clear_rep, color=RED_NEON, kind="text")
             preview = st["reply_to_preview"]
             if len(preview) > 40:
                 preview = preview[:40] + "..."
             return ft.Container(
                 padding=ft.Padding.symmetric(horizontal=10, vertical=6),
                 border_radius=ft.BorderRadius.all(8),
-                bgcolor="#0F172A",
-                border=ft.Border.all(1, "#10B981"),
+                bgcolor=BG_INPUT,
+                border=ft.Border.all(1, RED_LIGHT),
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
-                        ft.Text(f"↩️ ریپلای روی #{st['reply_to_id']}: {preview}", size=12, color="#10B981", expand=True),
+                        ft.Text(f"↩️ ریپلای روی #{st['reply_to_id']}: {preview}", size=12, color=RED_LIGHT, expand=True),
                         clr_b,
                     ],
                 ),
@@ -962,12 +1020,13 @@ async def main(page: ft.Page):
                 hint_text="@username یا شناسه عددی",
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
             chat_list_col = ft.Column(spacing=6, height=175, scroll=ft.ScrollMode.AUTO)
             recent_msgs_col = ft.Column(spacing=6, height=210, scroll=ft.ScrollMode.AUTO)
-            selected_count_lbl = ft.Text(f"چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}", size=12, color="#38BDF8")
+            selected_count_lbl = ft.Text(f"چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}", size=12, color=RED_LIGHT)
             reply_banner_holder = ft.Column(controls=[build_reply_status_banner(lambda: refresh_recent_msg_cards())])
 
             def rebuild_reply_banner():
@@ -979,14 +1038,14 @@ async def main(page: ft.Page):
                 st["reply_chat_id"] = st["active_target"]
                 rebuild_reply_banner()
                 refresh_recent_msg_cards()
-                log(f"پیام #{mid} برای ریپلای انتخاب شد ↩️", "#10B981")
+                log(f"پیام #{mid} برای ریپلای انتخاب شد ↩️", RED_LIGHT)
                 safe_page_update()
 
             def refresh_recent_msg_cards():
                 recent_msgs_col.controls.clear()
                 if not st["recent_messages"]:
                     recent_msgs_col.controls.append(
-                        ft.Text("پیامی بارگذاری نشده است. روی یک پی‌وی/گپ بزنید یا دکمه پیام‌های اخیر را بزنید.", size=12, color="#94A3B8")
+                        ft.Text("پیامی بارگذاری نشده است. روی یک پی‌وی/گپ بزنید یا دکمه پیام‌های اخیر را بزنید.", size=12, color=TEXT_MUTED)
                     )
                     return
 
@@ -996,8 +1055,8 @@ async def main(page: ft.Page):
                     card = ft.Container(
                         padding=ft.Padding.all(10),
                         border_radius=ft.BorderRadius.all(8),
-                        bgcolor="#1E293B" if is_rep_selected else "#0F172A",
-                        border=ft.Border.all(1.5 if is_rep_selected else 1, "#10B981" if is_rep_selected else "#334155"),
+                        bgcolor="#1C0A10" if is_rep_selected else BG_INPUT,
+                        border=ft.Border.all(1.5 if is_rep_selected else 1, RED_NEON if is_rep_selected else BORDER_CRIMSON),
                         on_click=lambda e, m_id=mid, m_txt=m["text"]: select_message_for_reply(e, m_id, m_txt),
                         content=ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -1006,11 +1065,11 @@ async def main(page: ft.Page):
                                     spacing=2,
                                     expand=True,
                                     controls=[
-                                        ft.Text(f"{m['sender']}  (#{mid})", size=11, color="#38BDF8", weight=ft.FontWeight.W_600),
-                                        ft.Text(m["text"], size=13, color="#F8FAFC", max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                                        ft.Text(f"{m['sender']}  (#{mid})", size=11, color=RED_LIGHT, weight=ft.FontWeight.W_600),
+                                        ft.Text(m["text"], size=13, color=TEXT_WHITE, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
                                     ],
                                 ),
-                                ft.Text("↩️ انتخاب‌شده" if is_rep_selected else "ریپلای", size=12, color="#10B981" if is_rep_selected else "#94A3B8"),
+                                ft.Text("↩️ انتخاب‌شده" if is_rep_selected else "ریپلای", size=12, color=RED_NEON if is_rep_selected else TEXT_MUTED),
                             ],
                         ),
                     )
@@ -1019,10 +1078,10 @@ async def main(page: ft.Page):
             async def load_msgs_for_current_target(e=None):
                 tgt = (manual_target.value or st["active_target"] or "").strip()
                 if not tgt:
-                    log("ابتدا یک چت را انتخاب کنید یا آیدی آن را وارد کنید.", "#EF4444")
+                    log("ابتدا یک چت را انتخاب کنید یا آیدی آن را وارد کنید.", RED_NEON)
                     return
                 set_active_target_clean(tgt)
-                log(f"در حال دریافت پیام‌های اخیر {tgt}...", "#38BDF8")
+                log(f"در حال دریافت پیام‌های اخیر {tgt}...", RED_LIGHT)
                 await fetch_recent_messages(tgt)
                 refresh_recent_msg_cards()
                 log(f"{len(st['recent_messages'])} پیام اخیر دریافت شد ✅", "#10B981")
@@ -1049,7 +1108,7 @@ async def main(page: ft.Page):
                 filtered = [x for x in st["dialogs"] if flt == "all" or x["kind"] == flt]
                 if not filtered:
                     chat_list_col.controls.append(
-                        ft.Text("چتی یافت نشد. دکمه بروزرسانی چت‌ها را بزنید.", size=12, color="#94A3B8")
+                        ft.Text("چتی یافت نشد. دکمه بروزرسانی چت‌ها را بزنید.", size=12, color=TEXT_MUTED)
                     )
                     return
 
@@ -1062,8 +1121,8 @@ async def main(page: ft.Page):
                     card = ft.Container(
                         padding=ft.Padding.all(10),
                         border_radius=ft.BorderRadius.all(10),
-                        bgcolor="#1E293B" if selected else "#0F172A",
-                        border=ft.Border.all(1.5 if selected else 1, "#38BDF8" if selected else "#1E293B"),
+                        bgcolor="#1C0A10" if selected else BG_INPUT,
+                        border=ft.Border.all(1.5 if selected else 1, RED_NEON if selected else BORDER_CRIMSON),
                         on_click=lambda e, c_id=cid, c_title=title: page.run_task(on_chat_card_click, e, c_id, c_title),
                         content=ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -1072,11 +1131,11 @@ async def main(page: ft.Page):
                                     spacing=2,
                                     expand=True,
                                     controls=[
-                                        ft.Text(title, size=14, weight=ft.FontWeight.W_600, color="#F8FAFC"),
-                                        ft.Text(f"{badge}  |  ID: {cid}", size=11, color="#94A3B8"),
+                                        ft.Text(title, size=14, weight=ft.FontWeight.W_600, color=TEXT_WHITE),
+                                        ft.Text(f"{badge}  |  ID: {cid}", size=11, color=TEXT_MUTED),
                                     ],
                                 ),
-                                ft.Text("✅ انتخاب" if selected else "انتخاب", size=12, color="#10B981" if selected else "#64748B"),
+                                ft.Text("✅ انتخاب" if selected else "انتخاب", size=12, color=RED_NEON if selected else "#64748B"),
                             ],
                         ),
                     )
@@ -1084,14 +1143,14 @@ async def main(page: ft.Page):
 
             def set_filter(e, mode: str):
                 st["chat_filter"] = mode
-                f_all.bgcolor = "#2563EB" if mode == "all" else "#1E293B"
-                f_pv.bgcolor = "#2563EB" if mode == "pv" else "#1E293B"
-                f_gp.bgcolor = "#2563EB" if mode == "group" else "#1E293B"
+                f_all.bgcolor = RED_PRIMARY if mode == "all" else BG_INPUT
+                f_pv.bgcolor = RED_PRIMARY if mode == "pv" else BG_INPUT
+                f_gp.bgcolor = RED_PRIMARY if mode == "group" else BG_INPUT
                 refresh_chat_cards()
                 safe_page_update()
 
             async def reload_chats(e):
-                log("در حال دریافت لیست پی‌وی‌ها و گپ‌ها...", "#38BDF8")
+                log("در حال دریافت لیست پی‌وی‌ها و گپ‌ها...", RED_LIGHT)
                 await fetch_dialogs_list()
                 refresh_chat_cards()
                 log(f"{len(st['dialogs'])} چت بارگذاری شد ✅", "#10B981")
@@ -1110,12 +1169,12 @@ async def main(page: ft.Page):
 
             on_dialogs_loaded_callback = lambda: (refresh_chat_cards(), safe_page_update())
 
-            f_all, _ = make_btn("همه", lambda e: set_filter(e, "all"), bgcolor="#2563EB" if st["chat_filter"] == "all" else "#1E293B", height=36, expand=True)
-            f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_filter(e, "pv"), bgcolor="#2563EB" if st["chat_filter"] == "pv" else "#1E293B", height=36, expand=True)
-            f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_filter(e, "group"), bgcolor="#2563EB" if st["chat_filter"] == "group" else "#1E293B", height=36, expand=True)
-            rel_btn, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats, bgcolor="#10B981", height=40, expand=True)
-            load_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_msgs_for_current_target, bgcolor="#2563EB", height=40, expand=True)
-            clr_btn, _ = make_btn("پاک کردن", clear_selected, color="#EF4444", kind="text")
+            f_all, _ = make_btn("همه", lambda e: set_filter(e, "all"), bgcolor=RED_PRIMARY if st["chat_filter"] == "all" else BG_INPUT, height=36, expand=True)
+            f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_filter(e, "pv"), bgcolor=RED_PRIMARY if st["chat_filter"] == "pv" else BG_INPUT, height=36, expand=True)
+            f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_filter(e, "group"), bgcolor=RED_PRIMARY if st["chat_filter"] == "group" else BG_INPUT, height=36, expand=True)
+            rel_btn, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats, bgcolor=RED_PRIMARY, height=40, expand=True)
+            load_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_msgs_for_current_target, bgcolor=RED_DARK, height=40, expand=True)
+            clr_btn, _ = make_btn("پاک کردن", clear_selected, color=RED_NEON, kind="text")
 
             refresh_chat_cards()
             refresh_recent_msg_cards()
@@ -1125,16 +1184,16 @@ async def main(page: ft.Page):
                 horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                 controls=[
                     ft.Container(
-                        bgcolor="#111827",
+                        bgcolor=BG_CARD,
                         padding=14,
                         border_radius=ft.BorderRadius.all(12),
-                        border=ft.Border.all(1, "#1E293B"),
+                        border=ft.Border.all(1, BORDER_CRIMSON),
                         content=ft.Column(
                             spacing=10,
                             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                             controls=[
                                 ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
-                                    ft.Text("💬 انتخاب پی‌وی یا گپ", size=16, weight=ft.FontWeight.BOLD),
+                                    ft.Text("💬 انتخاب پی‌وی یا گپ", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                                     clr_btn,
                                 ]),
                                 manual_target,
@@ -1146,15 +1205,15 @@ async def main(page: ft.Page):
                         ),
                     ),
                     ft.Container(
-                        bgcolor="#111827",
+                        bgcolor=BG_CARD,
                         padding=14,
                         border_radius=ft.BorderRadius.all(12),
-                        border=ft.Border.all(1, "#1E293B"),
+                        border=ft.Border.all(1, BORDER_CRIMSON),
                         content=ft.Column(
                             spacing=8,
                             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                             controls=[
-                                ft.Text("📜 پیام‌های اخیر چت (برای ریپلای لمس کنید)", size=14, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                                ft.Text("📜 پیام‌های اخیر چت (برای ریپلای لمس کنید)", size=14, weight=ft.FontWeight.BOLD, color=RED_LIGHT),
                                 reply_banner_holder,
                                 recent_msgs_col,
                             ],
@@ -1172,24 +1231,28 @@ async def main(page: ft.Page):
                 hint_text="@username یا شناسه عددی",
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
             use_multi_targets = ft.Switch(
                 label=f"ارسال همزمان به تمام چت‌های تیک‌خورده ({len(st['selected_targets'])} چت)",
                 value=len(st["selected_targets"]) > 1,
+                active_color=RED_NEON,
             )
             new_msg_input = ft.TextField(
                 label="متن پیام جدید برای افزودن به لیست",
                 hint_text="متن پیام را بنویسید...",
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
             )
             rounds_box = ft.TextField(
                 label="تعداد دور ارسال کل لیست",
                 value="1",
                 keyboard_type=ft.KeyboardType.NUMBER,
                 text_align=ft.TextAlign.LEFT,
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 expand=True,
             )
             delay_box = ft.TextField(
@@ -1197,10 +1260,11 @@ async def main(page: ft.Page):
                 value="0",
                 keyboard_type=ft.KeyboardType.NUMBER,
                 text_align=ft.TextAlign.LEFT,
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 expand=True,
             )
-            m_stat = ft.Text("آماده ارسال چندتایی", size=12, color="#94A3B8")
+            m_stat = ft.Text("آماده ارسال چندتایی", size=12, color=TEXT_MUTED)
             msg_items_col = ft.Column(spacing=6)
 
             def remove_msg_item(e, index: int):
@@ -1212,19 +1276,19 @@ async def main(page: ft.Page):
             def render_msg_items():
                 msg_items_col.controls.clear()
                 if not st["multi_messages"]:
-                    msg_items_col.controls.append(ft.Text("لیست پیام‌های چندتایی خالی است.", size=12, color="#94A3B8"))
+                    msg_items_col.controls.append(ft.Text("لیست پیام‌های چندتایی خالی است.", size=12, color=TEXT_MUTED))
                     return
                 for idx, txt in enumerate(st["multi_messages"]):
-                    del_btn, _ = make_btn("حذف", lambda e, i=idx: remove_msg_item(e, i), color="#EF4444", kind="text")
+                    del_btn, _ = make_btn("حذف", lambda e, i=idx: remove_msg_item(e, i), color=RED_NEON, kind="text")
                     row_card = ft.Container(
                         padding=ft.Padding.symmetric(horizontal=10, vertical=6),
                         border_radius=ft.BorderRadius.all(8),
-                        bgcolor="#0F172A",
-                        border=ft.Border.all(1, "#334155"),
+                        bgcolor=BG_INPUT,
+                        border=ft.Border.all(1, BORDER_CRIMSON),
                         content=ft.Row(
                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                             controls=[
-                                ft.Text(f"{idx + 1}. {txt}", size=13, color="#F8FAFC", expand=True),
+                                ft.Text(f"{idx + 1}. {txt}", size=13, color=TEXT_WHITE, expand=True),
                                 del_btn,
                             ],
                         ),
@@ -1242,7 +1306,7 @@ async def main(page: ft.Page):
 
             def save_messages_as_default(e):
                 if not st["multi_messages"]:
-                    log("لیست پیام‌ها خالی است؛ پیامی برای ذخیره وجود ندارد.", "#EF4444")
+                    log("لیست پیام‌ها خالی است؛ پیامی برای ذخیره وجود ندارد.", RED_NEON)
                     return
                 save_multi_messages_disk(st["multi_messages"])
                 log(f"{len(st['multi_messages'])} پیام در حافظه پیش‌فرض ذخیره شد 💾✅", "#10B981")
@@ -1261,10 +1325,10 @@ async def main(page: ft.Page):
                     targets = [(target_field.value or "").strip()]
 
                 if not targets:
-                    log("ابتدا یک پی‌وی/گپ انتخاب کنید یا آیدی مقصد را وارد کنید.", "#EF4444")
+                    log("ابتدا یک پی‌وی/گپ انتخاب کنید یا آیدی مقصد را وارد کنید.", RED_NEON)
                     st["multi_running"] = False
                     m_lbl.value = "🚀 شروع ارسال چندتایی"
-                    m_btn.bgcolor = "#10B981"
+                    m_btn.bgcolor = RED_PRIMARY
                     safe_page_update()
                     return
 
@@ -1279,7 +1343,6 @@ async def main(page: ft.Page):
                     for t_raw in targets:
                         resolved_peers[t_raw] = await resolve_peer(c, t_raw)
 
-                    # ساخت صف کامل عملیات
                     queue = []
                     for _ in range(rounds):
                         for raw_t in targets:
@@ -1288,7 +1351,6 @@ async def main(page: ft.Page):
                                 queue.append((raw_t, resolved_peers[raw_t], m_txt, rep_id))
 
                     if dly == 0:
-                        # ارسال فوق‌سریع دسته‌ای (۵ پیام هم‌زمان در شبکه)
                         batch_size = 5
                         for i in range(0, len(queue), batch_size):
                             if not st["multi_running"]:
@@ -1325,13 +1387,13 @@ async def main(page: ft.Page):
                 except asyncio.CancelledError:
                     log("ارسال چندتایی متوقف شد.", "#F59E0B")
                 except Exception as ex:
-                    log(f"خطا در ارسال چندتایی: {ex}", "#EF4444")
+                    log(f"خطا در ارسال چندتایی: {ex}", RED_NEON)
                     m_stat.value = f"توقف در {done}/{total_ops}: {ex}"
-                    m_stat.color = "#EF4444"
+                    m_stat.color = RED_NEON
                 finally:
                     st["multi_running"] = False
                     m_lbl.value = "🚀 شروع ارسال چندتایی"
-                    m_btn.bgcolor = "#10B981"
+                    m_btn.bgcolor = RED_PRIMARY
                     safe_page_update()
 
             async def toggle_multi(e):
@@ -1342,29 +1404,29 @@ async def main(page: ft.Page):
                     log("ابتدا ارسال توربو را متوقف کنید.", "#F59E0B")
                     return
                 if not st["multi_messages"]:
-                    log("حداقل یک پیام به لیست چندتایی اضافه کنید.", "#EF4444")
+                    log("حداقل یک پیام به لیست چندتایی اضافه کنید.", RED_NEON)
                     return
                 st["multi_running"] = True
                 m_lbl.value = "⛔ توقف ارسال چندتایی"
-                m_btn.bgcolor = "#EF4444"
+                m_btn.bgcolor = RED_DARK
                 safe_page_update()
                 asyncio.create_task(run_multi_sender())
 
-            add_btn, _ = make_btn("➕ افزودن به لیست", add_msg_item, bgcolor="#2563EB", height=40, expand=True)
-            save_msgs_btn, _ = make_btn("💾 ذخیره پیام‌ها (پیش‌فرض)", save_messages_as_default, bgcolor="#0284C7", height=40, expand=True)
-            m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_multi, bgcolor="#10B981", height=46)
+            add_btn, _ = make_btn("➕ افزودن به لیست", add_msg_item, bgcolor=RED_PRIMARY, height=40, expand=True)
+            save_msgs_btn, _ = make_btn("💾 ذخیره پیام‌ها (پیش‌فرض)", save_messages_as_default, bgcolor=RED_DARK, height=40, expand=True)
+            m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_multi, bgcolor=RED_PRIMARY, height=46)
             render_msg_items()
 
             return ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=14,
                 border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
                     spacing=10,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("📨 ارسال چندتایی (Multi-Message)", size=16, weight=ft.FontWeight.BOLD),
+                        ft.Text("📨 ارسال چندتایی (Multi-Message)", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         build_reply_status_banner(),
                         target_field,
                         use_multi_targets,
@@ -1387,13 +1449,14 @@ async def main(page: ft.Page):
                 hint_text="@username یا 12345678",
                 value=st["active_target"],
                 text_align=ft.TextAlign.LEFT,
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
-            msg_box = ft.TextField(label="متن پیام توربو", bgcolor="#1E293B")
-            cnt_box = ft.TextField(label="تعداد", value="20", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
-            dly_box = ft.TextField(label="تاخیر (0 = حداکثر سرعت)", value="0", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor="#1E293B", expand=True)
-            t_stat = ft.Text("آماده", size=12, color="#94A3B8")
+            msg_box = ft.TextField(label="متن پیام توربو", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
+            cnt_box = ft.TextField(label="تعداد", value="20", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
+            dly_box = ft.TextField(label="تاخیر (0 = حداکثر سرعت)", value="0", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
+            t_stat = ft.Text("آماده", size=12, color=TEXT_MUTED)
 
             async def turbo_run():
                 sent = 0
@@ -1443,13 +1506,13 @@ async def main(page: ft.Page):
                 except asyncio.CancelledError:
                     log("ارسال توربو متوقف شد.", "#F59E0B")
                 except Exception as ex:
-                    log(f"خطای توربو: {ex}", "#EF4444")
+                    log(f"خطای توربو: {ex}", RED_NEON)
                     t_stat.value = f"توقف در {sent}/{total}: {ex}"
-                    t_stat.color = "#EF4444"
+                    t_stat.color = RED_NEON
                 finally:
                     st["turbo_running"] = False
                     t_lbl.value = "🚀 شروع توربو"
-                    t_btn.bgcolor = "#10B981"
+                    t_btn.bgcolor = RED_PRIMARY
                     safe_page_update()
 
             async def toggle_turbo(e):
@@ -1460,25 +1523,25 @@ async def main(page: ft.Page):
                     log("ابتدا ارسال چندتایی را متوقف کنید.", "#F59E0B")
                     return
                 if not (target_box.value or "").strip() or not (msg_box.value or "").strip():
-                    log("مقصد و متن را وارد کنید.", "#EF4444")
+                    log("مقصد و متن را وارد کنید.", RED_NEON)
                     return
                 st["turbo_running"] = True
                 t_lbl.value = "⛔ توقف توربو"
-                t_btn.bgcolor = "#EF4444"
+                t_btn.bgcolor = RED_DARK
                 safe_page_update()
                 asyncio.create_task(turbo_run())
 
-            t_btn, t_lbl = make_btn("🚀 شروع توربو", toggle_turbo, bgcolor="#10B981", height=44)
+            t_btn, t_lbl = make_btn("🚀 شروع توربو", toggle_turbo, bgcolor=RED_PRIMARY, height=44)
             return ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=14,
                 border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
                     spacing=10,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("🚀 ارسال توربو فوق‌سریع", size=16, weight=ft.FontWeight.BOLD),
+                        ft.Text("🚀 ارسال توربو فوق‌سریع", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         build_reply_status_banner(),
                         target_box,
                         msg_box,
@@ -1494,27 +1557,31 @@ async def main(page: ft.Page):
         # ==========================================
         def build_clock_widget():
             cur_tehran = format_tehran_clock(clock_cfg.get("style", "bold"))
-            live_time_txt = ft.Text(f"🕒 ساعت فعلی به افق تهران: {cur_tehran}", size=14, weight=ft.FontWeight.BOLD, color="#38BDF8")
+            live_time_txt = ft.Text(f"🕒 ساعت فعلی به افق تهران: {cur_tehran}", size=14, weight=ft.FontWeight.BOLD, color=RED_NEON)
 
             clock_check = ft.Checkbox(
                 label="فعال‌سازی ساعت افق تهران کنار اسم پروفایل",
                 value=bool(clock_cfg.get("enabled", False)),
+                active_color=RED_PRIMARY,
             )
             base_first_box = ft.TextField(
                 label="نام اصلی شما (بدون ساعت)",
                 hint_text="اگر خالی بگذارید خودکار از پروفایل خوانده می‌شود",
                 value=clock_cfg.get("base_first", ""),
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
             )
             base_last_box = ft.TextField(
                 label="نام خانوادگی اصلی شما (اختیاری)",
                 value=clock_cfg.get("base_last", ""),
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
             )
             sep_box = ft.TextField(
                 label="جداکننده بین اسم و ساعت",
                 value=clock_cfg.get("sep", "|"),
-                bgcolor="#1E293B",
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
                 expand=True,
             )
 
@@ -1523,23 +1590,23 @@ async def main(page: ft.Page):
             def select_style(e, s_val: str):
                 style_state["val"] = s_val
                 for k, b in style_btns.items():
-                    b.bgcolor = "#2563EB" if k == s_val else "#1E293B"
+                    b.bgcolor = RED_PRIMARY if k == s_val else BG_INPUT
                 live_time_txt.value = f"🕒 پیش‌نمایش ساعت تهران: {format_tehran_clock(s_val)}"
                 safe_page_update()
 
             def select_pos(e, p_val: str):
                 style_state["pos"] = p_val
-                pos_first_btn.bgcolor = "#2563EB" if p_val == "first" else "#1E293B"
-                pos_last_btn.bgcolor = "#2563EB" if p_val == "last" else "#1E293B"
+                pos_first_btn.bgcolor = RED_PRIMARY if p_val == "first" else BG_INPUT
+                pos_last_btn.bgcolor = RED_PRIMARY if p_val == "last" else BG_INPUT
                 safe_page_update()
 
-            s_norm, _ = make_btn("ساده 14:30", lambda e: select_style(e, "normal"), bgcolor="#2563EB" if style_state["val"] == "normal" else "#1E293B", height=36, expand=True)
-            s_bold, _ = make_btn("ضخیم 𝟏𝟒:𝟑𝟎", lambda e: select_style(e, "bold"), bgcolor="#2563EB" if style_state["val"] == "bold" else "#1E293B", height=36, expand=True)
-            s_mono, _ = make_btn("فانتزی 𝟷𝟺:𝟹𝟶", lambda e: select_style(e, "mono"), bgcolor="#2563EB" if style_state["val"] == "mono" else "#1E293B", height=36, expand=True)
+            s_norm, _ = make_btn("ساده 14:30", lambda e: select_style(e, "normal"), bgcolor=RED_PRIMARY if style_state["val"] == "normal" else BG_INPUT, height=36, expand=True)
+            s_bold, _ = make_btn("ضخیم 𝟏𝟒:𝟑𝟎", lambda e: select_style(e, "bold"), bgcolor=RED_PRIMARY if style_state["val"] == "bold" else BG_INPUT, height=36, expand=True)
+            s_mono, _ = make_btn("فانتزی 𝟷𝟺:𝟹𝟶", lambda e: select_style(e, "mono"), bgcolor=RED_PRIMARY if style_state["val"] == "mono" else BG_INPUT, height=36, expand=True)
             style_btns = {"normal": s_norm, "bold": s_bold, "mono": s_mono}
 
-            pos_first_btn, _ = make_btn("کنار اسم (First Name)", lambda e: select_pos(e, "first"), bgcolor="#2563EB" if style_state["pos"] == "first" else "#1E293B", height=36, expand=True)
-            pos_last_btn, _ = make_btn("کنار فامیل (Last Name)", lambda e: select_pos(e, "last"), bgcolor="#2563EB" if style_state["pos"] == "last" else "#1E293B", height=36, expand=True)
+            pos_first_btn, _ = make_btn("کنار اسم (First Name)", lambda e: select_pos(e, "first"), bgcolor=RED_PRIMARY if style_state["pos"] == "first" else BG_INPUT, height=36, expand=True)
+            pos_last_btn, _ = make_btn("کنار فامیل (Last Name)", lambda e: select_pos(e, "last"), bgcolor=RED_PRIMARY if style_state["pos"] == "last" else BG_INPUT, height=36, expand=True)
 
             async def fetch_current_name(e):
                 try:
@@ -1555,7 +1622,7 @@ async def main(page: ft.Page):
                     log(f"نام فعلی پروفایل دریافت شد: {bf} {bl}".strip(), "#10B981")
                     safe_page_update()
                 except Exception as ex:
-                    log(f"خطا در دریافت نام پروفایل: {ex}", "#EF4444")
+                    log(f"خطا در دریافت نام پروفایل: {ex}", RED_NEON)
 
             async def save_and_apply_clock(e):
                 enabled = bool(clock_check.value)
@@ -1589,33 +1656,33 @@ async def main(page: ft.Page):
                     try:
                         await ensure_online(c)
                         await apply_profile_name(c, bf or "User", bl)
-                        log("ساعت غیرفعال شد و نام پروفایل به حالت عادی برگشت ✅", "#38BDF8")
+                        log("ساعت غیرفعال شد و نام پروفایل به حالت عادی برگشت ✅", RED_LIGHT)
                     except Exception as ex:
-                        log(f"خطا در بازگردانی نام: {ex}", "#EF4444")
+                        log(f"خطا در بازگردانی نام: {ex}", RED_NEON)
                 safe_page_update()
 
-            get_name_btn, _ = make_btn("📥 خواندن اسم فعلی من", fetch_current_name, bgcolor="#1E293B", height=40)
-            apply_clk_btn, _ = make_btn("💾 ذخیره و اعمال تنظیمات ساعت", save_and_apply_clock, bgcolor="#10B981", height=46)
+            get_name_btn, _ = make_btn("📥 خواندن اسم فعلی من", fetch_current_name, bgcolor=RED_DARK, height=40)
+            apply_clk_btn, _ = make_btn("💾 ذخیره و اعمال تنظیمات ساعت", save_and_apply_clock, bgcolor=RED_PRIMARY, height=46)
 
             return ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=14,
                 border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
                     spacing=10,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("⏰ ساعت افق تهران کنار اسم", size=16, weight=ft.FontWeight.BOLD),
+                        ft.Text("⏰ ساعت افق تهران کنار اسم", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         live_time_txt,
                         clock_check,
                         get_name_btn,
                         base_first_box,
                         base_last_box,
                         sep_box,
-                        ft.Text("فونت نمایش ساعت:", size=12, color="#94A3B8"),
+                        ft.Text("فونت نمایش ساعت:", size=12, color=TEXT_MUTED),
                         ft.Row(spacing=6, controls=[s_norm, s_bold, s_mono]),
-                        ft.Text("محل قرارگیری ساعت:", size=12, color="#94A3B8"),
+                        ft.Text("محل قرارگیری ساعت:", size=12, color=TEXT_MUTED),
                         ft.Row(spacing=6, controls=[pos_first_btn, pos_last_btn]),
                         apply_clk_btn,
                     ],
@@ -1637,7 +1704,7 @@ async def main(page: ft.Page):
         def switch_tab(e, tab_name: str):
             st["active_tab"] = tab_name
             for k, btn_ctrl in nav_buttons.items():
-                btn_ctrl.bgcolor = "#2563EB" if k == tab_name else "#1E293B"
+                btn_ctrl.bgcolor = RED_PRIMARY if k == tab_name else BG_INPUT
             render_body()
             safe_page_update()
 
@@ -1663,26 +1730,26 @@ async def main(page: ft.Page):
                         pass
             show_phone("از حساب خارج شدید.")
 
-        out_btn, _ = make_btn("خروج", logout, color="#EF4444", kind="text")
-        b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor="#2563EB", height=38, expand=True)
-        b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor="#1E293B", height=38, expand=True)
-        b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor="#1E293B", height=38, expand=True)
-        b_clock, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor="#1E293B", height=38, expand=True)
+        out_btn, _ = make_btn("خروج", logout, color=RED_NEON, kind="text")
+        b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor=RED_PRIMARY, height=38, expand=True)
+        b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
+        b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
+        b_clock, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
         nav_buttons = {"chats": b_chats, "multi": b_multi, "turbo": b_turbo, "clock": b_clock}
 
         render_body()
 
         page.add(
             ft.Container(
-                bgcolor="#111827",
+                bgcolor=BG_CARD,
                 padding=14,
-                border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border_radius=ft.BorderRadius.all(14),
+                border=ft.Border.all(1.2, BORDER_ACTIVE),
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
                         ft.Row(spacing=8, controls=[
-                            ft.Text("⚡ V3X Selfbot", size=18, weight=ft.FontWeight.BOLD, color="#38BDF8"),
+                            ft.Text("⚡ V3X Selfbot", size=18, weight=ft.FontWeight.BOLD, color=RED_NEON),
                             conn_badge,
                         ]),
                         out_btn,
@@ -1692,14 +1759,14 @@ async def main(page: ft.Page):
             ft.Row(spacing=5, controls=[b_chats, b_multi, b_turbo, b_clock]),
             body_host,
             ft.Container(
-                bgcolor="#0F172A",
+                bgcolor=BG_CARD,
                 padding=12,
                 border_radius=ft.BorderRadius.all(12),
-                border=ft.Border.all(1, "#1E293B"),
+                border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
                     spacing=6,
                     controls=[
-                        ft.Text("📜 گزارش زنده عملکرد", size=13, color="#94A3B8"),
+                        ft.Text("📜 گزارش زنده عملکرد", size=13, color=RED_LIGHT),
                         logs,
                     ],
                 ),
