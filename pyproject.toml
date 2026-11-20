@@ -1,24 +1,20 @@
 [project]
 name = "v3x-selfbot"
-version = "1.0.0"
+version = "2.1.0"
 description = "V3X Soroush+ Selfbot"
 requires-python = ">=3.10"
 dependencies = [
-    "flet==1.1.2",
-    "httpx",
-    "splusthon",
+  "flet==1.1.2",
+  "httpx>=0.28.1",
+  "splusthon",
+  "pyaes",
 ]
 
 [tool.flet]
-org = "com.v3x"
+org = "dev.pages.v3xsys"
 product = "V3X Selfbot"
-company = "V3X"
-copyright = "Copyright (C) 2026 V3X"
+company = "V3XSYS"
+copyright = "Copyright (C) 2026 V3XSYS"
 
-[tool.flet.android]
-permissions = [
-    "INTERNET",
-    "ACCESS_NETWORK_STATE"
-]
 [tool.flet.android]
 adaptive_icon_background = "#030306"
