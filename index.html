@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -22,76 +22,91 @@
           },
           colors: {
             void: '#030306',
-            nebula: '#0a0a12',
-            crimson: {
-              400: '#f87171',
-              500: '#ef4444',
-              600: '#dc2626',
-              700: '#b91c1c',
-              800: '#991b1b',
-              900: '#7f1d1d',
-            }
+            nebula: '#0a0812',
+            crimsonNeon: '#ef4444',
+            crimsonDeep: '#dc2626',
           },
-          boxShadow: {
-            'neon-red': '0 0 28px rgba(239, 68, 68, 0.35), 0 0 60px rgba(220, 38, 38, 0.16)',
-            'neon-red-lg': '0 0 42px rgba(239, 68, 68, 0.48), 0 0 90px rgba(185, 28, 28, 0.25)',
-          }
-        }
-      }
+        },
+      },
     };
   </script>
 
   <style>
     * {
+      font-family: 'Vazirmatn', sans-serif;
       box-sizing: border-box;
     }
 
     body {
       background-color: #030306;
       color: #f8fafc;
-      font-family: 'Vazirmatn', sans-serif;
       overflow-x: hidden;
+      min-height: 100vh;
     }
 
-    /* پس‌زمینه سحابی کهکشانی قرمز و مشکی */
-    .galaxy-nebula {
-      background:
-        radial-gradient(circle at 18% 15%, rgba(220, 38, 38, 0.16) 0%, transparent 42%),
-        radial-gradient(circle at 82% 28%, rgba(153, 27, 27, 0.18) 0%, transparent 46%),
-        radial-gradient(circle at 50% 85%, rgba(239, 68, 68, 0.12) 0%, transparent 50%),
-        linear-gradient(180deg, #030306 0%, #07060d 50%, #030306 100%);
+    /* بوم ستاره‌های کهکشانی پس‌زمینه */
+    #galaxy-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
     }
 
-    /* کارت‌های شیشه‌ای کهکشانی */
+    /* هاله‌های سحابی قرمز تیره */
+    .nebula-glow-top {
+      position: fixed;
+      top: -180px;
+      right: -120px;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(220, 38, 38, 0.22) 0%, rgba(239, 68, 68, 0.06) 45%, transparent 72%);
+      filter: blur(45px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .nebula-glow-bottom {
+      position: fixed;
+      bottom: -200px;
+      left: -140px;
+      width: 560px;
+      height: 560px;
+      background: radial-gradient(circle, rgba(185, 28, 28, 0.18) 0%, rgba(127, 29, 29, 0.05) 50%, transparent 75%);
+      filter: blur(55px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* کارت‌های شیشه‌ای کهکشانی با حاشیه نئونی قرمز */
     .glass-card {
-      background: rgba(12, 11, 20, 0.76);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+      background: linear-gradient(145deg, rgba(14, 12, 22, 0.84) 0%, rgba(7, 6, 12, 0.92) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(239, 68, 68, 0.24);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.85), 0 0 24px -6px rgba(239, 68, 68, 0.14);
+      transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
     }
 
-    .glass-card-hover {
-      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+    .glass-card:hover {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 18px 46px -10px rgba(0, 0, 0, 0.9), 0 0 32px -4px rgba(239, 68, 68, 0.25);
     }
 
-    .glass-card-hover:hover {
-      transform: translateY(-4px);
-      border-color: rgba(239, 68, 68, 0.58);
-      box-shadow: 0 16px 45px rgba(239, 68, 68, 0.18);
-    }
-
-    /* دکمه گرادیانت قرمز پررنگ */
+    /* دکمه گرادیانت قرمز پررنگ نئونی */
     .btn-crimson {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 52%, #991b1b 100%);
-      box-shadow: 0 6px 24px rgba(239, 68, 68, 0.38);
-      transition: all 0.24s ease;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
+      color: #ffffff;
+      border: 1px solid rgba(252, 165, 165, 0.35);
+      box-shadow: 0 8px 25px -5px rgba(220, 38, 38, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.25s ease;
     }
 
     .btn-crimson:hover:not(:disabled) {
-      filter: brightness(1.1);
       transform: translateY(-2px);
-      box-shadow: 0 10px 32px rgba(239, 68, 68, 0.55);
+      box-shadow: 0 12px 32px -4px rgba(239, 68, 68, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      filter: brightness(1.07);
     }
 
     .btn-crimson:active:not(:disabled) {
@@ -103,49 +118,63 @@
       cursor: not-allowed;
     }
 
-    /* باکس‌های ورود کد ۶ رقمی */
+    /* دکمه شیشه‌ای ثانویه */
+    .btn-ghost-red {
+      background: rgba(239, 68, 68, 0.08);
+      color: #fecaca;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      transition: all 0.25s ease;
+    }
+
+    .btn-ghost-red:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.65);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* باکس‌های ورود کد تایید ۶ رقمی */
     .otp-box {
-      width: 2.85rem;
-      height: 3.35rem;
+      width: 2.75rem;
+      height: 3.25rem;
       text-align: center;
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       font-weight: 800;
       border-radius: 0.85rem;
-      background: rgba(8, 8, 15, 0.92);
+      background: rgba(10, 9, 18, 0.95);
       border: 1.5px solid rgba(239, 68, 68, 0.35);
       color: #ffffff;
+      outline: none;
       transition: all 0.2s ease;
     }
 
     .otp-box:focus {
-      outline: none;
       border-color: #ef4444;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25), 0 0 18px rgba(239, 68, 68, 0.35);
-      transform: scale(1.04);
+      box-shadow: 0 0 18px rgba(239, 68, 68, 0.45);
+      transform: scale(1.05);
     }
 
     @media (min-width: 640px) {
       .otp-box {
-        width: 3.25rem;
-        height: 3.75rem;
-        font-size: 1.65rem;
+        width: 3.15rem;
+        height: 3.5rem;
+        font-size: 1.5rem;
       }
     }
 
-    /* انیمیشن پالس حلقه قفل */
-    @keyframes pulseRing {
-      0% { transform: scale(0.95); opacity: 0.75; }
-      70% { transform: scale(1.25); opacity: 0; }
-      100% { transform: scale(1.25); opacity: 0; }
+    /* افکت متن درخشان قرمز */
+    .neon-text {
+      text-shadow: 0 0 24px rgba(239, 68, 68, 0.55);
     }
 
-    .pulse-ring::before {
-      content: '';
-      position: absolute;
-      inset: -8px;
-      border-radius: 9999px;
-      border: 2px solid rgba(239, 68, 68, 0.65);
-      animation: pulseRing 2.2s infinite;
+    /* انیمیشن پالس نرم */
+    @keyframes pulseBorder {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+      50% { border-color: rgba(239, 68, 68, 0.8); }
+    }
+
+    .animate-neon-border {
+      animation: pulseBorder 3s infinite ease-in-out;
     }
 
     /* اسکرول‌بار سفارشی */
@@ -154,256 +183,282 @@
       height: 7px;
     }
     ::-webkit-scrollbar-track {
-      background: #05050a;
+      background: #030306;
     }
     ::-webkit-scrollbar-thumb {
       background: #7f1d1d;
-      border-radius: 9999px;
+      border-radius: 999px;
     }
     ::-webkit-scrollbar-thumb:hover {
       background: #ef4444;
     }
   </style>
 </head>
-<body class="galaxy-nebula min-h-screen flex flex-col justify-between selection:bg-red-600 selection:text-white">
+<body class="selection:bg-red-600 selection:text-white">
 
-  <!-- بوم ستاره‌های متحرک کهکشانی -->
-  <canvas id="galaxyCanvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
+  <!-- پس‌زمینه کهکشانی -->
+  <canvas id="galaxy-canvas"></canvas>
+  <div class="nebula-glow-top"></div>
+  <div class="nebula-glow-bottom"></div>
 
-  <!-- نوتیفیکیشن شناور (Toast) -->
-  <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2.5 w-[92%] max-w-md pointer-events-none"></div>
+  <!-- کانتینر اعلان‌های هوشمند (Toast) -->
+  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2.5 w-[92%] max-w-md pointer-events-none"></div>
 
-  <!-- نوار ناوبری بالای صفحه -->
-  <header class="sticky top-0 z-40 border-b border-red-500/20 bg-[#040409]/85 backdrop-blur-xl">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <!-- لوگو و عنوان -->
+  <!-- نوار ناوبری (Navbar) -->
+  <header class="relative z-20 border-b border-red-500/20 bg-[#030306]/80 backdrop-blur-xl sticky top-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- لوگو و نام برند -->
       <a href="#" class="flex items-center gap-3 group">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-500 via-red-600 to-red-950 p-[1px] shadow-neon-red group-hover:scale-105 transition-transform">
-          <div class="w-full h-full rounded-2xl bg-[#07070e] flex items-center justify-center">
-            <svg class="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </div>
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-red-950 border border-red-400/40 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.45)] group-hover:scale-105 transition">
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-black text-lg sm:text-xl tracking-wide text-white">V3X <span class="text-red-500">SELFBOT</span></span>
-            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/35">v2.0.0</span>
+            <span class="text-lg sm:text-xl font-black tracking-wider text-white">V3X SELFBOT</span>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-600/20 text-red-400 border border-red-500/40">v2.0.0</span>
           </div>
-          <p class="text-[11px] text-slate-400">سلف‌بات اختصاصی سروش‌پلاس</p>
+          <p class="text-[11px] text-slate-400 hidden sm:block">پورتال رسمی سلف‌بات اختصاصی سروش‌پلاس</p>
         </div>
       </a>
 
-      <!-- دکمه‌های عملیاتی هدر -->
+      <!-- دکمه‌های هدر -->
       <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <!-- کپی آیدی پشتیبانی -->
-        <button onclick="copyText('@V3XSYS', 'آیدی پشتیبانی @V3XSYS کپی شد')" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-xs sm:text-sm text-red-300 transition-all cursor-pointer" title="کپی آیدی سروش‌پلاس">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-          <span dir="ltr" class="font-bold">@V3XSYS</span>
-          <svg class="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <!-- دکمه پشتیبانی و کپی آیدی -->
+        <button onclick="copySupportId()" class="btn-ghost-red px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5" title="کپی آیدی سازنده و پشتیبانی">
+          <svg class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
+          <span dir="ltr">@V3XSYS</span>
         </button>
 
-        <!-- دکمه تیکت پشتیبانی -->
-        <button onclick="openTicketModal()" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/40 text-xs sm:text-sm font-semibold text-slate-200 transition-all cursor-pointer flex items-center gap-1.5">
-          <span>📩</span>
-          <span>تیکت‌ها</span>
-          <span id="userTicketBadge" class="hidden px-1.5 py-0.2 text-[10px] rounded-full bg-red-600 text-white font-bold">0</span>
-        </button>
+        <!-- وضعیت حساب کاربری در هدر -->
+        <div id="nav-auth-area" class="flex items-center gap-2">
+          <!-- با جاوااسکریپت رندر می‌شود -->
+        </div>
 
-        <!-- دکمه پنل مدیریت -->
-        <button onclick="openAdminGate()" class="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/40 text-xs sm:text-sm font-semibold text-slate-200 transition-all cursor-pointer flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        <!-- دکمه ورود به پنل مدیریت -->
+        <button onclick="openAdminModal()" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-300 border border-white/10 hover:border-red-500/40 transition flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
           <span>مدیریت</span>
         </button>
-
-        <!-- وضعیت حساب کاربری / دکمه ورود -->
-        <div id="navAuthArea">
-          <button onclick="openAuthModal()" class="btn-crimson px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-white cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
-            <span>ورود / ثبت‌نام</span>
-          </button>
-        </div>
       </div>
     </div>
   </header>
 
   <!-- محتوای اصلی -->
-  <main class="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-14">
+  <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20 space-y-16">
 
     <!-- بخش معرفی (Hero) -->
-    <section class="text-center max-w-3xl mx-auto space-y-5">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/35 text-red-400 text-xs sm:text-sm font-semibold shadow-neon-red">
-        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-        <span>نسخه جدید 2.0.0 منتشر شد • احراز هویت امن ایمیلی V3XSELF</span>
+    <section class="text-center max-w-4xl mx-auto space-y-6 pt-4">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/50 border border-red-500/40 text-red-300 text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+        <span>نسل جدید اتوماسیون هوشمند پیام‌رسان سروش‌پلاس — نسخه ۲.۰.۰</span>
       </div>
 
-      <h1 class="text-3xl sm:text-5xl font-black leading-tight text-white">
+      <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white">
         قدرت مطلق در سروش‌پلاس با
-        <span class="block mt-1 bg-gradient-to-l from-red-400 via-red-500 to-rose-600 bg-clip-text text-transparent">
-          سلف‌بات کهکشانی V3X
+        <span class="block mt-2 bg-gradient-to-l from-red-400 via-red-500 to-rose-600 bg-clip-text text-transparent neon-text">
+          V3X SELFBOT
         </span>
       </h1>
 
-      <p class="text-slate-300/90 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-        مدیریت هوشمند پروفایل با ساعت زنده افق تهران، اجرای توربو و چندتایی دستورات بدون تاخیر، و حافظه ذخیره‌سازی پیام‌های پیش‌فرض همراه با سیستم <strong class="text-red-400 font-bold">اشتراک اختصاصی</strong>.
+      <p class="text-slate-300 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
+        هوشمندترین و سریع‌ترین سلف‌بات اختصاصی پیام‌رسان سروش‌پلاس؛ مجهز به ساعت زنده افق تهران روی پروفایل، سرعت توربو چندتایی، حافظه پیام‌های پیش‌فرض و اتصال مستقیم به هسته مرکزی V3X.
       </p>
 
-      <!-- نوار اطلاعات سازنده -->
-      <div class="pt-1 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
-        <div class="px-4 py-2 rounded-2xl glass-card flex items-center gap-2 text-slate-300">
-          <span class="text-red-400 font-bold">توسعه‌دهنده و پشتیبانی:</span>
-          <button onclick="copyText('@V3XSYS', 'آیدی @V3XSYS در حافظه کپی شد')" dir="ltr" class="font-extrabold text-white hover:text-red-400 transition-colors cursor-pointer underline decoration-red-500/60 underline-offset-4">
-            @V3XSYS
+      <!-- دکمه‌های اصلی Hero -->
+      <div class="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+        <a href="#license-portal" class="btn-crimson px-6 py-3.5 rounded-2xl text-sm sm:text-base font-bold flex items-center gap-2">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+          <span>پنل لایسنس و دانلود برنامه</span>
+        </a>
+
+        <button onclick="openTicketModal()" class="btn-ghost-red px-6 py-3.5 rounded-2xl text-sm sm:text-base font-bold flex items-center gap-2">
+          <span>📩 ثبت تیکت پشتیبانی</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- بخش قفل دانلود و داشبورد اشتراک VIP -->
+    <section id="license-portal" class="max-w-4xl mx-auto">
+      <div id="portal-container" class="glass-card rounded-3xl p-6 sm:p-10 animate-neon-border">
+        <!-- محتوای این بخش بر اساس وضعیت ورود و لایسنس به‌صورت پویا رندر می‌شود -->
+      </div>
+    </section>
+
+    <!-- بخش امکانات کلیدی سلف‌بات -->
+    <section class="space-y-8">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl sm:text-3xl font-black text-white">امکانات انحصاری نسخه <span class="text-red-500">2.0.0</span></h2>
+        <p class="text-slate-400 text-xs sm:text-sm">طراحی‌شده برای حداکثر سرعت، پایداری ۲۴ ساعته و کنترل کامل حساب سروش‌پلاس</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- کارت ۱ -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">ساعت زنده افق تهران روی پروفایل</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            نمایش خودکار و دقیق ساعت رسمی ایران (افق تهران) به صورت لحظه‌ای روی نام یا بیوگرافی پروفایل سروش‌پلاس با فونت‌های متنوع.
+          </p>
+        </div>
+
+        <!-- کارت ۲ -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">سرعت توربو و ارسال همزمان چندتایی</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            موتور پردازش غیرهمزمان با حداکثر سرعت برای اجرای دستورات گروهی، پاسخ‌گویی آنی و ارسال رگباری بدون افت سرعت.
+          </p>
+        </div>
+
+        <!-- کارت ۳ -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">حافظه ذخیره پیام‌های پیش‌فرض</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            ذخیره‌سازی نامحدود متن‌ها، پاسخ‌های آماده و الگوهای پرکاربرد در حافظه داخلی ربات برای فراخوانی فوری با یک دستور کوتاه.
+          </p>
+        </div>
+
+        <!-- کارت ۴ -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">ضد اسپم و مدیریت هوشمند گروه</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            فیلتر خودکار لینک‌ها، پیام‌های تکراری و مزاحمت‌ها همراه با ابزارهای کامل پاک‌سازی و کنترل دسترسی اعضای گروه.
+          </p>
+        </div>
+
+        <!-- کارت ۵ (اشتراک اختصاصی) -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">اشتراک اختصاصی</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            فعال‌سازی آنی از طریق کلید لایسنس یکتا با کنترل دقیق زمان اعتبار و همگام‌سازی خودکار بین پورتال وب و اپلیکیشن.
+          </p>
+        </div>
+
+        <!-- کارت ۶ -->
+        <div class="glass-card rounded-2xl p-6 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">اتصال پایدار به هسته مرکزی V3X</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">
+            ارتباط رمزنگاری‌شده با هسته مرکزی V3X جهت دریافت سریع‌ترین به‌روزرسانی‌ها و استعلام لحظه‌ای وضعیت اشتراک.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش تیکت‌های کاربر (در صورت ورود کاربر یا ثبت تیکت نمایش داده می‌شود) -->
+    <section id="user-tickets-section" class="max-w-4xl mx-auto hidden">
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-3 border-b border-red-500/20 pb-4">
+          <div>
+            <h3 class="text-xl font-bold text-white">📩 تیکت‌های پشتیبانی شما</h3>
+            <p class="text-xs text-slate-400 mt-1">وضعیت درخواست‌های لایسنس و پاسخ‌های مدیریت در این بخش نمایش داده می‌شود</p>
+          </div>
+          <button onclick="openTicketModal()" class="btn-crimson px-4 py-2 rounded-xl text-xs sm:text-sm font-bold">
+            + ثبت تیکت جدید
           </button>
         </div>
-        <div class="px-4 py-2 rounded-2xl glass-card flex items-center gap-2 text-slate-300">
-          <span class="text-red-400 font-bold">سرویس تایید ایمیل:</span>
-          <span dir="ltr" class="font-mono font-bold text-slate-100">V3XSELF</span>
-        </div>
+        <div id="user-tickets-list" class="space-y-3"></div>
       </div>
     </section>
 
-    <!-- بخش اصلی دانلود / داشبورد اشتراک اختصاصی VIP -->
-    <section id="portalVaultSection" class="max-w-3xl mx-auto">
-      <!-- محتوای این بخش توسط جاوااسکریپت بر اساس وضعیت لایسنس رندر می‌شود -->
-    </section>
-
-    <!-- بخش ویژگی‌های کلیدی (۴ کارت) -->
-    <section class="space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-            <span class="w-2.5 h-7 rounded-full bg-gradient-to-b from-red-500 to-red-800"></span>
-            <span>امکانات نسخه 2.0.0</span>
-          </h2>
-          <p class="text-xs sm:text-sm text-slate-400 mt-1">بهینه‌سازی‌شده برای بالاترین سرعت و پایداری در سروش‌پلاس</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <!-- کارت ۱: ساعت زنده افق تهران -->
-        <div class="glass-card glass-card-hover rounded-3xl p-6 relative overflow-hidden">
-          <div class="absolute -top-10 -left-10 w-28 h-28 bg-red-600/10 rounded-full blur-2xl"></div>
-          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-extrabold text-white mb-2">ساعت زنده افق تهران</h3>
-          <p class="text-sm text-slate-300/85 leading-relaxed">
-            نمایش خودکار و لحظه‌ای ساعت در پروفایل سروش‌پلاس با هماهنگی دقیق با تایم رسمی تهران و استایل‌های متنوع.
-          </p>
-        </div>
-
-        <!-- کارت ۲: سرعت توربو و چندتایی حداکثری -->
-        <div class="glass-card glass-card-hover rounded-3xl p-6 relative overflow-hidden">
-          <div class="absolute -top-10 -left-10 w-28 h-28 bg-red-600/10 rounded-full blur-2xl"></div>
-          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-extrabold text-white mb-2">سرعت توربو و چندتایی حداکثری</h3>
-          <p class="text-sm text-slate-300/85 leading-relaxed">
-            اجرای آنی دستورات و ارسال سریع بدون تاخیر با هسته پردازش غیرهمزمان برای پاسخ‌گویی در کسری از ثانیه.
-          </p>
-        </div>
-
-        <!-- کارت ۳: حافظه ذخیره پیام‌های پیش‌فرض -->
-        <div class="glass-card glass-card-hover rounded-3xl p-6 relative overflow-hidden">
-          <div class="absolute -top-10 -left-10 w-28 h-28 bg-red-600/10 rounded-full blur-2xl"></div>
-          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-extrabold text-white mb-2">حافظه ذخیره پیام‌های پیش‌فرض</h3>
-          <p class="text-sm text-slate-300/85 leading-relaxed">
-            مدیریت هوشمند پاسخ‌ها و دستورهای ذخیره شده با قابلیت فراخوانی سریع و نگهداری دائمی اطلاعات.
-          </p>
-        </div>
-
-        <!-- کارت ۴: اشتراک اختصاصی -->
-        <div class="glass-card glass-card-hover rounded-3xl p-6 relative overflow-hidden">
-          <div class="absolute -top-10 -left-10 w-28 h-28 bg-red-600/10 rounded-full blur-2xl"></div>
-          <div class="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <h3 class="text-lg font-extrabold text-white mb-2">اشتراک اختصاصی</h3>
-          <p class="text-sm text-slate-300/85 leading-relaxed">
-            فعال‌سازی آنی لایسنس روی حساب کاربری و نمایش لحظه‌ای اعتبار با شمارش معکوس دقیق و دسترسی مستقیم به نسخه اصلی.
-          </p>
-        </div>
-      </div>
-    </section>
   </main>
 
   <!-- فوتر -->
-  <footer class="relative z-10 border-t border-red-500/20 bg-[#030307]/90 py-6 mt-10">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-slate-400">
+  <footer class="relative z-10 border-t border-red-500/20 bg-[#030306]/90 py-8 text-center text-xs sm:text-sm text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-2">
-        <span class="font-bold text-white">V3X Selfbot</span>
-        <span class="text-red-500 font-bold">v2.0.0</span>
-        <span>— پورتال رسمی کاربران و مدیریت اشتراک</span>
+        <span class="font-bold text-white">V3X SELFBOT v2.0.0</span>
+        <span class="text-red-500">|</span>
+        <span>پورتال رسمی سلف‌بات سروش‌پلاس</span>
       </div>
       <div class="flex items-center gap-3">
-        <span>پشتیبانی در سروش‌پلاس:</span>
-        <button onclick="copyText('@V3XSYS', 'آیدی پشتیبانی @V3XSYS کپی شد')" dir="ltr" class="px-3 py-1 rounded-lg bg-red-500/15 border border-red-500/35 text-red-400 font-bold hover:bg-red-500/25 transition-colors cursor-pointer">
+        <span>پشتیبانی و دریافت لایسنس:</span>
+        <button onclick="copySupportId()" dir="ltr" class="px-3 py-1 rounded-lg bg-red-500/15 border border-red-500/40 text-red-400 font-bold hover:bg-red-500/25 transition">
           @V3XSYS
         </button>
       </div>
     </div>
   </footer>
 
-  <!-- ===================================================================== -->
-  <!-- مودال ۱: ورود و ثبت‌نام با کد تایید ۶ رقمی ایمیل (فرستنده: V3XSELF)    -->
-  <!-- ===================================================================== -->
-  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl w-full max-w-md p-6 sm:p-7 relative border border-red-500/40 shadow-neon-red">
-      <button onclick="closeModal('authModal')" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+  <!-- ========================================================= -->
+  <!-- مودال ۱: ورود و ثبت‌نام با کد تایید ۶ رقمی ایمیل (V3XSELF) -->
+  <!-- ========================================================= -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="glass-card w-full max-w-md rounded-3xl p-6 sm:p-8 relative space-y-6">
+      <button onclick="closeModal('auth-modal')" class="absolute top-5 left-5 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition">
         ✕
       </button>
 
-      <div class="text-center mb-6">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-red-500/15 border border-red-500/40 flex items-center justify-center text-red-400 mb-3 shadow-neon-red">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-red-500/15 border border-red-500/40 flex items-center justify-center text-red-400">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <h3 class="text-xl font-black text-white">ورود / ثبت‌نام با ایمیل</h3>
-        <p class="text-xs text-slate-400 mt-1">ارسال کد تایید ۶ رقمی از طرف <span class="text-red-400 font-bold" dir="ltr">V3XSELF</span></p>
+        <h3 class="text-xl font-black text-white">ورود / ثبت‌نام در پورتال V3X</h3>
+        <p class="text-xs text-slate-400">احراز هویت سریع و امن از طریق کد تایید ۶ رقمی ایمیل</p>
       </div>
 
       <!-- مرحله اول: وارد کردن ایمیل -->
-      <div id="authStepEmail" class="space-y-4">
+      <div id="auth-step-email" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-2">آدرس ایمیل خود را وارد کنید:</label>
-          <input id="authEmailInput" type="email" dir="ltr" placeholder="example@gmail.com"
-            class="w-full px-4 py-3.5 rounded-2xl bg-[#07070e] border border-red-500/35 focus:border-red-500 focus:outline-none text-white text-sm placeholder-slate-500 transition-all" />
+          <label class="block text-xs font-semibold text-slate-300 mb-2">آدرس ایمیل (Gmail / Email)</label>
+          <input id="auth-email-input" type="email" dir="ltr" placeholder="example@gmail.com"
+            class="w-full px-4 py-3.5 rounded-2xl bg-[#090812] border border-red-500/35 focus:border-red-500 text-white placeholder-slate-500 outline-none text-sm transition" />
         </div>
 
-        <button id="sendOtpBtn" onclick="handleSendOtp()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm text-white cursor-pointer flex items-center justify-center gap-2">
-          <span>ارسال کد تایید به ایمیل</span>
+        <button id="send-otp-btn" onclick="handleSendOtp()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2">
+          <span>ارسال کد تایید ۶ رقمی</span>
         </button>
       </div>
 
-      <!-- مرحله دوم: وارد کردن کد ۶ رقمی ارسال‌شده به ایمیل -->
-      <div id="authStepOtp" class="hidden space-y-5">
-        <div class="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-center">
-          <p class="text-xs text-slate-300">کد تایید ۶ رقمی از طرف <strong class="text-red-400">V3XSELF</strong> به ایمیل زیر ارسال شد:</p>
-          <p id="otpTargetEmail" dir="ltr" class="text-sm font-bold text-white mt-1"></p>
+      <!-- مرحله دوم: وارد کردن کد ۶ رقمی (بدون نمایش کد روی صفحه) -->
+      <div id="auth-step-otp" class="space-y-5 hidden">
+        <div class="p-3.5 rounded-2xl bg-red-950/40 border border-red-500/35 text-center space-y-1">
+          <p class="text-xs sm:text-sm font-semibold text-red-200">
+            کد تایید ۶ رقمی از طرف <span class="text-red-400 font-black">V3XSELF</span> به ایمیل شما ارسال شد
+          </p>
+          <p id="otp-sent-email-label" dir="ltr" class="text-xs text-slate-400 font-mono"></p>
+          <p class="text-[11px] text-slate-400">در صورت ندیدن ایمیل، پوشه Spam یا Promotions را نیز بررسی کنید.</p>
         </div>
 
-        <!-- ۶ باکس ورود کد -->
-        <div dir="ltr" class="flex items-center justify-center gap-2 sm:gap-2.5" id="otpInputsWrapper">
+        <!-- ۶ باکس مجزای ورود کد -->
+        <div dir="ltr" class="flex items-center justify-center gap-2 sm:gap-2.5" id="otp-boxes-container">
           <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="0" />
           <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="1" />
           <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="2" />
@@ -412,570 +467,509 @@
           <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-idx="5" />
         </div>
 
-        <button id="verifyOtpBtn" onclick="handleVerifyOtp()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm text-white cursor-pointer">
+        <button id="verify-otp-btn" onclick="handleVerifyOtp()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm">
           تایید کد و ورود به حساب
         </button>
 
-        <div class="flex items-center justify-between text-xs pt-1">
-          <button onclick="resetAuthToEmail()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
-            ← تغییر آدرس ایمیل
-          </button>
-          <button id="resendOtpBtn" onclick="handleSendOtp(true)" disabled class="text-red-400 disabled:text-slate-500 font-semibold cursor-pointer disabled:cursor-not-allowed">
-            ارسال مجدد (<span id="resendTimer">60</span> ثانیه)
-          </button>
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <button onclick="resetAuthToEmail()" class="hover:text-red-400 transition">تغییر ایمیل</button>
+          <div id="resend-timer-area">
+            <span>ارسال مجدد تا <strong id="resend-countdown" class="text-red-400">60</strong> ثانیه دیگر</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- مودال ۲: فعال‌سازی کد لایسنس اشتراک اختصاصی                          -->
-  <!-- ===================================================================== -->
-  <div id="licenseModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl w-full max-w-md p-6 sm:p-7 relative border border-red-500/40 shadow-neon-red">
-      <button onclick="closeModal('licenseModal')" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+  <!-- ========================================================= -->
+  <!-- مودال ۲: ثبت تیکت پشتیبانی و درخواست لایسنس -->
+  <!-- ========================================================= -->
+  <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="glass-card w-full max-w-lg rounded-3xl p-6 sm:p-8 relative space-y-5">
+      <button onclick="closeModal('ticket-modal')" class="absolute top-5 left-5 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition">
         ✕
       </button>
 
-      <div class="text-center mb-5">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-red-500/15 border border-red-500/40 flex items-center justify-center text-2xl mb-3 shadow-neon-red">
-          🔑
-        </div>
-        <h3 class="text-xl font-black text-white">فعال‌سازی اشتراک اختصاصی</h3>
-        <p class="text-xs text-slate-400 mt-1">کلید لایسنس دریافتی از پشتیبانی <span class="text-red-400 font-bold" dir="ltr">@V3XSYS</span> را وارد کنید</p>
+      <div class="space-y-1">
+        <h3 class="text-xl font-black text-white">📩 ثبت تیکت پشتیبانی / درخواست لایسنس</h3>
+        <p class="text-xs text-slate-400">تیکت شما مستقیماً برای مدیریت (<span dir="ltr" class="text-red-400">@V3XSYS</span>) ارسال می‌شود</p>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-3.5">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-2">کد لایسنس اشتراک:</label>
-          <input id="licenseKeyInput" type="text" dir="ltr" placeholder="V3X-30D-XXXX-XXXX"
-            class="w-full px-4 py-3.5 rounded-2xl bg-[#07070e] border border-red-500/35 focus:border-red-500 focus:outline-none text-white font-mono text-center text-base tracking-wider uppercase placeholder-slate-600 transition-all" />
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">موضوع تیکت</label>
+          <select id="ticket-subject" class="w-full px-4 py-3 rounded-2xl bg-[#090812] border border-red-500/35 focus:border-red-500 text-white text-sm outline-none">
+            <option value="درخواست خرید / دریافت کلید لایسنس">درخواست خرید / دریافت کلید لایسنس</option>
+            <option value="تمدید اشتراک اختصاصی V3X">تمدید اشتراک اختصاصی V3X</option>
+            <option value="پشتیبانی فنی و راهنمای نصب">پشتیبانی فنی و راهنمای نصب</option>
+          </select>
         </div>
 
-        <button onclick="handleActivateLicense()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm text-white cursor-pointer">
-          فعال‌سازی آنی لایسنس و باز کردن دانلود
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">آیدی سروش‌پلاس شما</label>
+          <input id="ticket-soroush-id" type="text" dir="ltr" placeholder="@YourID"
+            class="w-full px-4 py-3 rounded-2xl bg-[#090812] border border-red-500/35 focus:border-red-500 text-white placeholder-slate-500 text-sm outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">متن پیام</label>
+          <textarea id="ticket-message" rows="3" placeholder="توضیحات یا مدت اشتراک درخواستی خود را بنویسید..."
+            class="w-full px-4 py-3 rounded-2xl bg-[#090812] border border-red-500/35 focus:border-red-500 text-white placeholder-slate-500 text-sm outline-none resize-none"></textarea>
+        </div>
+
+        <button onclick="submitUserTicket()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm">
+          ارسال تیکت به مدیریت
         </button>
-
-        <div class="text-center pt-1">
-          <button onclick="closeModal('licenseModal'); openTicketModal();" class="text-xs text-red-400 hover:text-red-300 underline underline-offset-4 cursor-pointer">
-            لایسنس ندارید؟ ثبت تیکت برای دریافت لایسنس
-          </button>
-        </div>
       </div>
     </div>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- مودال ۳: ثبت تیکت پشتیبانی و مشاهده پاسخ‌های مدیریت                   -->
-  <!-- ===================================================================== -->
-  <div id="ticketModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl w-full max-w-xl p-6 sm:p-7 relative border border-red-500/40 shadow-neon-red max-h-[90vh] flex flex-col">
-      <button onclick="closeModal('ticketModal')" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
+  <!-- ========================================================= -->
+  <!-- مودال ۳: پنل مدیریت سه‌بخشی (V3XSYS) -->
+  <!-- ========================================================= -->
+  <div id="admin-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 backdrop-blur-md p-4 overflow-y-auto">
+    <div class="glass-card w-full max-w-3xl rounded-3xl p-6 sm:p-8 relative my-8 space-y-6">
+      <button onclick="closeModal('admin-modal')" class="absolute top-5 left-5 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition">
         ✕
       </button>
 
-      <div class="mb-4">
-        <h3 class="text-xl font-black text-white flex items-center gap-2">
-          <span>📩</span>
-          <span>سیستم تیکت و دریافت لایسنس</span>
-        </h3>
-        <p class="text-xs text-slate-400 mt-1">
-          برای تهیه لایسنس یا ارتباط سریع می‌توانید علاوه بر ثبت تیکت، به آیدی <button onclick="copyText('@V3XSYS', 'آیدی @V3XSYS کپی شد')" dir="ltr" class="text-red-400 font-bold hover:underline cursor-pointer">@V3XSYS</button> در سروش‌پلاس پیام دهید.
-        </p>
-      </div>
-
-      <div class="overflow-y-auto space-y-5 pr-1">
-        <!-- فرم ثبت تیکت جدید -->
-        <div class="p-4 rounded-2xl bg-[#07070e]/90 border border-red-500/25 space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-slate-300 mb-1">موضوع تیکت:</label>
-              <select id="ticketSubject" class="w-full px-3.5 py-2.5 rounded-xl bg-[#0c0c16] border border-red-500/30 text-xs sm:text-sm text-white focus:outline-none focus:border-red-500">
-                <option value="درخواست دریافت لایسنس اختصاصی">درخواست دریافت لایسنس اختصاصی</option>
-                <option value="تمدید اشتراک فعلی">تمدید اشتراک فعلی</option>
-                <option value="پشتیبانی فنی سلف‌بات">پشتیبانی فنی سلف‌بات</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-300 mb-1">ایمیل یا آیدی سروش‌پلاس شما:</label>
-              <input id="ticketContactInput" type="text" dir="ltr" placeholder="@YourID یا email@gmail.com"
-                class="w-full px-3.5 py-2.5 rounded-xl bg-[#0c0c16] border border-red-500/30 text-xs sm:text-sm text-white focus:outline-none focus:border-red-500" />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs text-slate-300 mb-1">متن درخواست (مدت لایسنس درخواستی و توضیحات):</label>
-            <textarea id="ticketMessageInput" rows="3" placeholder="سلام، درخواست فعال‌سازی لایسنس ۳۰ روزه سلف‌بات V3X را دارم..."
-              class="w-full px-3.5 py-2.5 rounded-xl bg-[#0c0c16] border border-red-500/30 text-xs sm:text-sm text-white focus:outline-none focus:border-red-500"></textarea>
-          </div>
-
-          <button onclick="handleCreateTicket()" class="btn-crimson w-full py-3 rounded-xl font-bold text-xs sm:text-sm text-white cursor-pointer">
-            ارسال تیکت به پشتیبانی
-          </button>
+      <!-- بخش ورود ادمین -->
+      <div id="admin-login-view" class="max-w-md mx-auto py-4 space-y-5 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
         </div>
-
-        <!-- لیست تیکت‌های کاربر -->
-        <div class="space-y-2.5">
-          <h4 class="text-xs font-bold text-slate-300 flex items-center justify-between">
-            <span>تیکت‌های ثبت‌شده شما:</span>
-            <span id="userTicketsCount" class="text-red-400">0 تیکت</span>
-          </h4>
-          <div id="userTicketsList" class="space-y-2.5"></div>
+        <div>
+          <h3 class="text-xl font-black text-white">ورود به پنل مدیریت V3X</h3>
+          <p class="text-xs text-slate-400 mt-1">رمز عبور مدیریت را وارد نمایید</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- مودال ۴: ورود به مدیریت (احراز کد مدیریت)                            -->
-  <!-- ===================================================================== -->
-  <div id="adminGateModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="glass-card rounded-3xl w-full max-w-sm p-6 relative border border-red-500/40 shadow-neon-red">
-      <button onclick="closeModal('adminGateModal')" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
-        ✕
-      </button>
-
-      <div class="text-center mb-5">
-        <div class="w-12 h-12 mx-auto rounded-2xl bg-red-500/15 border border-red-500/40 flex items-center justify-center text-red-400 mb-2">
-          🛡️
-        </div>
-        <h3 class="text-lg font-black text-white">ورود به پنل مدیریت</h3>
-        <p class="text-xs text-slate-400 mt-1">رمز دسترسی مدیریت را وارد کنید</p>
-      </div>
-
-      <div class="space-y-3">
-        <input id="adminCodeInput" type="password" dir="ltr" placeholder="Admin Access Code"
-          class="w-full px-4 py-3 rounded-2xl bg-[#07070e] border border-red-500/35 focus:border-red-500 focus:outline-none text-white text-center font-mono tracking-widest" />
-        <button onclick="verifyAdminAccess()" class="btn-crimson w-full py-3 rounded-2xl font-bold text-sm text-white cursor-pointer">
+        <input id="admin-pass-input" type="password" dir="ltr" placeholder="••••••••"
+          class="w-full px-4 py-3.5 rounded-2xl bg-[#090812] border border-red-500/35 focus:border-red-500 text-white text-center tracking-widest outline-none" />
+        <button onclick="verifyAdminLogin()" class="btn-crimson w-full py-3.5 rounded-2xl font-bold text-sm">
           ورود به داشبورد مدیریت
         </button>
       </div>
-    </div>
-  </div>
 
-  <!-- ===================================================================== -->
-  <!-- مودال ۵: پنل مدیریت سه‌بخشی (@V3XSYS)                                  -->
-  <!-- ===================================================================== -->
-  <div id="adminPanelModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-    <div class="glass-card rounded-3xl w-full max-w-3xl p-6 sm:p-7 relative border border-red-500/45 shadow-neon-red-lg max-h-[92vh] flex flex-col">
-      <button onclick="closeModal('adminPanelModal')" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer">
-        ✕
-      </button>
-
-      <div class="mb-4">
-        <div class="flex items-center gap-2">
-          <span class="px-2.5 py-0.5 rounded-lg bg-red-600 text-white text-[11px] font-black">ADMIN</span>
-          <h3 class="text-xl font-black text-white">پنل مدیریت پورتال V3X</h3>
+      <!-- بخش داشبورد ادمین (۳ تب) -->
+      <div id="admin-dashboard-view" class="hidden space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-3 border-b border-red-500/20 pb-4">
+          <div>
+            <h3 class="text-xl font-black text-white flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <span>پنل مدیریت مرکزی V3X</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">مدیریت کلیدهای لایسنس، پاسخ به تیکت‌ها و لینک دانلود نسخه 2.0.0</p>
+          </div>
+          <button onclick="logoutAdmin()" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-red-500/20 text-xs text-slate-300 border border-white/10 transition">
+            قفل مجدد مدیریت
+          </button>
         </div>
-        <p class="text-xs text-slate-400 mt-1">تولید کلید لایسنس، پاسخ‌گویی به تیکت‌ها و تنظیم لینک دانلود APK</p>
-      </div>
 
-      <!-- تب‌های سه‌گانه مدیریت -->
-      <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[#07070e] border border-red-500/25 mb-5 text-xs sm:text-sm font-bold">
-        <button id="adminTabBtnKeys" onclick="switchAdminTab('keys')" class="py-2.5 px-2 rounded-xl bg-red-600 text-white transition-all cursor-pointer">
-          🔑 ساخت و مدیریت کد لایسنس
-        </button>
-        <button id="adminTabBtnTickets" onclick="switchAdminTab('tickets')" class="py-2.5 px-2 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer">
-          📩 مدیریت تیکت‌ها
-        </button>
-        <button id="adminTabBtnApk" onclick="switchAdminTab('apk')" class="py-2.5 px-2 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer">
-          ⬇️ تنظیم لینک دانلود APK
-        </button>
-      </div>
+        <!-- تب‌های پنل مدیریت -->
+        <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[#080710] border border-red-500/20">
+          <button onclick="switchAdminTab('licenses')" id="tab-btn-licenses" class="admin-tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition bg-red-600 text-white">
+            🔑 ساخت لایسنس
+          </button>
+          <button onclick="switchAdminTab('tickets')" id="tab-btn-tickets" class="admin-tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white">
+            📩 تیکت‌ها (<span id="admin-tickets-count">0</span>)
+          </button>
+          <button onclick="switchAdminTab('download')" id="tab-btn-download" class="admin-tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition text-slate-400 hover:text-white">
+            ⬇️ لینک دانلود APK
+          </button>
+        </div>
 
-      <!-- محتوای اسکرول‌شونده تب‌ها -->
-      <div class="overflow-y-auto flex-1 pr-1 space-y-4">
-
-        <!-- تب ۱: ساخت و مدیریت کد لایسنس -->
-        <div id="adminTabKeys" class="space-y-4">
-          <div class="p-4 rounded-2xl bg-[#07070e] border border-red-500/25 space-y-3">
-            <label class="block text-xs font-bold text-slate-300">انتخاب مدت اعتبار لایسنس (روز):</label>
-            <div class="flex flex-wrap items-center gap-2">
-              <button onclick="setAdminDuration(7)" class="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/35 text-xs font-bold text-red-300 cursor-pointer">۷ روزه</button>
-              <button onclick="setAdminDuration(30)" class="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/35 text-xs font-bold text-red-300 cursor-pointer">۳۰ روزه</button>
-              <button onclick="setAdminDuration(90)" class="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/35 text-xs font-bold text-red-300 cursor-pointer">۹۰ روزه</button>
-              <button onclick="setAdminDuration(365)" class="px-3.5 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/30 border border-red-500/35 text-xs font-bold text-red-300 cursor-pointer">۳۶۵ روزه</button>
-              <div class="flex items-center gap-2 mr-auto">
-                <input id="adminCustomDays" type="number" min="1" max="3650" value="30"
-                  class="w-24 px-3 py-2 rounded-xl bg-[#0c0c16] border border-red-500/35 text-center text-white text-sm font-bold focus:outline-none focus:border-red-500" />
-                <span class="text-xs text-slate-400">روز</span>
+        <!-- تب ۱: ساخت و مدیریت کلید لایسنس -->
+        <div id="admin-tab-licenses" class="space-y-5">
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#090812] border border-red-500/25 space-y-4">
+            <h4 class="text-sm font-bold text-red-300">تولید کلید لایسنس جدید (همگام با هسته مرکزی ربات)</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">مدت اشتراک آماده</label>
+                <select id="admin-duration-preset" onchange="syncDurationPreset()" class="w-full px-3.5 py-2.5 rounded-xl bg-[#05050a] border border-red-500/30 text-white text-xs sm:text-sm outline-none">
+                  <option value="1">۱ روزه (تست)</option>
+                  <option value="7">۷ روزه (هفتگی)</option>
+                  <option value="30" selected>۳۰ روزه (ماهانه)</option>
+                  <option value="90">۹۰ روزه (سه‌ماهه)</option>
+                  <option value="3650">نامحدود (دائمی)</option>
+                  <option value="custom">تعداد روز دلخواه...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">تعداد روز دقیق</label>
+                <input id="admin-custom-days" type="number" min="1" value="30"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-[#05050a] border border-red-500/30 text-white text-xs sm:text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">کلید سفارشی (اختیاری)</label>
+                <input id="admin-custom-key" type="text" dir="ltr" placeholder="خودکار: V3X-XXXX..."
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-[#05050a] border border-red-500/30 text-white text-xs sm:text-sm outline-none" />
               </div>
             </div>
 
-            <button onclick="generateNewLicenseKey()" class="btn-crimson w-full py-3 rounded-xl font-bold text-sm text-white cursor-pointer">
-              + تولید کد لایسنس جدید
+            <button id="admin-create-key-btn" onclick="adminGenerateLicense()" class="btn-crimson w-full py-3 rounded-xl font-bold text-xs sm:text-sm">
+              ⚡ ساخت و ثبت کلید لایسنس
             </button>
           </div>
 
-          <div class="space-y-2">
-            <h4 class="text-xs font-bold text-slate-300">کلیدهای تولیدشده:</h4>
-            <div id="adminKeysList" class="space-y-2"></div>
+          <div class="space-y-2.5">
+            <h4 class="text-xs font-bold text-slate-300">کلیدهای صادرشده اخیر:</h4>
+            <div id="admin-licenses-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
           </div>
         </div>
 
-        <!-- تب ۲: مدیریت تیکت‌ها -->
-        <div id="adminTabTickets" class="hidden space-y-3">
-          <div id="adminTicketsList" class="space-y-3"></div>
+        <!-- تب ۲: پاسخ به تیکت‌ها -->
+        <div id="admin-tab-tickets" class="hidden space-y-3 max-h-96 overflow-y-auto pr-1">
+          <div id="admin-tickets-list" class="space-y-3"></div>
         </div>
 
-        <!-- تب ۳: تنظیم لینک دانلود APK -->
-        <div id="adminTabApk" class="hidden space-y-4">
-          <div class="p-5 rounded-2xl bg-[#07070e] border border-red-500/25 space-y-4">
-            <div>
-              <h4 class="text-sm font-extrabold text-white mb-1">لینک مستقیم فایل نصبی V3X Selfbot v2.0.0 (APK)</h4>
-              <p class="text-xs text-slate-400">این لینک فقط برای کاربرانی که لایسنس فعال دارند نمایش داده می‌شود و با ذخیره در این بخش بلافاصله جایگزین می‌شود.</p>
+        <!-- تب ۳: تنظیم لینک مستقیم دانلود APK -->
+        <div id="admin-tab-download" class="hidden space-y-4">
+          <div class="p-5 rounded-2xl bg-[#090812] border border-red-500/25 space-y-4">
+            <div class="space-y-1">
+              <h4 class="text-sm font-bold text-white">تنظیم لینک مستقیم فایل نصبی (APK)</h4>
+              <p class="text-xs text-slate-400">این لینک فقط برای کاربرانی نمایش داده می‌شود که وارد حساب شده و لایسنس معتبر فعال کرده باشند.</p>
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1.5">آدرس مستقیم دانلود (URL):</label>
-              <input id="adminApkUrlInput" type="url" dir="ltr" placeholder="https://example.com/V3X-Selfbot-v2.0.0.apk"
-                class="w-full px-4 py-3 rounded-xl bg-[#0c0c16] border border-red-500/35 focus:border-red-500 focus:outline-none text-white text-sm font-mono" />
+              <label class="block text-xs text-slate-300 mb-1.5">آدرس مستقیم دانلود (Direct URL)</label>
+              <input id="admin-apk-url-input" type="url" dir="ltr" placeholder="https://example.com/V3X-Selfbot-v2.0.0.apk"
+                class="w-full px-4 py-3 rounded-xl bg-[#05050a] border border-red-500/35 focus:border-red-500 text-white text-xs sm:text-sm outline-none" />
             </div>
 
-            <button onclick="saveAdminApkUrl()" class="btn-crimson w-full py-3 rounded-xl font-bold text-sm text-white cursor-pointer">
-              ذخیره و انتشار لینک دانلود APK
-            </button>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button onclick="saveApkDownloadUrl()" class="btn-crimson px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm">
+                💾 ذخیره لینک دانلود
+              </button>
+              <button onclick="clearApkDownloadUrl()" class="btn-ghost-red px-4 py-2.5 rounded-xl font-semibold text-xs">
+                پاک کردن لینک
+              </button>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- منطق جاوااسکریپت: ستاره‌های کهکشانی، احراز ایمیل V3XSELF، لایسنس و مدیریت -->
-  <!-- ===================================================================== -->
+  <!-- ========================================================= -->
+  <!-- منطق کامل جاوااسکریپت پورتال V3X Selfbot -->
+  <!-- ========================================================= -->
   <script>
-    // آدرس وب‌اپ ارسال و تایید کد ۶ رقمی ایمیل (فرستنده: V3XSELF)
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyC4Wp0B1hQjVY3IG3sn3UMDi3VBfELLcHbfUkfKXhxPQ47wGuC23oVtlIFEPbCnZD_Og/exec';
-    const ADMIN_EMAIL = 'krymyhady314@gmail.com';
-    const ADMIN_SECRET_CODE = 'V3XSYS';
+    /**
+     * تنظیمات هسته ارتباطی پورتال V3X Selfbot v2.0.0
+     */
+    const EMAIL_OTP_ENDPOINT = "https://script.google.com/macros/s/AKfycbyC4Wp0B1hQjVY3IG3sn3UMDi3VBfELLcHbfUkfKXhxPQ47wGuC23oVtlIFEPbCnZD_Og/exec";
+    const BOT_LICENSE_API = "https://selfbot-license.krymyhady314.workers.dev";
+    const SUPPORT_ID = "@V3XSYS";
+    const ADMIN_SECRET = "V3XSYS";
+    const ADMIN_EMAIL = "krymyhady314@gmail.com";
 
     // کلیدهای ذخیره‌سازی محلی
     const STORAGE_KEYS = {
-      CURRENT_USER: 'v3x_portal_current_user_v2',
-      USERS_DB: 'v3x_portal_users_db_v2',
-      ADMIN_KEYS: 'v3x_portal_admin_keys_v2',
-      TICKETS: 'v3x_portal_tickets_v2',
-      APK_URL: 'v3x_portal_apk_url_v2',
-      REDEEMED: 'v3x_portal_redeemed_v2'
+      USER: "v3x_user_session_v2",
+      LICENSES: "v3x_licenses_registry_v2",
+      TICKETS: "v3x_support_tickets_v2",
+      APK_URL: "v3x_apk_download_url_v2",
+      ADMIN_AUTH: "v3x_admin_session_v2"
     };
 
-    let countdownInterval = null;
-    let resendTimerInterval = null;
-    let pendingAuthEmail = '';
-    let isAdminAuthenticated = false;
+    // وضعیت لحظه‌ای برنامه
+    let state = {
+      user: null, // { email, license: { key, expiresAt, totalMs, label } | null }
+      pendingEmail: "",
+      resendSeconds: 0,
+      resendInterval: null,
+      countdownInterval: null,
+      isAdmin: false
+    };
 
-    // -----------------------------------------------------------------------
-    // ۱. انیمیشن پس‌زمینه کهکشانی و ستاره‌های متحرک
-    // -----------------------------------------------------------------------
-    function initGalaxyCanvas() {
-      const canvas = document.getElementById('galaxyCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      let width = 0;
-      let height = 0;
-      let stars = [];
+    /**
+     * نمایش اعلان شناور زیبا (جایگزین کامل alert)
+     */
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
 
-      function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        const count = Math.min(180, Math.floor((width * height) / 9000));
-        stars = Array.from({ length: count }, () => ({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          r: Math.random() * 1.7 + 0.3,
-          alpha: Math.random() * 0.8 + 0.2,
-          dAlpha: (Math.random() * 0.015 + 0.004) * (Math.random() < 0.5 ? 1 : -1),
-          vx: (Math.random() - 0.5) * 0.14,
-          vy: (Math.random() - 0.5) * 0.14,
-          isCrimson: Math.random() < 0.24
-        }));
-      }
-
-      function render() {
-        ctx.clearRect(0, 0, width, height);
-        for (const s of stars) {
-          s.x += s.vx;
-          s.y += s.vy;
-          if (s.x < 0) s.x = width;
-          if (s.x > width) s.x = 0;
-          if (s.y < 0) s.y = height;
-          if (s.y > height) s.y = 0;
-
-          s.alpha += s.dAlpha;
-          if (s.alpha <= 0.15 || s.alpha >= 0.95) s.dAlpha *= -1;
-
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = s.isCrimson
-            ? `rgba(239, 68, 68, ${s.alpha.toFixed(2)})`
-            : `rgba(248, 250, 252, ${s.alpha.toFixed(2)})`;
-          ctx.fill();
-        }
-        requestAnimationFrame(render);
-      }
-
-      window.addEventListener('resize', resize);
-      resize();
-      render();
-    }
-
-    // -----------------------------------------------------------------------
-    // ۲. ابزارهای کمکی (Toast، کپی، مدیریت مودال‌ها و دیتابیس محلی)
-    // -----------------------------------------------------------------------
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const el = document.createElement('div');
       const styles = {
-        success: 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200',
-        error: 'bg-red-950/95 border-red-500/70 text-red-200',
-        info: 'bg-[#0f0e1a]/95 border-red-500/45 text-slate-100'
+        success: "bg-emerald-950/95 border-emerald-500/60 text-emerald-100 shadow-[0_10px_30px_rgba(16,185,129,0.25)]",
+        error: "bg-red-950/95 border-red-500/70 text-red-100 shadow-[0_10px_30px_rgba(239,68,68,0.35)]",
+        info: "bg-[#110e1c]/95 border-red-500/50 text-slate-100 shadow-[0_10px_30px_rgba(239,68,68,0.25)]"
       };
-      const icons = { success: '✅', error: '⚠️', info: '✨' };
 
-      el.className = `pointer-events-auto w-full px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-semibold transition-all duration-300 ${styles[type] || styles.info}`;
-      el.innerHTML = `<span>${icons[type] || '✨'}</span><span class="flex-1">${escapeHtml(message)}</span>`;
-      container.appendChild(el);
+      const icons = {
+        success: "✓",
+        error: "✕",
+        info: "✦"
+      };
 
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl text-xs sm:text-sm font-semibold transition-all duration-300 transform translate-y-0 opacity-100 ${styles[type] || styles.info}`;
+      toast.innerHTML = `
+        <span class="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center shrink-0 font-bold">${icons[type] || icons.info}</span>
+        <span class="leading-relaxed">${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
       setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(-8px)';
-        setTimeout(() => el.remove(), 300);
-      }, 3600);
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-10px)";
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
     }
 
-    function copyText(text, successMsg = 'کپی شد!') {
+    /**
+     * ایمن‌سازی رشته‌های متنی در HTML
+     */
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    /**
+     * کپی متن در کلیپ‌بورد با سازگاری کامل با iframe
+     */
+    function copyTextToClipboard(text, successMsg) {
       try {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast(successMsg, 'success');
-      } catch (e) {
-        showToast('امکان کپی خودکار وجود نداشت', 'error');
+        const tempInput = document.createElement("textarea");
+        tempInput.value = text;
+        tempInput.style.position = "fixed";
+        tempInput.style.opacity = "0";
+        document.body.appendChild(tempInput);
+        tempInput.focus();
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        showToast(successMsg || "کپی شد!", "success");
+      } catch (err) {
+        showToast("خطا در کپی کردن متن.", "error");
       }
     }
 
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    function copySupportId() {
+      copyTextToClipboard(SUPPORT_ID, "آیدی پشتیبانی @V3XSYS در کلیپ‌بورد کپی شد.");
     }
 
+    /**
+     * کنترل باز و بسته شدن مودال‌ها
+     */
     function openModal(id) {
       const el = document.getElementById(id);
       if (!el) return;
-      el.classList.remove('hidden');
-      el.classList.add('flex');
+      el.classList.remove("hidden");
+      el.classList.add("flex");
     }
 
     function closeModal(id) {
       const el = document.getElementById(id);
       if (!el) return;
-      el.classList.add('hidden');
-      el.classList.remove('flex');
+      el.classList.add("hidden");
+      el.classList.remove("flex");
     }
 
-    function getJson(key, fallback) {
+    /**
+     * بارگذاری اولیه نشست کاربر و همگام‌سازی لایسنس با دیتابیس ربات
+     */
+    async function initPortal() {
       try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
+        const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        if (savedUser) {
+          state.user = JSON.parse(savedUser);
+        }
+        if (localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === "1" || (state.user && state.user.email === ADMIN_EMAIL)) {
+          state.isAdmin = true;
+        }
       } catch (e) {
-        return fallback;
+        state.user = null;
+      }
+
+      setupOtpBoxes();
+      renderNavbarAuth();
+      renderPortalSection();
+      renderUserTickets();
+
+      // اگر کاربر لایسنس فعال دارد، در پس‌زمینه از دیتابیس ربات استعلام مجدد بگیر تا تایم دقیق بماند
+      if (state.user && state.user.license && state.user.license.key) {
+        const refreshed = await verifyLicenseWithCore(state.user.license.key, true);
+        if (refreshed && refreshed.valid) {
+          state.user.license = refreshed.license;
+          saveUserSession();
+          renderPortalSection();
+        } else if (refreshed && refreshed.expired) {
+          state.user.license = null;
+          saveUserSession();
+          renderPortalSection();
+          showToast("مدت اعتبار اشتراک اختصاصی شما به پایان رسیده است.", "error");
+        }
       }
     }
 
-    function setJson(key, val) {
-      localStorage.setItem(key, JSON.stringify(val));
+    function saveUserSession() {
+      if (state.user) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(state.user));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.USER);
+      }
     }
 
-    function getCurrentUser() {
-      const email = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      if (!email) return null;
-      const db = getJson(STORAGE_KEYS.USERS_DB, {});
-      return db[email] || { email, license: null };
+    /**
+     * رندر بخش حساب کاربری در هدر
+     */
+    function renderNavbarAuth() {
+      const navArea = document.getElementById("nav-auth-area");
+      if (!state.user) {
+        navArea.innerHTML = `
+          <button onclick="openAuthModal()" class="btn-crimson px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            <span>ورود / ثبت‌نام</span>
+          </button>
+        `;
+      } else {
+        navArea.innerHTML = `
+          <div class="flex items-center gap-2 bg-red-950/40 border border-red-500/35 px-3 py-1.5 rounded-xl">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span dir="ltr" class="text-xs font-semibold text-slate-200 max-w-[120px] sm:max-w-[180px] truncate">${escapeHtml(state.user.email)}</span>
+            <button onclick="logoutUser()" class="text-[11px] text-red-400 hover:text-red-300 font-bold mr-1" title="خروج از حساب">خروج</button>
+          </div>
+        `;
+      }
     }
 
-    function saveUserRecord(userObj) {
-      const db = getJson(STORAGE_KEYS.USERS_DB, {});
-      db[userObj.email] = userObj;
-      setJson(STORAGE_KEYS.USERS_DB, db);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, userObj.email);
-    }
-
-    function hasValidLicense(user) {
-      if (!user || !user.license || !user.license.expiresAt) return false;
-      return Number(user.license.expiresAt) > Date.now();
-    }
-
-    // -----------------------------------------------------------------------
-    // ۳. احراز هویت ایمیلی با کد ۶ رقمی (ارسال مستقیم از طرف V3XSELF)
-    // -----------------------------------------------------------------------
     function openAuthModal() {
       resetAuthToEmail();
-      openModal('authModal');
-      setTimeout(() => document.getElementById('authEmailInput')?.focus(), 100);
+      openModal("auth-modal");
     }
 
-    function resetAuthToEmail() {
-      document.getElementById('authStepEmail').classList.remove('hidden');
-      document.getElementById('authStepOtp').classList.add('hidden');
-      clearOtpInputs();
-      if (resendTimerInterval) clearInterval(resendTimerInterval);
+    function logoutUser() {
+      state.user = null;
+      saveUserSession();
+      if (state.countdownInterval) clearInterval(state.countdownInterval);
+      renderNavbarAuth();
+      renderPortalSection();
+      renderUserTickets();
+      showToast("از حساب کاربری خود خارج شدید.", "info");
     }
 
-    function clearOtpInputs() {
-      document.querySelectorAll('#otpInputsWrapper .otp-box').forEach((inp) => {
-        inp.value = '';
-      });
-    }
+    /**
+     * منطق ارسال کد تایید ۶ رقمی از طرف V3XSELF به ایمیل کاربر
+     */
+    async function handleSendOtp() {
+      const emailInput = document.getElementById("auth-email-input");
+      const email = String(emailInput.value || "").trim().toLowerCase();
 
-    function startResendCountdown() {
-      const btn = document.getElementById('resendOtpBtn');
-      let seconds = 60;
+      if (!email || !email.includes("@") || !email.includes(".")) {
+        showToast("لطفاً یک آدرس ایمیل معتبر وارد کنید.", "error");
+        emailInput.focus();
+        return;
+      }
+
+      const btn = document.getElementById("send-otp-btn");
       btn.disabled = true;
-      btn.innerHTML = `ارسال مجدد (<span id="resendTimer">${seconds}</span> ثانیه)`;
+      btn.innerHTML = `<span class="animate-pulse">در حال ارسال کد تایید از طرف V3XSELF...</span>`;
 
-      if (resendTimerInterval) clearInterval(resendTimerInterval);
-      resendTimerInterval = setInterval(() => {
-        seconds -= 1;
-        const span = document.getElementById('resendTimer');
-        if (span) span.textContent = String(seconds);
-        if (seconds <= 0) {
-          clearInterval(resendTimerInterval);
-          btn.disabled = false;
-          btn.textContent = 'ارسال مجدد کد تایید';
+      try {
+        // ارسال با text/plain جهت جلوگیری از خطای CORS Preflight در سرویس ایمیل
+        const response = await fetch(EMAIL_OTP_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "send", email })
+        });
+
+        const data = await response.json();
+        if (data && data.ok) {
+          state.pendingEmail = email;
+          document.getElementById("otp-sent-email-label").textContent = email;
+          document.getElementById("auth-step-email").classList.add("hidden");
+          document.getElementById("auth-step-otp").classList.remove("hidden");
+          clearOtpBoxes();
+          startResendTimer(60);
+          showToast("کد تایید ۶ رقمی از طرف V3XSELF به ایمیل شما ارسال شد.", "success");
+        } else {
+          showToast((data && data.message) || "خطا در ارسال کد تایید ایمیل. دوباره تلاش کنید.", "error");
+        }
+      } catch (err) {
+        showToast("خطا در ارتباط با سرویس ارسال ایمیل. اتصال اینترنت خود را بررسی کنید.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>ارسال کد تایید ۶ رقمی</span>`;
+      }
+    }
+
+    /**
+     * تایمر معکوس ۶۰ ثانیه‌ای برای ارسال مجدد کد
+     */
+    function startResendTimer(seconds) {
+      if (state.resendInterval) clearInterval(state.resendInterval);
+      state.resendSeconds = seconds;
+      const timerArea = document.getElementById("resend-timer-area");
+
+      const updateUi = () => {
+        if (state.resendSeconds > 0) {
+          timerArea.innerHTML = `<span>ارسال مجدد تا <strong class="text-red-400">${state.resendSeconds}</strong> ثانیه دیگر</span>`;
+        } else {
+          timerArea.innerHTML = `<button onclick="resendOtpCode()" class="text-red-400 hover:text-red-300 font-bold underline">ارسال مجدد کد تایید</button>`;
+        }
+      };
+
+      updateUi();
+      state.resendInterval = setInterval(() => {
+        state.resendSeconds--;
+        updateUi();
+        if (state.resendSeconds <= 0) {
+          clearInterval(state.resendInterval);
         }
       }, 1000);
     }
 
-    async function handleSendOtp(isResend = false) {
-      const emailInput = document.getElementById('authEmailInput');
-      const email = (isResend ? pendingAuthEmail : emailInput.value).trim().toLowerCase();
-
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showToast('لطفاً یک آدرس ایمیل معتبر وارد کنید.', 'error');
-        return;
-      }
-
-      const btn = document.getElementById('sendOtpBtn');
-      const originalBtnText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span>در حال ارسال کد به ایمیل...</span>';
-
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'send', email })
-        });
-        const data = await res.json();
-
-        if (data && data.ok) {
-          pendingAuthEmail = email;
-          document.getElementById('otpTargetEmail').textContent = email;
-          document.getElementById('authStepEmail').classList.add('hidden');
-          document.getElementById('authStepOtp').classList.remove('hidden');
-          clearOtpInputs();
-          startResendCountdown();
-          showToast('کد تایید ۶ رقمی از طرف V3XSELF به ایمیل شما ارسال شد.', 'success');
-          setTimeout(() => document.querySelector('#otpInputsWrapper .otp-box[data-idx="0"]')?.focus(), 120);
-        } else {
-          showToast((data && data.message) || 'خطا در ارسال ایمیل. دوباره تلاش کنید.', 'error');
-        }
-      } catch (err) {
-        showToast('ارتباط با سرویس ارسال ایمیل برقرار نشد. اتصال اینترنت را بررسی کنید.', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalBtnText;
-      }
+    async function resendOtpCode() {
+      if (!state.pendingEmail) return;
+      document.getElementById("auth-email-input").value = state.pendingEmail;
+      await handleSendOtp();
     }
 
-    async function handleVerifyOtp() {
-      const boxes = Array.from(document.querySelectorAll('#otpInputsWrapper .otp-box'));
-      const code = boxes.map((b) => b.value.trim()).join('');
-
-      if (code.length !== 6) {
-        showToast('لطفاً هر ۶ رقم کد ارسال‌شده به ایمیل را وارد کنید.', 'error');
-        return;
-      }
-
-      const btn = document.getElementById('verifyOtpBtn');
-      btn.disabled = true;
-      btn.textContent = 'در حال بررسی کد...';
-
-      try {
-        const res = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'verify', email: pendingAuthEmail, code })
-        });
-        const data = await res.json();
-
-        if (data && data.ok) {
-          const db = getJson(STORAGE_KEYS.USERS_DB, {});
-          const existingUser = db[pendingAuthEmail] || {
-            email: pendingAuthEmail,
-            createdAt: Date.now(),
-            license: null
-          };
-          saveUserRecord(existingUser);
-
-          if (pendingAuthEmail === ADMIN_EMAIL) {
-            isAdminAuthenticated = true;
-          }
-
-          closeModal('authModal');
-          renderApp();
-          showToast('ایمیل تایید شد! خوش آمدید.', 'success');
-        } else {
-          showToast((data && data.message) || 'کد تایید اشتباه یا منقضی شده است.', 'error');
-        }
-      } catch (err) {
-        showToast('خطا در تایید کد. لطفاً دوباره امتحان کنید.', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'تایید کد و ورود به حساب';
-      }
+    function resetAuthToEmail() {
+      if (state.resendInterval) clearInterval(state.resendInterval);
+      document.getElementById("auth-step-otp").classList.add("hidden");
+      document.getElementById("auth-step-email").classList.remove("hidden");
+      clearOtpBoxes();
     }
 
-    function setupOtpInputs() {
-      const boxes = Array.from(document.querySelectorAll('#otpInputsWrapper .otp-box'));
-      boxes.forEach((box, idx) => {
-        box.addEventListener('input', (e) => {
-          const val = e.target.value.replace(/\D/g, '');
-          e.target.value = val ? val[0] : '';
-          if (val && idx < boxes.length - 1) {
-            boxes[idx + 1].focus();
+    /**
+     * راه‌اندازی باکس‌های ۶ رقمی OTP (انتقال خودکار و پشتیبانی Paste)
+     */
+    function setupOtpBoxes() {
+      const boxes = document.querySelectorAll(".otp-box");
+      boxes.forEach((box, index) => {
+        box.addEventListener("input", (e) => {
+          const val = e.target.value.replace(/\D/g, "");
+          e.target.value = val ? val[0] : "";
+          if (val && index < boxes.length - 1) {
+            boxes[index + 1].focus();
           }
-          if (boxes.every((b) => b.value.length === 1)) {
+          if (getOtpCodeValue().length === 6) {
             handleVerifyOtp();
           }
         });
 
-        box.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-            boxes[idx - 1].focus();
+        box.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !e.target.value && index > 0) {
+            boxes[index - 1].focus();
           }
         });
 
-        box.addEventListener('paste', (e) => {
+        box.addEventListener("paste", (e) => {
           e.preventDefault();
-          const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+          const pasted = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "").slice(0, 6);
           if (!pasted) return;
-          pasted.split('').forEach((ch, i) => {
-            if (boxes[i]) boxes[i].value = ch;
+          pasted.split("").forEach((digit, i) => {
+            if (boxes[i]) boxes[i].value = digit;
           });
-          const nextIdx = Math.min(pasted.length, boxes.length - 1);
-          boxes[nextIdx].focus();
+          const focusIdx = Math.min(pasted.length, boxes.length - 1);
+          boxes[focusIdx].focus();
           if (pasted.length === 6) {
             handleVerifyOtp();
           }
@@ -983,632 +977,888 @@
       });
     }
 
-    function handleLogout() {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-      isAdminAuthenticated = false;
-      renderApp();
-      showToast('از حساب کاربری خارج شدید.', 'info');
+    function clearOtpBoxes() {
+      document.querySelectorAll(".otp-box").forEach((b) => (b.value = ""));
+      const first = document.querySelector(".otp-box");
+      if (first) setTimeout(() => first.focus(), 100);
     }
 
-    // -----------------------------------------------------------------------
-    // ۴. تولید و اعتبارسنجی رمزنگاری‌شده کلیدهای لایسنس اشتراک اختصاصی
-    // -----------------------------------------------------------------------
-    function computeKeyChecksum(baseStr) {
-      let hash = 2166136261;
-      const salted = baseStr + '::V3XSYS_2026_VIP';
-      for (let i = 0; i < salted.length; i++) {
-        hash ^= salted.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
+    function getOtpCodeValue() {
+      return Array.from(document.querySelectorAll(".otp-box"))
+        .map((b) => b.value.trim())
+        .join("");
+    }
+
+    /**
+     * تایید کد ۶ رقمی واردشده با سرویس ایمیل
+     */
+    async function handleVerifyOtp() {
+      const code = getOtpCodeValue();
+      if (code.length !== 6) {
+        showToast("لطفاً هر ۶ رقم کد تایید ارسال‌شده به ایمیل را وارد کنید.", "error");
+        return;
       }
-      return (hash >>> 0).toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
-    }
 
-    function createSignedLicenseCode(days) {
-      const cleanDays = Math.max(1, Math.min(3650, parseInt(days, 10) || 30));
-      const randPart = Math.random().toString(36).substring(2, 6).toUpperCase().padEnd(4, 'X');
-      const base = `V3X-${cleanDays}D-${randPart}`;
-      const chk = computeKeyChecksum(base);
-      return `${base}-${chk}`;
-    }
+      const btn = document.getElementById("verify-otp-btn");
+      btn.disabled = true;
+      btn.textContent = "در حال بررسی کد تایید...";
 
-    function validateSignedLicenseCode(rawKey) {
-      const key = String(rawKey || '').trim().toUpperCase();
-      // بررسی کلیدهای ساخته‌شده در پنل مدیریت
-      const adminKeys = getJson(STORAGE_KEYS.ADMIN_KEYS, []);
-      const foundInAdmin = adminKeys.find((k) => k.key === key);
-      if (foundInAdmin) {
-        if (foundInAdmin.used) {
-          return { valid: false, message: 'این کد لایسنس قبلاً استفاده شده است.' };
+      try {
+        const response = await fetch(EMAIL_OTP_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "verify",
+            email: state.pendingEmail,
+            code
+          })
+        });
+
+        const data = await response.json();
+        if (data && data.ok) {
+          // بررسی اینکه آیا این ایمیل قبلاً لایسنسی در حافظه ثبت کرده یا خیر
+          const userLicenseMap = getSavedUserLicensesMap();
+          const existingLicense = userLicenseMap[state.pendingEmail] || null;
+
+          state.user = {
+            email: state.pendingEmail,
+            license: existingLicense
+          };
+
+          if (state.pendingEmail === ADMIN_EMAIL) {
+            state.isAdmin = true;
+            localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, "1");
+          }
+
+          saveUserSession();
+          closeModal("auth-modal");
+          renderNavbarAuth();
+          renderPortalSection();
+          renderUserTickets();
+          showToast("خوش آمدید! احراز هویت ایمیل با موفقیت انجام شد.", "success");
+
+          // استعلام لحظه‌ای اعتبار لایسنس ذخیره‌شده از دیتابیس ربات
+          if (existingLicense && existingLicense.key) {
+            const check = await verifyLicenseWithCore(existingLicense.key, true);
+            if (check && check.valid) {
+              state.user.license = check.license;
+              saveUserSession();
+              renderPortalSection();
+            }
+          }
+        } else {
+          showToast((data && data.message) || "کد تایید واردشده اشتباه یا منقضی شده است.", "error");
+          clearOtpBoxes();
         }
-        return { valid: true, days: foundInAdmin.days, key };
+      } catch (err) {
+        showToast("خطا در تایید کد. لطفاً دوباره تلاش کنید.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "تایید کد و ورود به حساب";
       }
-
-      // بررسی امضای رمزنگاری کلیدهای صادرشده توسط @V3XSYS
-      const match = key.match(/^V3X-(\d{1,4})D-([A-Z0-9]{4})-([A-Z0-9]{4})$/);
-      if (!match) {
-        return { valid: false, message: 'فرمت کد لایسنس نامعتبر است.' };
-      }
-      const days = parseInt(match[1], 10);
-      const base = `V3X-${days}D-${match[2]}`;
-      const expectedChk = computeKeyChecksum(base);
-      if (match[3] !== expectedChk) {
-        return { valid: false, message: 'کد لایسنس معتبر نیست.' };
-      }
-
-      const redeemed = getJson(STORAGE_KEYS.REDEEMED, []);
-      if (redeemed.includes(key)) {
-        return { valid: false, message: 'این کد لایسنس قبلاً روی این دستگاه فعال شده است.' };
-      }
-
-      return { valid: true, days, key };
     }
 
-    function openLicenseActivateModal() {
-      const user = getCurrentUser();
-      if (!user) {
-        showToast('ابتدا با ایمیل خود وارد حساب کاربری شوید.', 'info');
-        openAuthModal();
-        return;
+    function getSavedUserLicensesMap() {
+      try {
+        return JSON.parse(localStorage.getItem("v3x_user_license_bindings_v2") || "{}");
+      } catch {
+        return {};
       }
-      document.getElementById('licenseKeyInput').value = '';
-      openModal('licenseModal');
-      setTimeout(() => document.getElementById('licenseKeyInput')?.focus(), 100);
     }
 
-    function handleActivateLicense() {
-      const user = getCurrentUser();
-      if (!user) {
-        closeModal('licenseModal');
-        openAuthModal();
-        return;
-      }
+    function bindLicenseToCurrentUser(licenseObj) {
+      if (!state.user || !state.user.email) return;
+      const map = getSavedUserLicensesMap();
+      map[state.user.email] = licenseObj;
+      localStorage.setItem("v3x_user_license_bindings_v2", JSON.stringify(map));
+    }
 
-      const rawKey = document.getElementById('licenseKeyInput').value;
-      const result = validateSignedLicenseCode(rawKey);
-      if (!result.valid) {
-        showToast(result.message, 'error');
-        return;
-      }
+    /**
+     * اتصال هوشمند پس‌زمینه به دیتابیس مرکزی ربات برای استعلام لایسنس
+     * پشتیبانی همزمان از کلیدهای ساخته‌شده در ربات و کلیدهای پنل مدیریت سایت
+     */
+    async function verifyLicenseWithCore(rawKey, silent = false) {
+      const cleanKey = String(rawKey || "").trim().toUpperCase();
+      if (!cleanKey) return { valid: false, message: "لطفاً کد لایسنس را وارد کنید." };
 
       const now = Date.now();
-      const durationMs = result.days * 24 * 60 * 60 * 1000;
-      const subCode = 'SUB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      user.license = {
-        key: result.key,
-        days: result.days,
-        startedAt: now,
-        expiresAt: now + durationMs,
-        subCode
-      };
-      saveUserRecord(user);
+      // ۱. استعلام آنلاین از دیتابیس مرکزی ربات (سازگار با مسیرهای مختلف API ربات)
+      const candidateRequests = [
+        {
+          url: `${BOT_LICENSE_API}/verify`,
+          options: {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: cleanKey, license_key: cleanKey, email: state.user ? state.user.email : "" })
+          }
+        },
+        {
+          url: `${BOT_LICENSE_API}/check?key=${encodeURIComponent(cleanKey)}`,
+          options: { method: "GET" }
+        },
+        {
+          url: `${BOT_LICENSE_API}/?key=${encodeURIComponent(cleanKey)}`,
+          options: { method: "GET" }
+        }
+      ];
 
-      // علامت‌گذاری کلید به‌عنوان استفاده‌شده
-      const adminKeys = getJson(STORAGE_KEYS.ADMIN_KEYS, []);
-      const idx = adminKeys.findIndex((k) => k.key === result.key);
-      if (idx !== -1) {
-        adminKeys[idx].used = true;
-        adminKeys[idx].usedBy = user.email;
-        setJson(STORAGE_KEYS.ADMIN_KEYS, adminKeys);
+      for (const req of candidateRequests) {
+        try {
+          const res = await fetch(req.url, req.options);
+          if (!res.ok) continue;
+          const data = await res.json();
+
+          const isOk = Boolean(
+            data && (
+              data.valid === true ||
+              data.ok === true ||
+              data.active === true ||
+              data.status === "active" ||
+              data.status === "valid"
+            )
+          );
+
+          if (isOk) {
+            const parsedExp = extractExpirationTimestamp(data, now);
+            if (parsedExp <= now) {
+              return { valid: false, expired: true, message: "مهلت اعتبار این کد لایسنس به پایان رسیده است." };
+            }
+
+            const totalMs = Math.max(parsedExp - now, 24 * 3600 * 1000);
+            return {
+              valid: true,
+              license: {
+                key: cleanKey,
+                expiresAt: parsedExp,
+                totalMs,
+                label: parsedExp - now > 3000 * 86400000 ? "اشتراک نامحدود VIP" : "اشتراک اختصاصی فعال"
+              }
+            };
+          } else if (data && (data.expired === true || data.status === "expired")) {
+            return { valid: false, expired: true, message: "مهلت اعتبار این کلید لایسنس تمام شده است." };
+          }
+        } catch (e) {
+          // ادامه به مسیر بعدی در صورت خطای شبکه
+        }
       }
 
-      const redeemed = getJson(STORAGE_KEYS.REDEEMED, []);
-      if (!redeemed.includes(result.key)) {
-        redeemed.push(result.key);
-        setJson(STORAGE_KEYS.REDEEMED, redeemed);
+      // ۲. بررسی کلیدهای ثبت‌شده در رجیستری پنل مدیریت سایت
+      const localLicenses = getLocalLicenses();
+      const foundLocal = localLicenses.find((item) => item.key.toUpperCase() === cleanKey);
+      if (foundLocal) {
+        if (foundLocal.expiresAt <= now) {
+          return { valid: false, expired: true, message: "اعتبار این کلید لایسنس به پایان رسیده است." };
+        }
+        return {
+          valid: true,
+          license: {
+            key: foundLocal.key.toUpperCase(),
+            expiresAt: foundLocal.expiresAt,
+            totalMs: foundLocal.totalMs || (foundLocal.expiresAt - now),
+            label: foundLocal.days >= 3650 ? "اشتراک نامحدود VIP" : `اشتراک اختصاصی ${foundLocal.days} روزه`
+          }
+        };
       }
 
-      closeModal('licenseModal');
-      renderApp();
-      showToast(`اشتراک اختصاصی ${result.days} روزه با موفقیت فعال شد!`, 'success');
+      return { valid: false, message: "کد لایسنس واردشده نامعتبر است یا در سیستم یافت نشد." };
     }
 
-    // -----------------------------------------------------------------------
-    // ۵. رندر بخش مرکزی (گاوصندوق قفل‌شده یا داشبورد VIP با تایمر زنده)
-    // -----------------------------------------------------------------------
-    function renderPortalVault() {
-      const container = document.getElementById('portalVaultSection');
-      if (!container) return;
+    /**
+     * استخراج دقیق زمان انقضا (میلی‌ثانیه) از فرمت‌های مختلف خروجی دیتابیس ربات
+     */
+    function extractExpirationTimestamp(data, now) {
+      const candidate =
+        data.expires_at ??
+        data.expiresAt ??
+        data.expire_at ??
+        data.expire ??
+        data.expiry ??
+        data.exp ??
+        (data.data && (data.data.expires_at || data.data.expiresAt || data.data.expire));
 
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
+      if (typeof candidate === "number" && candidate > 0) {
+        // تبدیل ثانیه یونیکس به میلی‌ثانیه در صورت نیاز
+        return candidate < 1e12 ? candidate * 1000 : candidate;
       }
 
-      const user = getCurrentUser();
-      const active = hasValidLicense(user);
+      if (typeof candidate === "string" && candidate.trim()) {
+        const num = Number(candidate);
+        if (!Number.isNaN(num) && num > 0) {
+          return num < 1e12 ? num * 1000 : num;
+        }
+        const parsedDate = Date.parse(candidate);
+        if (!Number.isNaN(parsedDate)) {
+          return parsedDate;
+        }
+      }
 
-      // حالت قفل‌شده (بدون لایسنس معتبر): هیچ لینک دانلودی وجود ندارد و فقط پیام خواسته‌شده نمایش داده می‌شود
-      if (!active) {
+      const remainingSeconds = Number(data.remaining_seconds ?? data.remainingSeconds ?? data.ttl ?? 0);
+      if (remainingSeconds > 0) {
+        return now + remainingSeconds * 1000;
+      }
+
+      const days = Number(data.days ?? data.duration_days ?? data.duration ?? 30);
+      return now + Math.max(days, 1) * 86400 * 1000;
+    }
+
+    /**
+     * رندر بخش دانلود و داشبورد اشتراک VIP (قفل تا زمان داشتن لایسنس معتبر)
+     */
+    function renderPortalSection() {
+      const container = document.getElementById("portal-container");
+      if (state.countdownInterval) clearInterval(state.countdownInterval);
+
+      const hasValidLicense = Boolean(
+        state.user &&
+        state.user.license &&
+        state.user.license.expiresAt &&
+        state.user.license.expiresAt > Date.now()
+      );
+
+      // حالت قفل‌شده: کاربر وارد نشده یا لایسنس معتبر ندارد (بدون هیچ لینک دانلودی در صفحه!)
+      if (!hasValidLicense) {
         container.innerHTML = `
-          <div class="glass-card rounded-3xl p-7 sm:p-10 text-center relative overflow-hidden border-2 border-red-500/45 shadow-neon-red">
-            <div class="absolute inset-0 bg-gradient-to-b from-red-600/10 via-transparent to-red-950/20 pointer-events-none"></div>
-
-            <!-- آیکون قفل کهکشانی -->
-            <div class="relative w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/15 border border-red-500/50 flex items-center justify-center text-red-500 pulse-ring shadow-neon-red">
-              <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <div class="text-center space-y-6 py-4">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-red-600/15 border border-red-500/40 flex items-center justify-center text-red-500 shadow-[0_0_25px_rgba(239,68,68,0.3)]">
+              <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
 
-            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-950/70 border border-red-500/35 text-red-300 text-xs font-bold mb-3">
-              <span>اشتراک اختصاصی V3X</span>
-            </div>
-
-            <!-- پیام دقیق خواسته‌شده -->
-            <h2 class="text-2xl sm:text-3xl font-black text-white mb-3">
+            <h2 class="text-2xl sm:text-3xl font-black text-white">
               برای داشتن لایسنس تیکت دهید
             </h2>
 
-            <p class="text-xs sm:text-sm text-slate-300/85 max-w-lg mx-auto mb-7 leading-relaxed">
-              دسترسی به فایل نصبی <strong class="text-white">V3X Selfbot v2.0.0</strong> صرفاً از طریق اشتراک اختصاصی فعال است. پس از دریافت کلید از پشتیبانی <span dir="ltr" class="text-red-400 font-bold">@V3XSYS</span>، کد خود را فعال کنید.
-            </p>
-
-            <!-- دو دکمه اصلی: ثبت تیکت و فعال‌سازی کد لایسنس -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-md mx-auto">
-              <button onclick="openTicketModal()" class="btn-crimson w-full sm:w-1/2 py-3.5 px-5 rounded-2xl font-extrabold text-sm text-white cursor-pointer flex items-center justify-center gap-2">
+            <div class="flex flex-wrap items-center justify-center gap-3.5 pt-1">
+              <button onclick="openTicketModal()" class="btn-ghost-red px-6 py-3.5 rounded-2xl text-sm sm:text-base font-bold flex items-center gap-2">
                 <span>📩 ثبت تیکت</span>
               </button>
-              <button onclick="openLicenseActivateModal()" class="w-full sm:w-1/2 py-3.5 px-5 rounded-2xl bg-white/5 hover:bg-red-500/15 border border-red-500/45 font-extrabold text-sm text-white transition-all cursor-pointer flex items-center justify-center gap-2">
+              <button onclick="toggleLicenseInputBox()" class="btn-crimson px-6 py-3.5 rounded-2xl text-sm sm:text-base font-bold flex items-center gap-2">
                 <span>🔑 فعال‌سازی کد لایسنس</span>
               </button>
+            </div>
+
+            <!-- کادر وارد کردن کد لایسنس (بازشونده) -->
+            <div id="license-activation-box" class="hidden max-w-md mx-auto pt-3 space-y-3">
+              <div class="p-4 rounded-2xl bg-[#080710] border border-red-500/35 space-y-3">
+                <p class="text-xs text-slate-300">
+                  ${state.user ? "کد لایسنس خود را وارد کنید تا اشتراک و بخش دانلود فعال شود:" : "ابتدا وارد حساب کاربری خود شوید، سپس کد لایسنس را فعال کنید."}
+                </p>
+                <input id="license-key-input" type="text" dir="ltr" placeholder="V3X-XXXX-XXXX-XXXX"
+                  class="w-full px-4 py-3 rounded-xl bg-[#040409] border border-red-500/40 focus:border-red-500 text-white text-center font-mono tracking-wider uppercase text-sm outline-none" />
+                <button id="activate-license-btn" onclick="handleActivateLicense()" class="btn-crimson w-full py-3 rounded-xl font-bold text-xs sm:text-sm">
+                  بررسی و فعال‌سازی اشتراک
+                </button>
+              </div>
             </div>
           </div>
         `;
         return;
       }
 
-      // حالت بازشده (دارای لایسنس معتبر): نمایش داشبورد VIP، تایمر معکوس لحظه‌ای و دکمه دانلود مستقیم APK
-      const lic = user.license;
-      const savedApkUrl = localStorage.getItem(STORAGE_KEYS.APK_URL) || '';
+      // حالت بازشده: کاربر وارد شده و لایسنس معتبر دارد -> نمایش داشبورد VIP و دکمه دانلود مستقیم
+      const lic = state.user.license;
+      const maskedKey = maskLicenseKey(lic.key);
 
       container.innerHTML = `
-        <div class="glass-card rounded-3xl p-6 sm:p-9 relative overflow-hidden border-2 border-red-500/55 shadow-neon-red-lg">
-          <div class="absolute -top-24 -right-24 w-56 h-56 bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
-
-          <!-- هدر وضعیت اشتراک VIP -->
-          <div class="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-red-500/20">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-red-900 flex items-center justify-center text-2xl shadow-neon-red">
-                👑
+        <div class="space-y-7">
+          <!-- هدر وضعیت VIP -->
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-red-500/25 pb-5">
+            <div class="flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
               <div>
                 <div class="flex items-center gap-2">
-                  <h2 class="text-lg sm:text-xl font-black text-white">اشتراک اختصاصی VIP</h2>
-                  <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-bold flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    فعال
-                  </span>
+                  <h2 class="text-lg sm:text-xl font-black text-white">${escapeHtml(lic.label || "اشتراک اختصاصی فعال")}</h2>
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">VIP فعال</span>
                 </div>
-                <p class="text-xs text-slate-400 mt-0.5" dir="ltr">${escapeHtml(user.email)}</p>
+                <p class="text-xs text-slate-400 mt-0.5">حساب متصل: <span dir="ltr" class="text-slate-200">${escapeHtml(state.user.email)}</span></p>
               </div>
             </div>
 
-            <div class="text-left">
-              <span class="text-[11px] text-slate-400 block">شناسه اشتراک اختصاصی:</span>
-              <span dir="ltr" class="font-mono text-xs sm:text-sm font-bold text-red-400 bg-red-950/50 px-3 py-1 rounded-xl border border-red-500/30 inline-block mt-1">
-                ${escapeHtml(lic.subCode || 'SUB-V3X-VIP')}
-              </span>
+            <!-- نمایش کلید لایسنس مخفی‌شده -->
+            <div class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#080710] border border-red-500/30">
+              <span class="text-[11px] text-slate-400">کد لایسنس:</span>
+              <code id="vip-key-display" dir="ltr" class="text-xs sm:text-sm font-bold text-red-400 tracking-wider">${escapeHtml(maskedKey)}</code>
+              <button onclick="toggleRevealVipKey()" class="text-[11px] text-slate-400 hover:text-white px-1.5" title="نمایش/مخفی کردن کلید">👁</button>
             </div>
           </div>
 
-          <!-- تایمر معکوس لحظه‌ای اعتبار اشتراک -->
-          <div class="py-6 space-y-4">
+          <!-- تایمر معکوس لحظه‌ای اعتبار لایسنس -->
+          <div class="space-y-3">
             <div class="flex items-center justify-between text-xs text-slate-300">
-              <span class="font-bold text-red-400">⏳ زمان باقی‌مانده اعتبار لایسنس:</span>
-              <span>مدت اشتراک: <strong class="text-white">${lic.days} روزه</strong></span>
+              <span>زمان باقی‌مانده تا پایان اعتبار اشتراک:</span>
+              <span id="vip-percent-label" class="text-red-400 font-bold">100%</span>
             </div>
 
-            <!-- ۴ باکس شمارش معکوس (روز : ساعت : دقیقه : ثانیه) -->
+            <!-- باکس‌های شمارش معکوس (روز : ساعت : دقیقه : ثانیه) -->
             <div dir="ltr" class="grid grid-cols-4 gap-2.5 sm:gap-4 text-center">
-              <div class="p-3 sm:p-4 rounded-2xl bg-[#07070e] border border-red-500/35">
-                <div id="cdDays" class="text-2xl sm:text-4xl font-black text-white font-mono">00</div>
-                <div class="text-[11px] sm:text-xs text-red-400 font-bold mt-1">روز</div>
+              <div class="p-3 sm:p-4 rounded-2xl bg-[#080710] border border-red-500/30">
+                <div id="cd-days" class="text-2xl sm:text-4xl font-black text-white">00</div>
+                <div class="text-[11px] text-red-400 font-semibold mt-1">روز</div>
               </div>
-              <div class="p-3 sm:p-4 rounded-2xl bg-[#07070e] border border-red-500/35">
-                <div id="cdHours" class="text-2xl sm:text-4xl font-black text-white font-mono">00</div>
-                <div class="text-[11px] sm:text-xs text-red-400 font-bold mt-1">ساعت</div>
+              <div class="p-3 sm:p-4 rounded-2xl bg-[#080710] border border-red-500/30">
+                <div id="cd-hours" class="text-2xl sm:text-4xl font-black text-white">00</div>
+                <div class="text-[11px] text-red-400 font-semibold mt-1">ساعت</div>
               </div>
-              <div class="p-3 sm:p-4 rounded-2xl bg-[#07070e] border border-red-500/35">
-                <div id="cdMinutes" class="text-2xl sm:text-4xl font-black text-white font-mono">00</div>
-                <div class="text-[11px] sm:text-xs text-red-400 font-bold mt-1">دقیقه</div>
+              <div class="p-3 sm:p-4 rounded-2xl bg-[#080710] border border-red-500/30">
+                <div id="cd-minutes" class="text-2xl sm:text-4xl font-black text-white">00</div>
+                <div class="text-[11px] text-red-400 font-semibold mt-1">دقیقه</div>
               </div>
-              <div class="p-3 sm:p-4 rounded-2xl bg-[#07070e] border border-red-500/35">
-                <div id="cdSeconds" class="text-2xl sm:text-4xl font-black text-red-500 font-mono">00</div>
-                <div class="text-[11px] sm:text-xs text-red-400 font-bold mt-1">ثانیه</div>
+              <div class="p-3 sm:p-4 rounded-2xl bg-[#080710] border border-red-500/30">
+                <div id="cd-seconds" class="text-2xl sm:text-4xl font-black text-red-500">00</div>
+                <div class="text-[11px] text-red-400 font-semibold mt-1">ثانیه</div>
               </div>
             </div>
 
             <!-- نوار پیشرفت اعتبار -->
-            <div class="space-y-1.5">
-              <div class="w-full h-2.5 rounded-full bg-[#07070e] border border-red-500/25 overflow-hidden">
-                <div id="licenseProgressBar" class="h-full bg-gradient-to-l from-red-500 via-red-600 to-rose-700 transition-all duration-500" style="width: 100%"></div>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span>تاریخ انقضا: <strong class="text-slate-200">${new Date(lic.expiresAt).toLocaleDateString('fa-IR')}</strong></span>
-                <span id="licensePercentText">100% باقی‌مانده</span>
-              </div>
+            <div class="w-full h-2.5 rounded-full bg-white/5 overflow-hidden border border-red-500/20">
+              <div id="vip-progress-bar" class="h-full bg-gradient-to-l from-red-500 to-rose-700 rounded-full transition-all duration-500" style="width: 100%"></div>
             </div>
           </div>
 
-          <!-- دکمه دانلود مستقیم برنامه -->
+          <!-- دکمه بزرگ دانلود مستقیم نسخه 2.0.0 (APK) -->
           <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <button onclick="handleDownloadApk()" class="btn-crimson w-full sm:flex-1 py-4 px-6 rounded-2xl font-black text-sm sm:text-base text-white cursor-pointer flex items-center justify-center gap-2.5">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>دانلود مستقیم V3X Selfbot v2.0.0 (APK)</span>
+            <button onclick="handleDirectApkDownload()" class="btn-crimson w-full py-4 px-6 rounded-2xl text-sm sm:text-base font-black flex items-center justify-center gap-2.5">
+              <span>⬇️ دانلود مستقیم نسخه 2.0.0 (APK)</span>
             </button>
-
-            <button onclick="openLicenseActivateModal()" class="w-full sm:w-auto py-4 px-5 rounded-2xl bg-white/5 hover:bg-red-500/15 border border-red-500/35 text-xs sm:text-sm font-bold text-slate-200 transition-all cursor-pointer">
-              🔑 تمدید اشتراک
+            <button onclick="openTicketModal()" class="btn-ghost-red w-full sm:w-auto py-4 px-5 rounded-2xl text-xs sm:text-sm font-bold shrink-0">
+              📩 تمدید / پشتیبانی
             </button>
           </div>
-          ${!savedApkUrl ? '<p class="text-[11px] text-amber-400/90 text-center mt-3">توجه: لینک دانلود APK هنوز در بخش مدیریت تنظیم نشده است.</p>' : ''}
         </div>
       `;
 
-      // شروع شمارش معکوس لحظه‌ای
-      function updateCountdown() {
+      startLiveLicenseCountdown(lic);
+    }
+
+    let isVipKeyRevealed = false;
+    function toggleRevealVipKey() {
+      if (!state.user || !state.user.license) return;
+      isVipKeyRevealed = !isVipKeyRevealed;
+      const el = document.getElementById("vip-key-display");
+      if (el) {
+        el.textContent = isVipKeyRevealed ? state.user.license.key : maskLicenseKey(state.user.license.key);
+      }
+    }
+
+    function maskLicenseKey(key) {
+      const clean = String(key || "");
+      if (clean.length <= 8) return "V3X-****-****";
+      return `${clean.slice(0, 4)}••••${clean.slice(-4)}`;
+    }
+
+    /**
+     * اجرای تایمر زنده معکوس اعتبار اشتراک
+     */
+    function startLiveLicenseCountdown(lic) {
+      const update = () => {
         const now = Date.now();
-        const remaining = lic.expiresAt - now;
-        if (remaining <= 0) {
-          clearInterval(countdownInterval);
-          renderPortalVault();
-          showToast('مدت اعتبار اشتراک اختصاصی شما به پایان رسید.', 'error');
+        const diff = lic.expiresAt - now;
+
+        if (diff <= 0) {
+          clearInterval(state.countdownInterval);
+          state.user.license = null;
+          saveUserSession();
+          renderPortalSection();
+          showToast("مدت اعتبار اشتراک شما به پایان رسید.", "error");
           return;
         }
 
-        const totalSec = Math.floor(remaining / 1000);
-        const days = Math.floor(totalSec / 86400);
-        const hours = Math.floor((totalSec % 86400) / 3600);
-        const minutes = Math.floor((totalSec % 3600) / 60);
-        const seconds = totalSec % 60;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
 
-        const dEl = document.getElementById('cdDays');
-        const hEl = document.getElementById('cdHours');
-        const mEl = document.getElementById('cdMinutes');
-        const sEl = document.getElementById('cdSeconds');
+        const dEl = document.getElementById("cd-days");
+        const hEl = document.getElementById("cd-hours");
+        const mEl = document.getElementById("cd-minutes");
+        const sEl = document.getElementById("cd-seconds");
+        const barEl = document.getElementById("vip-progress-bar");
+        const pctEl = document.getElementById("vip-percent-label");
 
-        if (dEl) dEl.textContent = String(days).padStart(2, '0');
-        if (hEl) hEl.textContent = String(hours).padStart(2, '0');
-        if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
-        if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+        if (dEl) dEl.textContent = String(days).padStart(2, "0");
+        if (hEl) hEl.textContent = String(hours).padStart(2, "0");
+        if (mEl) mEl.textContent = String(minutes).padStart(2, "0");
+        if (sEl) sEl.textContent = String(seconds).padStart(2, "0");
 
-        const totalDuration = Math.max(1, lic.expiresAt - (lic.startedAt || (lic.expiresAt - lic.days * 86400000)));
-        const pct = Math.max(1, Math.min(100, Math.round((remaining / totalDuration) * 100)));
-        const bar = document.getElementById('licenseProgressBar');
-        const pctText = document.getElementById('licensePercentText');
-        if (bar) bar.style.width = pct + '%';
-        if (pctText) pctText.textContent = `${pct}% اعتبار باقی‌مانده`;
-      }
+        const total = lic.totalMs || (30 * 86400 * 1000);
+        const pct = Math.min(100, Math.max(2, Math.round((diff / total) * 100)));
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (pctEl) pctEl.textContent = `${pct}%`;
+      };
 
-      updateCountdown();
-      countdownInterval = setInterval(updateCountdown, 1000);
+      update();
+      state.countdownInterval = setInterval(update, 1000);
     }
 
-    function handleDownloadApk() {
-      const user = getCurrentUser();
-      if (!hasValidLicense(user)) {
-        showToast('ابتدا اشتراک اختصاصی خود را فعال کنید.', 'error');
-        renderPortalVault();
+    function toggleLicenseInputBox() {
+      if (!state.user) {
+        showToast("برای فعال‌سازی کد لایسنس، ابتدا با ایمیل خود وارد شوید.", "info");
+        openAuthModal();
+        return;
+      }
+      const box = document.getElementById("license-activation-box");
+      if (box) {
+        box.classList.toggle("hidden");
+        const input = document.getElementById("license-key-input");
+        if (input && !box.classList.contains("hidden")) input.focus();
+      }
+    }
+
+    async function handleActivateLicense() {
+      if (!state.user) {
+        openAuthModal();
+        return;
+      }
+      const input = document.getElementById("license-key-input");
+      const key = String(input.value || "").trim();
+      if (!key) {
+        showToast("لطفاً کلید لایسنس خود را وارد کنید.", "error");
         return;
       }
 
-      const apkUrl = (localStorage.getItem(STORAGE_KEYS.APK_URL) || '').trim();
+      const btn = document.getElementById("activate-license-btn");
+      btn.disabled = true;
+      btn.textContent = "در حال استعلام از هسته مرکزی V3X...";
+
+      try {
+        const result = await verifyLicenseWithCore(key);
+        if (result.valid) {
+          state.user.license = result.license;
+          saveUserSession();
+          bindLicenseToCurrentUser(result.license);
+          renderPortalSection();
+          showToast("اشتراک اختصاصی شما با موفقیت فعال شد و بخش دانلود باز گردید!", "success");
+        } else {
+          showToast(result.message || "کد لایسنس معتبر نیست.", "error");
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "بررسی و فعال‌سازی اشتراک";
+      }
+    }
+
+    /**
+     * دانلود مستقیم فایل APK پس از تایید اشتراک
+     */
+    function handleDirectApkDownload() {
+      if (!state.user || !state.user.license || state.user.license.expiresAt <= Date.now()) {
+        showToast("ابتدا اشتراک معتبر فعال کنید.", "error");
+        renderPortalSection();
+        return;
+      }
+
+      const apkUrl = localStorage.getItem(STORAGE_KEYS.APK_URL) || "";
       if (!apkUrl) {
-        showToast('لینک دانلود فایل APK هنوز توسط مدیریت تنظیم نشده است. لطفاً به @V3XSYS اطلاع دهید.', 'info');
+        showToast("لینک نسخه جدید در حال به‌روزرسانی توسط مدیریت است. لطفاً به @V3XSYS پیام دهید.", "info");
         return;
       }
 
-      window.open(apkUrl, '_blank', 'noopener,noreferrer');
-      showToast('در حال شروع دانلود V3X Selfbot v2.0.0...', 'success');
+      window.open(apkUrl, "_blank", "noopener,noreferrer");
+      showToast("در حال شروع دانلود مستقیم V3X Selfbot v2.0.0...", "success");
     }
 
-    // -----------------------------------------------------------------------
-    // ۶. سیستم تیکت پشتیبانی
-    // -----------------------------------------------------------------------
+    /**
+     * =========================================================
+     * سیستم تیکت کاربران
+     * =========================================================
+     */
     function openTicketModal() {
-      const user = getCurrentUser();
-      const contactInput = document.getElementById('ticketContactInput');
-      if (user && contactInput && !contactInput.value) {
-        contactInput.value = user.email;
-      }
-      renderUserTickets();
-      openModal('ticketModal');
+      openModal("ticket-modal");
     }
 
-    function handleCreateTicket() {
-      const user = getCurrentUser();
-      const subject = document.getElementById('ticketSubject').value;
-      const contact = document.getElementById('ticketContactInput').value.trim();
-      const message = document.getElementById('ticketMessageInput').value.trim();
+    function getAllTickets() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.TICKETS) || "[]");
+      } catch {
+        return [];
+      }
+    }
 
-      if (!contact) {
-        showToast('لطفاً ایمیل یا آیدی سروش‌پلاس خود را وارد کنید.', 'error');
+    function saveAllTickets(list) {
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(list));
+    }
+
+    function submitUserTicket() {
+      const subject = document.getElementById("ticket-subject").value;
+      const soroushId = String(document.getElementById("ticket-soroush-id").value || "").trim();
+      const message = String(document.getElementById("ticket-message").value || "").trim();
+
+      if (!soroushId) {
+        showToast("لطفاً آیدی سروش‌پلاس خود را وارد کنید.", "error");
         return;
       }
       if (!message) {
-        showToast('لطفاً متن درخواست خود را بنویسید.', 'error');
+        showToast("لطفاً متن پیام تیکت را بنویسید.", "error");
         return;
       }
 
-      const tickets = getJson(STORAGE_KEYS.TICKETS, []);
+      const tickets = getAllTickets();
       const newTicket = {
-        id: 'TK-' + Math.floor(1000 + Math.random() * 9000),
-        ownerEmail: user ? user.email : contact.toLowerCase(),
-        contact,
+        id: "TK-" + Math.floor(10000 + Math.random() * 90000),
+        email: state.user ? state.user.email : "کاربر مهمان",
+        soroushId: soroushId.startsWith("@") ? soroushId : "@" + soroushId,
         subject,
         message,
-        reply: '',
-        status: 'در انتظار پاسخ',
-        createdAt: new Date().toLocaleString('fa-IR')
+        reply: "",
+        createdAt: new Date().toLocaleString("fa-IR")
       };
 
       tickets.unshift(newTicket);
-      setJson(STORAGE_KEYS.TICKETS, tickets);
+      saveAllTickets(tickets);
 
-      document.getElementById('ticketMessageInput').value = '';
+      document.getElementById("ticket-message").value = "";
+      closeModal("ticket-modal");
       renderUserTickets();
-      updateTicketBadge();
-      showToast('تیکت شما ثبت شد. پاسخ از همین بخش و یا @V3XSYS قابل مشاهده است.', 'success');
+      showToast(`تیکت شما با کد ${newTicket.id} با موفقیت ثبت شد.`, "success");
     }
 
     function renderUserTickets() {
-      const listEl = document.getElementById('userTicketsList');
-      const countEl = document.getElementById('userTicketsCount');
-      if (!listEl) return;
+      const section = document.getElementById("user-tickets-section");
+      const listEl = document.getElementById("user-tickets-list");
+      const tickets = getAllTickets();
 
-      const user = getCurrentUser();
-      const allTickets = getJson(STORAGE_KEYS.TICKETS, []);
-      const filtered = user
-        ? allTickets.filter((t) => t.ownerEmail === user.email || t.contact.toLowerCase() === user.email)
-        : allTickets;
+      const visibleTickets = state.user
+        ? tickets.filter((t) => t.email === state.user.email || t.email === "کاربر مهمان")
+        : tickets.slice(0, 3);
 
-      if (countEl) countEl.textContent = `${filtered.length} تیکت`;
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = `<div class="p-4 rounded-2xl bg-white/5 text-center text-xs text-slate-400">هنوز تیکتی ثبت نکرده‌اید.</div>`;
+      if (visibleTickets.length === 0) {
+        section.classList.add("hidden");
         return;
       }
 
-      listEl.innerHTML = filtered.map((t) => `
-        <div class="p-3.5 rounded-2xl bg-[#080810] border border-red-500/25 space-y-2">
-          <div class="flex items-center justify-between gap-2 text-xs">
-            <span class="font-bold text-white">${escapeHtml(t.subject)} <span class="text-slate-500 font-mono">(${escapeHtml(t.id)})</span></span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${t.reply ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/35' : 'bg-amber-500/15 text-amber-300 border border-amber-500/35'}">
-              ${t.reply ? 'پاسخ داده شد' : 'در انتظار پاسخ'}
-            </span>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">${escapeHtml(t.message)}</p>
-          ${t.reply ? `
-            <div class="p-2.5 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-200">
-              <strong class="text-red-400">پاسخ مدیریت (@V3XSYS):</strong> ${escapeHtml(t.reply)}
+      section.classList.remove("hidden");
+      listEl.innerHTML = visibleTickets
+        .map(
+          (t) => `
+          <div class="p-4 rounded-2xl bg-[#080710] border border-red-500/25 space-y-2.5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-lg bg-red-500/15 text-red-400 text-xs font-mono font-bold">${escapeHtml(t.id)}</span>
+                <span class="text-sm font-bold text-white">${escapeHtml(t.subject)}</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${t.reply ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-amber-500/20 text-amber-300 border border-amber-500/40"}">
+                ${t.reply ? "پاسخ داده شده" : "در انتظار بررسی"}
+              </span>
             </div>
-          ` : ''}
-        </div>
-      `).join('');
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">${escapeHtml(t.message)}</p>
+            <div class="text-[11px] text-slate-500 flex items-center justify-between">
+              <span>آیدی سروش‌پلاس: <span dir="ltr" class="text-slate-300">${escapeHtml(t.soroushId)}</span></span>
+              <span>${escapeHtml(t.createdAt)}</span>
+            </div>
+            ${
+              t.reply
+                ? `<div class="p-3 rounded-xl bg-emerald-950/35 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
+                    <div class="font-bold text-emerald-400">پاسخ مدیریت (@V3XSYS):</div>
+                    <div>${escapeHtml(t.reply)}</div>
+                  </div>`
+                : ""
+            }
+          </div>
+        `
+        )
+        .join("");
     }
 
-    function updateTicketBadge() {
-      const badge = document.getElementById('userTicketBadge');
-      if (!badge) return;
-      const allTickets = getJson(STORAGE_KEYS.TICKETS, []);
-      if (allTickets.length > 0) {
-        badge.textContent = String(allTickets.length);
-        badge.classList.remove('hidden');
+    /**
+     * =========================================================
+     * پنل مدیریت سه‌بخشی (V3XSYS)
+     * =========================================================
+     */
+    function openAdminModal() {
+      openModal("admin-modal");
+      if (state.isAdmin) {
+        showAdminDashboard();
       } else {
-        badge.classList.add('hidden');
+        document.getElementById("admin-login-view").classList.remove("hidden");
+        document.getElementById("admin-dashboard-view").classList.add("hidden");
       }
     }
 
-    // -----------------------------------------------------------------------
-    // ۷. پنل مدیریت سه‌بخشی (@V3XSYS)
-    // -----------------------------------------------------------------------
-    function openAdminGate() {
-      const user = getCurrentUser();
-      if (isAdminAuthenticated || (user && user.email === ADMIN_EMAIL)) {
-        isAdminAuthenticated = true;
-        openAdminPanel();
-        return;
-      }
-      document.getElementById('adminCodeInput').value = '';
-      openModal('adminGateModal');
-      setTimeout(() => document.getElementById('adminCodeInput')?.focus(), 100);
-    }
-
-    function verifyAdminAccess() {
-      const code = document.getElementById('adminCodeInput').value.trim();
-      if (code === ADMIN_SECRET_CODE) {
-        isAdminAuthenticated = true;
-        closeModal('adminGateModal');
-        openAdminPanel();
-        showToast('خوش آمدید مدیر گرامی (@V3XSYS)', 'success');
+    function verifyAdminLogin() {
+      const pass = String(document.getElementById("admin-pass-input").value || "").trim();
+      if (pass === ADMIN_SECRET) {
+        state.isAdmin = true;
+        localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, "1");
+        document.getElementById("admin-pass-input").value = "";
+        showAdminDashboard();
+        showToast("ورود به پنل مدیریت تایید شد.", "success");
       } else {
-        showToast('کد مدیریت اشتباه است.', 'error');
+        showToast("رمز عبور مدیریت اشتباه است.", "error");
       }
     }
 
-    function openAdminPanel() {
-      document.getElementById('adminApkUrlInput').value = localStorage.getItem(STORAGE_KEYS.APK_URL) || '';
-      switchAdminTab('keys');
-      openModal('adminPanelModal');
+    function logoutAdmin() {
+      state.isAdmin = false;
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+      document.getElementById("admin-dashboard-view").classList.add("hidden");
+      document.getElementById("admin-login-view").classList.remove("hidden");
+    }
+
+    function showAdminDashboard() {
+      document.getElementById("admin-login-view").classList.add("hidden");
+      document.getElementById("admin-dashboard-view").classList.remove("hidden");
+      document.getElementById("admin-apk-url-input").value = localStorage.getItem(STORAGE_KEYS.APK_URL) || "";
+      renderAdminLicensesList();
+      renderAdminTicketsList();
     }
 
     function switchAdminTab(tabName) {
-      const tabs = ['keys', 'tickets', 'apk'];
-      tabs.forEach((t) => {
-        const panel = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
-        const btn = document.getElementById('adminTabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (panel) panel.classList.toggle('hidden', t !== tabName);
-        if (btn) {
-          if (t === tabName) {
-            btn.className = 'py-2.5 px-2 rounded-xl bg-red-600 text-white transition-all cursor-pointer';
-          } else {
-            btn.className = 'py-2.5 px-2 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer';
-          }
+      ["licenses", "tickets", "download"].forEach((t) => {
+        const panel = document.getElementById(`admin-tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          panel.classList.remove("hidden");
+          btn.classList.add("bg-red-600", "text-white");
+          btn.classList.remove("text-slate-400");
+        } else {
+          panel.classList.add("hidden");
+          btn.classList.remove("bg-red-600", "text-white");
+          btn.classList.add("text-slate-400");
         }
       });
-
-      if (tabName === 'keys') renderAdminKeysList();
-      if (tabName === 'tickets') renderAdminTicketsList();
     }
 
-    function setAdminDuration(days) {
-      document.getElementById('adminCustomDays').value = days;
+    function syncDurationPreset() {
+      const preset = document.getElementById("admin-duration-preset").value;
+      const daysInput = document.getElementById("admin-custom-days");
+      if (preset !== "custom") {
+        daysInput.value = preset;
+      } else {
+        daysInput.focus();
+      }
     }
 
-    function generateNewLicenseKey() {
-      const days = parseInt(document.getElementById('adminCustomDays').value, 10) || 30;
-      const newKey = createSignedLicenseCode(days);
+    function getLocalLicenses() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.LICENSES) || "[]");
+      } catch {
+        return [];
+      }
+    }
 
-      const keys = getJson(STORAGE_KEYS.ADMIN_KEYS, []);
-      keys.unshift({
-        key: newKey,
+    function saveLocalLicenses(list) {
+      localStorage.setItem(STORAGE_KEYS.LICENSES, JSON.stringify(list));
+    }
+
+    function generateRandomLicenseCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const segment = () =>
+        Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+      return `V3X-${segment()}-${segment()}-${segment()}`;
+    }
+
+    async function adminGenerateLicense() {
+      const days = Math.max(1, parseInt(document.getElementById("admin-custom-days").value || "30", 10));
+      const customKey = String(document.getElementById("admin-custom-key").value || "").trim().toUpperCase();
+      const key = customKey || generateRandomLicenseCode();
+      const now = Date.now();
+      const totalMs = days * 86400 * 1000;
+      const expiresAt = now + totalMs;
+
+      const btn = document.getElementById("admin-create-key-btn");
+      btn.disabled = true;
+      btn.textContent = "در حال ثبت در هسته مرکزی...";
+
+      // ارسال کلید به دیتابیس مرکزی ربات برای هماهنگی کامل بین سایت و اپلیکیشن
+      try {
+        await fetch(`${BOT_LICENSE_API}/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${ADMIN_SECRET}`
+          },
+          body: JSON.stringify({
+            key,
+            license_key: key,
+            days,
+            expires_at: Math.floor(expiresAt / 1000),
+            admin_secret: ADMIN_SECRET
+          })
+        });
+      } catch (e) {
+        // در صورت آفلاین بودن یا تفاوت مسیر، در رجیستری محلی نیز ذخیره می‌شود
+      }
+
+      const list = getLocalLicenses();
+      list.unshift({
+        key,
         days,
-        used: false,
-        usedBy: '',
-        createdAt: new Date().toLocaleDateString('fa-IR')
+        expiresAt,
+        totalMs,
+        createdAt: new Date().toLocaleString("fa-IR")
       });
-      setJson(STORAGE_KEYS.ADMIN_KEYS, keys);
+      saveLocalLicenses(list);
 
-      renderAdminKeysList();
-      copyText(newKey, `کلید ${days} روزه ساخته و کپی شد: ${newKey}`);
+      document.getElementById("admin-custom-key").value = "";
+      renderAdminLicensesList();
+      copyTextToClipboard(key, `کلید ${key} ساخته و در کلیپ‌بورد کپی شد!`);
+
+      btn.disabled = false;
+      btn.textContent = "⚡ ساخت و ثبت کلید لایسنس";
     }
 
-    function deleteAdminKey(keyStr) {
-      const keys = getJson(STORAGE_KEYS.ADMIN_KEYS, []).filter((k) => k.key !== keyStr);
-      setJson(STORAGE_KEYS.ADMIN_KEYS, keys);
-      renderAdminKeysList();
-      showToast('کلید از لیست حذف شد.', 'info');
-    }
-
-    function renderAdminKeysList() {
-      const listEl = document.getElementById('adminKeysList');
-      if (!listEl) return;
-      const keys = getJson(STORAGE_KEYS.ADMIN_KEYS, []);
-
-      if (keys.length === 0) {
-        listEl.innerHTML = `<div class="p-4 rounded-2xl bg-white/5 text-center text-xs text-slate-400">هنوز کد لایسنسی تولید نشده است.</div>`;
+    function renderAdminLicensesList() {
+      const listEl = document.getElementById("admin-licenses-list");
+      const list = getLocalLicenses();
+      if (list.length === 0) {
+        listEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">هنوز کلید جدیدی در پنل ساخته نشده است.</p>`;
         return;
       }
 
-      listEl.innerHTML = keys.map((k) => `
-        <div class="p-3 rounded-2xl bg-[#07070e] border border-red-500/25 flex flex-wrap items-center justify-between gap-2">
-          <div class="space-y-0.5">
-            <div class="flex items-center gap-2">
-              <span dir="ltr" class="font-mono font-bold text-xs sm:text-sm text-white">${escapeHtml(k.key)}</span>
-              <span class="px-2 py-0.5 rounded-md bg-red-500/15 text-red-300 text-[10px] font-bold">${k.days} روزه</span>
-              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${k.used ? 'bg-slate-700 text-slate-300' : 'bg-emerald-500/15 text-emerald-400'}">
-                ${k.used ? 'استفاده‌شده' : 'آماده استفاده'}
-              </span>
+      listEl.innerHTML = list
+        .map(
+          (item, idx) => `
+          <div class="p-3 rounded-xl bg-[#07060f] border border-red-500/20 flex items-center justify-between gap-2 flex-wrap">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <code dir="ltr" class="text-xs sm:text-sm font-bold text-red-400">${escapeHtml(item.key)}</code>
+                <span class="px-2 py-0.5 rounded bg-white/5 text-[11px] text-slate-300">${item.days >= 3650 ? "نامحدود" : item.days + " روزه"}</span>
+              </div>
+              <div class="text-[10px] text-slate-500">تاریخ صدور: ${escapeHtml(item.createdAt)}</div>
             </div>
-            ${k.usedBy ? `<p class="text-[11px] text-slate-400" dir="ltr">فعال‌شده توسط: ${escapeHtml(k.usedBy)}</p>` : ''}
+            <div class="flex items-center gap-1.5">
+              <button onclick="copyTextToClipboard('${escapeHtml(item.key)}', 'کلید کپی شد')" class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-semibold">کپی</button>
+              <button onclick="deleteAdminLicense(${idx})" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-red-900/40 text-slate-400 hover:text-red-300 text-xs">حذف</button>
+            </div>
           </div>
+        `
+        )
+        .join("");
+    }
 
-          <div class="flex items-center gap-1.5">
-            <button onclick="copyText('${escapeHtml(k.key)}', 'کد لایسنس کپی شد')" class="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/35 text-red-300 text-xs font-bold cursor-pointer">
-              کپی
-            </button>
-            <button onclick="deleteAdminKey('${escapeHtml(k.key)}')" class="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-red-900/50 text-slate-400 hover:text-red-300 text-xs cursor-pointer">
-              حذف
-            </button>
-          </div>
-        </div>
-      `).join('');
+    function deleteAdminLicense(index) {
+      const list = getLocalLicenses();
+      list.splice(index, 1);
+      saveLocalLicenses(list);
+      renderAdminLicensesList();
+      showToast("کلید از لیست حذف شد.", "info");
     }
 
     function renderAdminTicketsList() {
-      const listEl = document.getElementById('adminTicketsList');
-      if (!listEl) return;
-      const tickets = getJson(STORAGE_KEYS.TICKETS, []);
+      const listEl = document.getElementById("admin-tickets-list");
+      const countEl = document.getElementById("admin-tickets-count");
+      const tickets = getAllTickets();
+      countEl.textContent = tickets.length;
 
       if (tickets.length === 0) {
-        listEl.innerHTML = `<div class="p-4 rounded-2xl bg-white/5 text-center text-xs text-slate-400">هیچ تیکتی ثبت نشده است.</div>`;
+        listEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">هیچ تیکتی ثبت نشده است.</p>`;
         return;
       }
 
-      listEl.innerHTML = tickets.map((t, idx) => `
-        <div class="p-4 rounded-2xl bg-[#07070e] border border-red-500/25 space-y-2.5">
-          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span class="font-bold text-white">${escapeHtml(t.subject)} — <span dir="ltr" class="text-red-400">${escapeHtml(t.contact)}</span></span>
-            <span class="text-[11px] text-slate-400">${escapeHtml(t.createdAt)}</span>
+      listEl.innerHTML = tickets
+        .map(
+          (t, idx) => `
+          <div class="p-4 rounded-2xl bg-[#07060f] border border-red-500/25 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="text-xs sm:text-sm font-bold text-white">
+                <span class="text-red-400 font-mono">${escapeHtml(t.id)}</span> — ${escapeHtml(t.subject)}
+              </div>
+              <span dir="ltr" class="text-xs text-red-300 font-semibold">${escapeHtml(t.soroushId)}</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">${escapeHtml(t.message)}</p>
+            <div class="flex items-center gap-2">
+              <input id="admin-reply-input-${idx}" type="text" value="${escapeHtml(t.reply || "")}" placeholder="پاسخ خود (یا کلید لایسنس) را برای کاربر بنویسید..."
+                class="flex-1 px-3 py-2 rounded-xl bg-[#040409] border border-red-500/30 text-white text-xs outline-none" />
+              <button onclick="sendAdminTicketReply(${idx})" class="btn-crimson px-3.5 py-2 rounded-xl text-xs font-bold shrink-0">
+                ارسال پاسخ
+              </button>
+            </div>
           </div>
-          <p class="text-xs text-slate-300 bg-white/5 p-2.5 rounded-xl">${escapeHtml(t.message)}</p>
-          <div class="flex items-center gap-2">
-            <input id="adminReplyInput_${idx}" type="text" value="${escapeHtml(t.reply || '')}" placeholder="پاسخ یا کد لایسنس را برای کاربر بنویسید..."
-              class="flex-1 px-3 py-2 rounded-xl bg-[#0c0c16] border border-red-500/30 text-xs text-white focus:outline-none focus:border-red-500" />
-            <button onclick="submitAdminTicketReply(${idx})" class="btn-crimson px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer">
-              ارسال پاسخ
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `
+        )
+        .join("");
     }
 
-    function submitAdminTicketReply(idx) {
-      const tickets = getJson(STORAGE_KEYS.TICKETS, []);
-      const input = document.getElementById(`adminReplyInput_${idx}`);
-      if (!tickets[idx] || !input) return;
-
-      tickets[idx].reply = input.value.trim();
-      tickets[idx].status = tickets[idx].reply ? 'پاسخ داده شد' : 'در انتظار پاسخ';
-      setJson(STORAGE_KEYS.TICKETS, tickets);
-
+    function sendAdminTicketReply(index) {
+      const tickets = getAllTickets();
+      if (!tickets[index]) return;
+      const input = document.getElementById(`admin-reply-input-${index}`);
+      tickets[index].reply = String(input.value || "").trim();
+      saveAllTickets(tickets);
       renderAdminTicketsList();
       renderUserTickets();
-      showToast('پاسخ تیکت با موفقیت ذخیره شد.', 'success');
+      showToast("پاسخ تیکت با موفقیت ذخیره و برای کاربر نمایش داده شد.", "success");
     }
 
-    function saveAdminApkUrl() {
-      const url = document.getElementById('adminApkUrlInput').value.trim();
-      localStorage.setItem(STORAGE_KEYS.APK_URL, url);
-      renderPortalVault();
-      showToast('لینک مستقیم دانلود APK با موفقیت ذخیره شد.', 'success');
-    }
-
-    // -----------------------------------------------------------------------
-    // ۸. به‌روزرسانی کل رابط کاربری هنگام بارگذاری و تغییر وضعیت
-    // -----------------------------------------------------------------------
-    function renderNavAuth() {
-      const navArea = document.getElementById('navAuthArea');
-      if (!navArea) return;
-      const user = getCurrentUser();
-
-      if (!user) {
-        navArea.innerHTML = `
-          <button onclick="openAuthModal()" class="btn-crimson px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-white cursor-pointer flex items-center gap-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
-            <span>ورود / ثبت‌نام</span>
-          </button>
-        `;
+    function saveApkDownloadUrl() {
+      const url = String(document.getElementById("admin-apk-url-input").value || "").trim();
+      if (!url || !url.startsWith("http")) {
+        showToast("لطفاً یک لینک معتبر که با http یا https شروع می‌شود وارد کنید.", "error");
         return;
       }
-
-      navArea.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span dir="ltr" class="hidden md:inline-block px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs font-semibold text-slate-200 max-w-[170px] truncate">
-            ${escapeHtml(user.email)}
-          </span>
-          <button onclick="handleLogout()" class="px-3 py-2 rounded-xl bg-red-950/60 hover:bg-red-800/60 border border-red-500/35 text-xs font-bold text-red-300 transition-colors cursor-pointer">
-            خروج
-          </button>
-        </div>
-      `;
+      localStorage.setItem(STORAGE_KEYS.APK_URL, url);
+      showToast("لینک مستقیم دانلود APK با موفقیت ذخیره شد.", "success");
     }
 
-    function renderApp() {
-      renderNavAuth();
-      renderPortalVault();
-      updateTicketBadge();
+    function clearApkDownloadUrl() {
+      localStorage.removeItem(STORAGE_KEYS.APK_URL);
+      document.getElementById("admin-apk-url-input").value = "";
+      showToast("لینک دانلود پاک شد.", "info");
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    /**
+     * =========================================================
+     * انیمیشن ستاره‌های کهکشانی واکنش‌گرا (Canvas)
+     * =========================================================
+     */
+    function initGalaxyCanvas() {
+      const canvas = document.getElementById("galaxy-canvas");
+      const ctx = canvas.getContext("2d");
+      let stars = [];
+      let w = 0;
+      let h = 0;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        const count = Math.min(180, Math.floor((w * h) / 9500));
+        stars = Array.from({ length: count }, () => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 1.6 + 0.3,
+          alpha: Math.random() * 0.8 + 0.2,
+          delta: (Math.random() * 0.015 + 0.004) * (Math.random() > 0.5 ? 1 : -1),
+          speedY: Math.random() * 0.15 + 0.03,
+          isCrimson: Math.random() > 0.72
+        }));
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (const s of stars) {
+          s.alpha += s.delta;
+          if (s.alpha >= 1 || s.alpha <= 0.15) s.delta *= -1;
+          s.y -= s.speedY;
+          if (s.y < 0) {
+            s.y = h;
+            s.x = Math.random() * w;
+          }
+
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = s.isCrimson
+            ? `rgba(239, 68, 68, ${s.alpha})`
+            : `rgba(248, 250, 252, ${s.alpha * 0.85})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      draw();
+    }
+
+    // اجرای اولیه هنگام بارگذاری کامل صفحه
+    window.addEventListener("load", () => {
       initGalaxyCanvas();
-      setupOtpInputs();
-      renderApp();
+      initPortal();
     });
   </script>
 </body>
