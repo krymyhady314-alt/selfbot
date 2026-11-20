@@ -19,7 +19,7 @@ if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(
     ft.border_radius.all = ft.BorderRadius.all
     ft.border_radius.only = ft.BorderRadius.only
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.1.1"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
