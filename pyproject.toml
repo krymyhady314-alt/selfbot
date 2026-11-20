@@ -20,3 +20,5 @@ permissions = [
     "INTERNET",
     "ACCESS_NETWORK_STATE"
 ]
+[tool.flet.android]
+adaptive_icon_background = "#030306"
