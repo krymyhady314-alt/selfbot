@@ -59,7 +59,6 @@
       width: 100%;
     }
 
-    /* بوم کهکشان زنده تمام‌صفحه با شتاب‌دهنده سخت‌افزاری */
     #galaxyCanvas {
       position: fixed;
       inset: 0;
@@ -70,7 +69,6 @@
       transform: translateZ(0);
     }
 
-    /* هاله‌های سحابی قرمز کهکشانی */
     .nebula-aura {
       position: fixed;
       inset: 0;
@@ -159,7 +157,6 @@
       color: var(--crimson-hot);
     }
 
-    /* ساعت زنده تهران در هدر */
     .live-clock-pill {
       display: flex;
       align-items: center;
@@ -253,7 +250,6 @@
       border-color: var(--border-red);
     }
 
-    /* کارت‌های سبک بدون لگ اسکرول */
     .tilt-card {
       position: relative;
       min-width: 0;
@@ -471,7 +467,6 @@
       font-weight: 800;
     }
 
-    /* نوار رویدادهای زنده پایین نمودار */
     .live-ticker-box {
       margin-top: 12px;
       background: rgba(4, 3, 9, 0.88);
@@ -492,7 +487,6 @@
       transition: opacity 0.25s;
     }
 
-    /* بخش‌های عمومی */
     section {
       padding: 42px 0;
       width: 100%;
@@ -613,13 +607,14 @@
       color: #fff;
     }
 
-    /* باکس استعلام لایسنس و دانلود */
+    /* باکس استعلام لایسنس و داشبورد زنده اشتراک */
     .portal-card {
       padding: 26px;
       width: 100%;
-      max-width: 780px;
+      max-width: 820px;
       margin: 0 auto;
       border-color: var(--border-red);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
     }
 
     .input-group {
@@ -636,7 +631,7 @@
       width: 100%;
       min-width: 0;
       background: rgba(3, 2, 8, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 13px;
       padding: 13px 16px;
       color: #fff;
@@ -650,18 +645,19 @@
     }
 
     .status-banner {
-      margin-top: 16px;
-      padding: 15px;
-      border-radius: 14px;
+      margin-top: 14px;
+      padding: 13px 16px;
+      border-radius: 13px;
       display: none;
-      font-size: 14px;
+      font-size: 13.5px;
+      font-weight: 600;
     }
 
-    .status-banner.ok {
+    .status-banner.loading {
       display: block;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.38);
-      color: #a7f3d0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
     }
 
     .status-banner.err {
@@ -671,7 +667,188 @@
       color: #fecdd3;
     }
 
-    /* کارت‌های امکانات با آیکون‌های برداری */
+    /* داشبورد زنده اشتراک کاربر (Live License HUD) */
+    .license-hud {
+      display: none;
+      margin-top: 18px;
+      background: linear-gradient(160deg, rgba(16, 11, 24, 0.96), rgba(5, 4, 10, 0.98));
+      border: 1px solid var(--border-red);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 32px rgba(255, 10, 52, 0.16);
+      animation: fadeSlideUp 0.35s ease-out;
+    }
+
+    .license-hud.active {
+      display: block;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .lic-hud-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 16px;
+    }
+
+    .lic-key-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 10, 52, 0.14);
+      border: 1px solid rgba(255, 10, 52, 0.4);
+      padding: 6px 14px;
+      border-radius: 11px;
+      font-weight: 900;
+      font-size: 14px;
+      color: #fff;
+      letter-spacing: 0.6px;
+    }
+
+    .lic-state-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .lic-state-pill.running {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+
+    .lic-state-pill.standby {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fcd34d;
+    }
+
+    /* تایمر شمارش معکوس ۴ ستونه زنده */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+      direction: ltr;
+    }
+
+    .cd-cell {
+      background: rgba(4, 3, 9, 0.92);
+      border: 1px solid rgba(255, 10, 52, 0.3);
+      border-radius: 15px;
+      padding: 12px 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cd-cell::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--crimson), transparent);
+    }
+
+    .cd-num {
+      display: block;
+      font-size: clamp(22px, 3.6vw, 30px);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+      text-shadow: 0 0 18px rgba(255, 10, 52, 0.45);
+    }
+
+    .cd-lbl {
+      display: block;
+      font-size: 11.5px;
+      color: #fda4af;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    /* نوار پیشرفت نئونی زمان باقی‌مانده */
+    .lic-progress-wrap {
+      margin-bottom: 16px;
+    }
+
+    .lic-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .lic-progress-track {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .lic-progress-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #b91c1c, #ff0a34, #ff5c7c);
+      box-shadow: 0 0 16px var(--crimson-glow);
+      transition: width 0.6s ease;
+    }
+
+    /* کارت‌های جزئیات لایسنس */
+    .lic-details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .lic-detail-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 13px;
+      padding: 10px 12px;
+    }
+
+    .lic-detail-item span {
+      display: block;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+
+    .lic-detail-item strong {
+      display: block;
+      font-size: 13.5px;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .lic-hud-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* کارت‌های امکانات */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -798,7 +975,6 @@
       margin-top: 8px;
     }
 
-    /* بهینه‌سازی اختصاصی تبلت و موبایل */
     @media (max-width: 920px) {
       .nav-links {
         display: none;
@@ -880,7 +1056,13 @@
       .input-group .btn {
         width: 100%;
       }
-      #apkDownloadBtn {
+      .countdown-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .lic-details-grid {
+        grid-template-columns: 1fr;
+      }
+      .lic-hud-actions .btn {
         width: 100%;
       }
     }
@@ -911,12 +1093,12 @@
       <nav class="nav-links">
         <a href="#telemetry">نوسان‌نگار زنده</a>
         <a href="#demo-video">ویدیو تست</a>
-        <a href="#download">دریافت برنامه</a>
+        <a href="#download">وضعیت لایسنس</a>
         <a href="#features">امکانات</a>
       </nav>
 
       <div class="nav-actions">
-        <a href="#download" class="btn btn-crimson">ورود لایسنس</a>
+        <a href="#download" class="btn btn-crimson" id="headerLicenseBtn">ورود لایسنس</a>
         <button type="button" class="btn btn-glass" id="openAdminBtn">مدیریت</button>
       </div>
     </div>
@@ -944,7 +1126,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            فعال‌سازی و دانلود مستقیم
+            بررسی لایسنس و دانلود مستقیم
           </a>
           <a href="#demo-video" class="btn btn-glass">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1040,34 +1222,105 @@
       </div>
     </section>
 
-    <!-- بخش استعلام لایسنس و دانلود -->
+    <!-- بخش استعلام لایسنس و داشبورد زنده اشتراک -->
     <section id="download">
       <div class="section-title">
-        <div class="kicker">LICENSE & DOWNLOAD</div>
-        <h2>استعلام لایسنس و دریافت نسخه 2.1.1</h2>
-        <p>کلید اشتراک خود را وارد کنید تا لینک دانلود مستقیم فایل نصب (APK) فعال شود</p>
+        <div class="kicker">LIVE LICENSE TELEMETRY</div>
+        <h2>پنل زنده اشتراک و دریافت نسخه 2.1.1</h2>
+        <p>با وارد کردن کد لایسنس، تایمر زنده اعتبار باقی‌مانده و لینک دانلود مستقیم برای شما فعال می‌شود</p>
       </div>
 
       <div class="tilt-card portal-card">
-        <label for="licenseInput" style="font-size:13.5px;color:var(--text-dim);font-weight:700;">
-          کلید لایسنس اختصاصی شما:
-        </label>
-        <div class="input-group">
-          <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
-          <button type="button" class="btn btn-glass" id="pasteLicenseBtn" style="white-space:nowrap;">
-            چسباندن
-          </button>
-          <button type="button" class="btn btn-crimson" id="verifyBtn" style="white-space:nowrap;">
-            بررسی و دریافت لینک
-          </button>
+        <div id="licenseFormWrap">
+          <label for="licenseInput" style="font-size:13.5px;color:var(--text-dim);font-weight:700;">
+            کلید لایسنس اختصاصی شما:
+          </label>
+          <div class="input-group">
+            <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
+            <button type="button" class="btn btn-glass" id="pasteLicenseBtn" style="white-space:nowrap;">
+              چسباندن
+            </button>
+            <button type="button" class="btn btn-crimson" id="verifyBtn" style="white-space:nowrap;">
+              ورود و نمایش تایم لایسنس
+            </button>
+          </div>
         </div>
 
         <div class="status-banner" id="licenseResult"></div>
 
-        <div id="downloadActions" style="display:none;margin-top:16px;">
-          <a href="#" target="_blank" rel="noopener" class="btn btn-crimson" id="apkDownloadBtn">
-            دانلود مستقیم فایل نصب (APK v2.1.1)
-          </a>
+        <!-- داشبورد زنده اشتراک پس از ورود موفق -->
+        <div class="license-hud" id="licenseHud">
+          <div class="lic-hud-header">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="lic-key-badge" id="hudKeyText" dir="ltr">V3X-XXXX-XXXX</span>
+              <span class="lic-state-pill running" id="hudStatePill">
+                <i class="pulse-beacon" style="background:#10b981;box-shadow:0 0 8px #10b981;"></i>
+                <span id="hudStateLabel">اشتراک فعال</span>
+              </span>
+            </div>
+            <button type="button" class="btn btn-glass" id="logoutLicenseBtn" style="padding:6px 12px;font-size:12px;">
+              تغییر / خروج لایسنس
+            </button>
+          </div>
+
+          <!-- شمارشگر معکوس زنده ثانیه‌به‌ثانیه -->
+          <div class="countdown-grid">
+            <div class="cd-cell">
+              <span class="cd-num" id="cdDays">00</span>
+              <span class="cd-lbl">روز</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdHours">00</span>
+              <span class="cd-lbl">ساعت</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdMins">00</span>
+              <span class="cd-lbl">دقیقه</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdSecs" style="color:#ff2e55;">00</span>
+              <span class="cd-lbl">ثانیه</span>
+            </div>
+          </div>
+
+          <!-- نوار پیشرفت زنده اعتبار -->
+          <div class="lic-progress-wrap">
+            <div class="lic-progress-meta">
+              <span id="licProgressLabel">میزان اعتبار باقی‌مانده</span>
+              <span id="licProgressPct" dir="ltr">100%</span>
+            </div>
+            <div class="lic-progress-track">
+              <div class="lic-progress-fill" id="licProgressFill"></div>
+            </div>
+          </div>
+
+          <!-- جزئیات کامل لایسنس -->
+          <div class="lic-details-grid">
+            <div class="lic-detail-item">
+              <span>مدت کل اشتراک</span>
+              <strong id="hudTotalDays">30 روز</strong>
+            </div>
+            <div class="lic-detail-item">
+              <span>وضعیت اتصال گوشی</span>
+              <strong id="hudDeviceStatus">فعال و متصل</strong>
+            </div>
+            <div class="lic-detail-item">
+              <span>تاریخ و ساعت انقضا</span>
+              <strong id="hudExpiryDate">--</strong>
+            </div>
+          </div>
+
+          <div class="lic-hud-actions">
+            <a href="#" target="_blank" rel="noopener" class="btn btn-crimson" id="apkDownloadBtn" style="flex:1;">
+              ⬇️ دانلود مستقیم اپلیکیشن (APK v2.1.1)
+            </a>
+            <button type="button" class="btn btn-glass" id="refreshLicenseBtn">
+              🔄 بروزرسانی لحظه‌ای
+            </button>
+          </div>
+          <p id="noApkHint" style="display:none;margin-top:10px;font-size:12.5px;color:#fcd34d;text-align:center;">
+            ⚠️ لینک فایل نصب هنوز توسط مدیریت قرار داده نشده است.
+          </p>
         </div>
       </div>
     </section>
@@ -1194,6 +1447,9 @@
 
     let globalDownloadUrl = localStorage.getItem("v3x_dl_url") || "";
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
+    let savedUserKey = localStorage.getItem("v3x_user_license") || "";
+    let activeLicenseData = null;
+    let countdownTimerId = null;
     let isAdminLogged = false;
 
     // ========================================================
@@ -1336,7 +1592,7 @@
     }, 2400);
 
     // ========================================================
-    // ۳. نوسان‌نگار زنده با رندر فوق‌سریع GPU
+    // ۳. نوسان‌نگار زنده با رندر GPU
     // ========================================================
     const tCanvas = document.getElementById("telemetryCanvas");
     const tCtx = tCanvas.getContext("2d");
@@ -1496,7 +1752,6 @@
         tCtx.fillStyle = grad;
         tCtx.fill();
 
-        // هاله نئونی سریع بدون افت فریم CPU
         tCtx.beginPath();
         tCtx.moveTo(pts[0].x, pts[0].y);
         for (let i = 0; i < pts.length - 1; i++) {
@@ -1523,7 +1778,199 @@
     requestAnimationFrame(renderScope);
 
     // ========================================================
-    // ۴. ویدیو تست، لایسنس و پنل مدیریت
+    // ۴. داشبورد زنده لایسنس و تایمر شمارش معکوس ثانیه‌به‌ثانیه
+    // ========================================================
+    function pad2(n) {
+      return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+    }
+
+    function updateDownloadButtonState() {
+      const dlBtn = document.getElementById("apkDownloadBtn");
+      const noApkHint = document.getElementById("noApkHint");
+      if (globalDownloadUrl) {
+        dlBtn.href = globalDownloadUrl;
+        dlBtn.style.display = "inline-flex";
+        noApkHint.style.display = "none";
+      } else {
+        dlBtn.style.display = "none";
+        noApkHint.style.display = "block";
+      }
+    }
+
+    function renderLiveLicenseHud(key, data) {
+      activeLicenseData = { key, ...data };
+      const hud = document.getElementById("licenseHud");
+      const formWrap = document.getElementById("licenseFormWrap");
+      const resBox = document.getElementById("licenseResult");
+      const headerBtn = document.getElementById("headerLicenseBtn");
+
+      resBox.style.display = "none";
+      formWrap.style.display = "none";
+      hud.classList.add("active");
+      if (headerBtn) headerBtn.textContent = "🟢 اشتراک فعال";
+
+      document.getElementById("hudKeyText").textContent = key;
+      const totalDays = Number(data.days || data.days_left || 30);
+      document.getElementById("hudTotalDays").textContent = `${totalDays} روز`;
+
+      updateDownloadButtonState();
+
+      if (countdownTimerId) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+      }
+
+      const pill = document.getElementById("hudStatePill");
+      const stateLabel = document.getElementById("hudStateLabel");
+      const devStatus = document.getElementById("hudDeviceStatus");
+      const expDateEl = document.getElementById("hudExpiryDate");
+      const progFill = document.getElementById("licProgressFill");
+      const progPct = document.getElementById("licProgressPct");
+      const progLabel = document.getElementById("licProgressLabel");
+
+      if (data.expires_at) {
+        const targetMs = Date.parse(data.expires_at);
+        const totalMs = Math.max(1, totalDays * 86400000);
+
+        pill.className = "lic-state-pill running";
+        stateLabel.textContent = "اشتراک فعال و در حال اجرا";
+        devStatus.textContent = "متصل و قفل‌شده روی گوشی";
+
+        try {
+          expDateEl.textContent = new Date(targetMs).toLocaleString("fa-IR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch {
+          expDateEl.textContent = new Date(targetMs).toLocaleDateString("fa-IR");
+        }
+
+        const tickCountdown = () => {
+          const diff = Math.max(0, targetMs - Date.now());
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+
+          document.getElementById("cdDays").textContent = pad2(d);
+          document.getElementById("cdHours").textContent = pad2(h);
+          document.getElementById("cdMins").textContent = pad2(m);
+          document.getElementById("cdSecs").textContent = pad2(s);
+
+          const pct = Math.max(2, Math.min(100, Math.round((diff / totalMs) * 100)));
+          progFill.style.width = `${pct}%`;
+          progPct.textContent = `${pct}%`;
+          progLabel.textContent = diff > 0 ? "تایمر زنده اعتبار باقی‌مانده" : "اعتبار اشتراک به پایان رسیده است";
+        };
+
+        tickCountdown();
+        countdownTimerId = setInterval(tickCountdown, 1000);
+      } else {
+        // لایسنس جدید که هنوز روی گوشی وارد نشده است
+        pill.className = "lic-state-pill standby";
+        stateLabel.textContent = "آماده فعال‌سازی روی گوشی";
+        devStatus.textContent = "آزاد (در انتظار اولین ورود در اپ)";
+        expDateEl.textContent = "از لحظه ورود در اپلیکیشن";
+
+        document.getElementById("cdDays").textContent = pad2(totalDays);
+        document.getElementById("cdHours").textContent = "00";
+        document.getElementById("cdMins").textContent = "00";
+        document.getElementById("cdSecs").textContent = "00";
+
+        progFill.style.width = "100%";
+        progPct.textContent = "100%";
+        progLabel.textContent = `اعتبار کامل ${totalDays} روزه آماده استارت`;
+      }
+    }
+
+    async function verifyLicenseKey(rawKey, silent = false) {
+      const key = String(rawKey || "").trim().toUpperCase();
+      const resBox = document.getElementById("licenseResult");
+
+      if (!key) {
+        if (!silent) {
+          resBox.className = "status-banner err";
+          resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
+        }
+        return;
+      }
+
+      if (!silent) {
+        resBox.className = "status-banner loading";
+        resBox.textContent = "⏳ در حال دریافت اطلاعات زنده لایسنس...";
+      }
+
+      try {
+        const r = await fetch(`${API_BASE}/api/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, source: "web" })
+        });
+        const d = await r.json();
+        if (d.valid || d.ok) {
+          savedUserKey = key;
+          localStorage.setItem("v3x_user_license", key);
+          renderLiveLicenseHud(key, d);
+        } else {
+          localStorage.removeItem("v3x_user_license");
+          savedUserKey = "";
+          document.getElementById("licenseHud").classList.remove("active");
+          document.getElementById("licenseFormWrap").style.display = "block";
+          resBox.className = "status-banner err";
+          resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است یا منقضی شده.");
+        }
+      } catch (err) {
+        if (!silent) {
+          resBox.className = "status-banner err";
+          resBox.textContent = "❌ خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.";
+        }
+      }
+    }
+
+    document.getElementById("pasteLicenseBtn").addEventListener("click", async () => {
+      try {
+        const txt = await navigator.clipboard.readText();
+        if (txt) document.getElementById("licenseInput").value = txt.trim();
+      } catch (e) {}
+    });
+
+    document.getElementById("verifyBtn").addEventListener("click", () => {
+      verifyLicenseKey(document.getElementById("licenseInput").value, false);
+    });
+
+    document.getElementById("licenseInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        verifyLicenseKey(document.getElementById("licenseInput").value, false);
+      }
+    });
+
+    document.getElementById("refreshLicenseBtn").addEventListener("click", () => {
+      if (savedUserKey) {
+        verifyLicenseKey(savedUserKey, false);
+      }
+    });
+
+    document.getElementById("logoutLicenseBtn").addEventListener("click", () => {
+      if (countdownTimerId) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+      }
+      savedUserKey = "";
+      activeLicenseData = null;
+      localStorage.removeItem("v3x_user_license");
+      document.getElementById("licenseHud").classList.remove("active");
+      document.getElementById("licenseFormWrap").style.display = "block";
+      document.getElementById("licenseInput").value = "";
+      document.getElementById("licenseResult").style.display = "none";
+      const headerBtn = document.getElementById("headerLicenseBtn");
+      if (headerBtn) headerBtn.textContent = "ورود لایسنس";
+    });
+
+    // ========================================================
+    // ۵. ویدیو تست و پنل مدیریت
     // ========================================================
     const demoPlayer = document.getElementById("demoPlayer");
     const demoIframe = document.getElementById("demoIframe");
@@ -1564,8 +2011,12 @@
       });
     });
 
-    async function loadGlobalConfig() {
+    async function initPortal() {
       renderShowcaseVideo(globalVideoUrl);
+      if (savedUserKey) {
+        document.getElementById("licenseInput").value = savedUserKey;
+        verifyLicenseKey(savedUserKey, true);
+      }
       try {
         const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`);
         const data = await res.json();
@@ -1573,6 +2024,7 @@
           if (data.download_url !== undefined) {
             globalDownloadUrl = data.download_url;
             localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+            if (activeLicenseData) updateDownloadButtonState();
           }
           if (data.video_url !== undefined) {
             globalVideoUrl = data.video_url;
@@ -1582,56 +2034,6 @@
         }
       } catch (e) {}
     }
-
-    document.getElementById("pasteLicenseBtn").addEventListener("click", async () => {
-      try {
-        const txt = await navigator.clipboard.readText();
-        if (txt) document.getElementById("licenseInput").value = txt.trim();
-      } catch (e) {}
-    });
-
-    document.getElementById("verifyBtn").addEventListener("click", async () => {
-      const key = document.getElementById("licenseInput").value.trim().toUpperCase();
-      const resBox = document.getElementById("licenseResult");
-      const dlBox = document.getElementById("downloadActions");
-      const dlBtn = document.getElementById("apkDownloadBtn");
-
-      if (!key) {
-        resBox.className = "status-banner err";
-        resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
-        dlBox.style.display = "none";
-        return;
-      }
-
-      resBox.className = "status-banner ok";
-      resBox.textContent = "در حال بررسی اعتبار لایسنس...";
-      dlBox.style.display = "none";
-
-      try {
-        const r = await fetch(`${API_BASE}/api/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, source: "web" })
-        });
-        const d = await r.json();
-        if (d.valid || d.ok) {
-          resBox.className = "status-banner ok";
-          resBox.innerHTML = `✅ <strong>لایسنس معتبر است!</strong> (اعتبار: ${d.days_left || d.days} روز)`;
-          if (globalDownloadUrl) {
-            dlBtn.href = globalDownloadUrl;
-            dlBox.style.display = "block";
-          } else {
-            resBox.innerHTML += "<br><span style='color:#fde68a;'>لینک دانلود هنوز فعال نشده است.</span>";
-          }
-        } else {
-          resBox.className = "status-banner err";
-          resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است.");
-        }
-      } catch (err) {
-        resBox.className = "status-banner err";
-        resBox.textContent = "❌ خطا در ارتباط با سرور.";
-      }
-    });
 
     const adminModal = document.getElementById("adminModal");
     document.getElementById("openAdminBtn").addEventListener("click", () => {
@@ -1683,6 +2085,7 @@
         if (d.ok) {
           globalDownloadUrl = d.download_url;
           localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          if (activeLicenseData) updateDownloadButtonState();
           fb.textContent = "✅ لینک دانلود برای تمام دستگاه‌ها ذخیره شد!";
         } else {
           fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
@@ -1740,7 +2143,7 @@
       }
     });
 
-    loadGlobalConfig();
+    initPortal();
   </script>
 </body>
 </html>
