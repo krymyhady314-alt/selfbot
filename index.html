@@ -1,1500 +1,1279 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" class="dark scroll-smooth">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V3X Selfbot v2.1.0 | پورتال رسمی سلف‌بات سروش‌پلاس</title>
-
-  <!-- آیکون اختصاصی یکپارچه V3X (Favicon & Apple Touch Icon) -->
-  <link id="dynamic-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23FF1E42'/%3E%3Cstop offset='55%25' stop-color='%23EF4444'/%3E%3Cstop offset='100%25' stop-color='%23991B1B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='28' fill='%23030306'/%3E%3Cpath d='M60 10 L102 27 V61 C102 86 84 103 60 112 C36 103 18 86 18 61 V27 Z' fill='%230A0A12' stroke='url(%23g1)' stroke-width='4.5'/%3E%3Cpath d='M60 20 L93 33 V60 C93 80 79 94 60 102 C41 94 27 80 27 60 V33 Z' fill='none' stroke='%23991B1B' stroke-width='1.5' stroke-opacity='0.75'/%3E%3Cpath d='M35 41 L53 84 L60 70 L67 84 L85 41 L74 41 L60 72 L46 41 Z' fill='%23FFFFFF'/%3E%3Cpath d='M48 41 L60 66 L72 41 L65 41 L60 52 L55 41 Z' fill='%23FF1E42'/%3E%3Cpolygon points='60,77 65,83 60,89 55,83' fill='%23FF1E42'/%3E%3C/svg%3E" />
-  <link id="dynamic-apple-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%23030306'/%3E%3Cpath d='M60 10 L102 27 V61 C102 86 84 103 60 112 C36 103 18 86 18 61 V27 Z' fill='%230A0A12' stroke='%23FF1E42' stroke-width='4.5'/%3E%3Cpath d='M35 41 L53 84 L60 70 L67 84 L85 41 L74 41 L60 72 L46 41 Z' fill='%23FFFFFF'/%3E%3Cpolygon points='60,77 65,83 60,89 55,83' fill='%23FF1E42'/%3E%3C/svg%3E" />
-
-  <!-- فونت فارسی وزیرمتن -->
+  <title>V3X Selfbot | دستیار هوشمند و پرسرعت سروش‌پلاس</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Vazirmatn', 'system-ui', 'sans-serif'],
-          },
-          colors: {
-            galaxy: '#030306',
-            carddark: '#0A0A12',
-            crimson: '#991B1B',
-            neonred: '#FF1E42',
-          },
-        },
-      },
-    };
-  </script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --bg-void: #040408;
+      --bg-surface: rgba(13, 13, 22, 0.78);
+      --bg-elevated: rgba(22, 22, 36, 0.9);
+      --crimson: #ff1e42;
+      --crimson-deep: #b91c1c;
+      --crimson-glow: rgba(255, 30, 66, 0.28);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-crimson: rgba(255, 30, 66, 0.35);
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --emerald: #10b981;
+    }
+
     * {
-      font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Vazirmatn", system-ui, -apple-system, sans-serif;
     }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      background-color: #030306;
-      color: #ffffff;
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      min-height: 100vh;
       overflow-x: hidden;
+      line-height: 1.7;
+      background-image:
+        radial-gradient(circle at 85% 8%, rgba(255, 30, 66, 0.16), transparent 36%),
+        radial-gradient(circle at 12% 45%, rgba(185, 28, 28, 0.12), transparent 42%),
+        radial-gradient(circle at 75% 85%, rgba(255, 30, 66, 0.1), transparent 38%);
     }
-    .cosmic-card {
-      background: linear-gradient(160deg, rgba(14, 14, 24, 0.92) 0%, rgba(7, 7, 13, 0.96) 100%);
-      border: 1px solid rgba(239, 68, 68, 0.28);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-      backdrop-filter: blur(14px);
+
+    /* شبکه نوری پس‌زمینه */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-size: 46px 46px;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      mask-image: radial-gradient(ellipse at center, black 45%, transparent 90%);
+      pointer-events: none;
+      z-index: 0;
     }
-    .cosmic-card-glow {
-      background: linear-gradient(160deg, rgba(18, 12, 20, 0.94) 0%, rgba(8, 6, 12, 0.98) 100%);
-      border: 1px solid rgba(255, 30, 66, 0.48);
-      box-shadow: 0 0 36px rgba(255, 30, 66, 0.16), 0 18px 45px rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(16px);
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 1;
     }
-    .btn-neon {
-      background: linear-gradient(135deg, #FF1E42 0%, #DC2626 55%, #991B1B 100%);
-      box-shadow: 0 0 22px rgba(255, 30, 66, 0.42);
+
+    /* نوار ناوبری شناور */
+    header {
+      position: sticky;
+      top: 14px;
+      z-index: 50;
+      margin: 14px auto 0;
+      max-width: 1100px;
+      padding: 0 16px;
+    }
+
+    .nav-bar {
+      background: rgba(10, 10, 18, 0.82);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--crimson), #7f1d1d);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: -0.5px;
+      box-shadow: 0 0 22px var(--crimson-glow);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-title span {
+      color: var(--crimson);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       transition: all 0.22s ease;
+      text-decoration: none;
     }
-    .btn-neon:hover {
-      box-shadow: 0 0 32px rgba(255, 30, 66, 0.68);
-      transform: translateY(-1px);
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--crimson), #dc2626);
+      color: #fff;
+      box-shadow: 0 6px 24px var(--crimson-glow);
     }
-    .btn-neon:active {
-      transform: translateY(0);
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 30, 66, 0.45);
     }
-    @keyframes floatSlow {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-7px); }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
     }
-    .emblem-float {
-      animation: floatSlow 4.5s ease-in-out infinite;
-      filter: drop-shadow(0 0 22px rgba(255, 30, 66, 0.48));
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-crimson);
     }
-    /* اسکرول‌بار سفارشی */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+
+    /* بخش Hero دو ستونه */
+    .hero {
+      padding: 64px 0 48px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      align-items: center;
     }
-    ::-webkit-scrollbar-track {
-      background: #030306;
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: #6ee7b7;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 18px;
     }
-    ::-webkit-scrollbar-thumb {
-      background: #7F1D1D;
-      border-radius: 9999px;
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(1.3); }
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 4.4vw, 48px);
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(90deg, #ff1e42, #ff6b81);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p.lead {
+      color: var(--text-dim);
+      font-size: 16px;
+      margin-bottom: 28px;
+      max-width: 560px;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 520px;
+    }
+
+    .metric-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .metric-box strong {
+      display: block;
+      font-size: 16px;
+      color: var(--text-main);
+    }
+
+    .metric-box span {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* کارت تعاملی پیش‌نمایش زنده موتور V3X */
+    .engine-card {
+      background: linear-gradient(160deg, rgba(18, 18, 30, 0.92), rgba(8, 8, 14, 0.96));
+      border: 1px solid var(--border-crimson);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 30, 66, 0.12);
+      position: relative;
+    }
+
+    .engine-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 14px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dots i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: block;
+    }
+
+    .engine-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .engine-tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .engine-tab.active {
+      background: rgba(255, 30, 66, 0.16);
+      border-color: var(--crimson);
+      color: #fff;
+    }
+
+    .console-screen {
+      background: #06060c;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 13px;
+      min-height: 155px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .console-line {
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .console-line .tag {
+      color: var(--crimson);
+      font-weight: 800;
+    }
+
+    .console-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      color: #34d399;
+    }
+
+    /* بخش عمومی تیترها */
+    section {
+      padding: 44px 0;
+    }
+
+    .section-head {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .section-head .kicker {
+      color: var(--crimson);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(22px, 3.2vw, 32px);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .section-head p {
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+
+    /* بخش ویدیو تست (Showcase Video Player) */
+    .video-showcase {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-crimson);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.6);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .video-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #05050a;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-frame video,
+    .video-frame iframe {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border: none;
+      display: none;
+    }
+
+    .video-empty {
+      text-align: center;
+      padding: 28px;
+    }
+
+    .video-empty .play-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(255, 30, 66, 0.15);
+      border: 1px solid var(--crimson);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 14px;
+      font-size: 26px;
+      color: var(--crimson);
+    }
+
+    .video-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .speed-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .speed-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-dim);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .speed-btn.active {
+      background: var(--crimson);
+      border-color: var(--crimson);
+      color: #fff;
+    }
+
+    /* باکس لایسنس و دانلود مستقیم */
+    .portal-box {
+      background: linear-gradient(145deg, rgba(16, 16, 28, 0.92), rgba(10, 10, 18, 0.95));
+      border: 1px solid var(--border-crimson);
+      border-radius: 24px;
+      padding: 28px;
+      max-width: 760px;
+      margin: 0 auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="url"] {
+      width: 100%;
+      background: rgba(5, 5, 11, 0.9);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 13px 16px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--crimson);
+    }
+
+    .license-result {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      display: none;
+      font-size: 14px;
+    }
+
+    .license-result.ok {
+      display: block;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #a7f3d0;
+    }
+
+    .license-result.err {
+      display: block;
+      background: rgba(255, 30, 66, 0.12);
+      border: 1px solid rgba(255, 30, 66, 0.4);
+      color: #fecdd3;
+    }
+
+    .download-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* مراحل ۳ گانه */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 22px;
+      position: relative;
+    }
+
+    .step-num {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--crimson);
+      background: rgba(255, 30, 66, 0.12);
+      border: 1px solid rgba(255, 30, 66, 0.28);
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .step-card h3 {
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+
+    .step-card p {
+      font-size: 13.5px;
+      color: var(--text-dim);
+    }
+
+    /* کارت‌های امکانات */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .feat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 22px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feat-card:hover {
+      border-color: var(--border-crimson);
+      transform: translateY(-3px);
+    }
+
+    .feat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 30, 66, 0.14);
+      border: 1px solid rgba(255, 30, 66, 0.3);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+
+    .feat-card h3 {
+      font-size: 17px;
+      margin-bottom: 6px;
+    }
+
+    .feat-card p {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    /* فوتر */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 26px 0 40px;
+      margin-top: 30px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    footer strong {
+      color: var(--crimson);
+    }
+
+    /* مودال پنل مدیریت */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 2, 6, 0.84);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #0c0c16;
+      border: 1px solid var(--border-crimson);
+      border-radius: 22px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .admin-section {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .admin-section h4 {
+      font-size: 14px;
+      color: #fca5a5;
+      margin-bottom: 10px;
+    }
+
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px dashed var(--crimson);
+      background: rgba(255, 30, 66, 0.08);
+      color: #fecdd3;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 36px;
+      }
+      .nav-links {
+        display: none;
+      }
+      .steps-grid,
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      .input-row {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
-<body class="min-h-screen bg-[#030306] text-white antialiased selection:bg-[#FF1E42] selection:text-white">
+<body>
+  <div class="bg-grid"></div>
 
-  <!-- پس‌زمینه کهکشانی متحرک -->
-  <canvas id="starfield-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0"></canvas>
-
-  <!-- هاله نوری پس‌زمینه -->
-  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-    <div class="absolute -top-32 right-1/4 w-96 h-96 bg-[#FF1E42]/10 rounded-full blur-[130px]"></div>
-    <div class="absolute bottom-0 left-1/5 w-[28rem] h-[28rem] bg-[#991B1B]/15 rounded-full blur-[140px]"></div>
-  </div>
-
-  <!-- پیام اعلان شناور (Toast) -->
-  <div id="toast-container" class="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- نوار ناوبری بالا (Navbar) -->
-  <header class="sticky top-0 z-30 border-b border-red-500/20 bg-[#030306]/85 backdrop-blur-xl">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2">
-      <!-- لوگو و نام برند -->
-      <a href="#" class="flex items-center gap-3 group">
-        <div id="nav-logo-slot" class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 transition-transform duration-300 group-hover:scale-105"></div>
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <span class="font-black text-base sm:text-lg tracking-wide text-white">V3X <span class="text-[#FF1E42]">SELFBOT</span></span>
-            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FF1E42]/15 text-[#FF1E42] border border-[#FF1E42]/40">v2.1.0</span>
-          </div>
-          <span class="text-[11px] text-slate-400 hidden sm:inline">نسل جدید اتوماسیون هوشمند سروش‌پلاس</span>
-        </div>
+  <header>
+    <div class="nav-bar">
+      <a href="#" class="brand">
+        <div class="brand-badge">V3X</div>
+        <div class="brand-title">V3X <span>SELFBOT</span></div>
       </a>
 
-      <!-- دکمه‌های ناوبری -->
-      <nav class="flex items-center gap-2 sm:gap-3">
-        <button id="nav-login-btn" onclick="openLicenseModal()" class="px-3.5 sm:px-5 py-2.5 rounded-xl btn-neon text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 cursor-pointer">
-          <span>🔑</span>
-          <span>ورود با لایسنس</span>
-        </button>
-
-        <button id="nav-vip-btn" onclick="scrollToPortal()" class="hidden px-3.5 sm:px-5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs sm:text-sm font-bold text-emerald-300 flex items-center gap-1.5 cursor-pointer transition">
-          <span>👑</span>
-          <span id="nav-vip-nick">پنل کاربری</span>
-        </button>
-
-        <button onclick="openTicketModal()" class="px-3 sm:px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-red-500/25 text-xs sm:text-sm font-semibold text-slate-200 transition cursor-pointer">
-          📩 تیکت
-        </button>
-
-        <button onclick="openAdminModal()" class="px-3 sm:px-4 py-2.5 rounded-xl bg-[#991B1B]/25 hover:bg-[#991B1B]/45 border border-red-500/35 text-xs sm:text-sm font-semibold text-red-300 transition cursor-pointer">
-          🛡️ مدیریت
-        </button>
+      <nav class="nav-links">
+        <a href="#demo-video">ویدیو تست</a>
+        <a href="#download">دریافت برنامه</a>
+        <a href="#how-it-works">مراحل نصب</a>
+        <a href="#features">امکانات</a>
       </nav>
+
+      <div class="nav-actions">
+        <a href="#download" class="btn btn-primary">ورود لایسنس</a>
+        <button type="button" class="btn btn-glass" id="openAdminBtn">🛡️ مدیریت</button>
+      </div>
     </div>
   </header>
 
-  <!-- محتوای اصلی صفحه -->
-  <main class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-14 pb-20 space-y-14 sm:space-y-20">
+  <main class="container">
+    <!-- بخش Hero -->
+    <section class="hero">
+      <div>
+        <div class="status-pill">
+          <span class="pulse-dot"></span>
+          <span id="serverStatusText">سرور اختصاصی فعال · نسخه 2.1.1</span>
+        </div>
 
-    <!-- بخش معرفی اصلی (Hero Section) -->
-    <section class="text-center max-w-3xl mx-auto space-y-6">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FF1E42]/10 border border-[#FF1E42]/35 text-xs sm:text-sm font-semibold text-[#FF1E42]">
-        <span class="w-2 h-2 rounded-full bg-[#FF1E42] animate-ping"></span>
-        <span>نسخه جدید 2.1.0 منتشر شد — هسته فوق‌سریع و پایدار</span>
+        <h1>
+          قدرتمندترین <span class="accent">سلف‌بات سروش‌پلاس</span> با سرعت توربو و امکانات هوشمند
+        </h1>
+
+        <p class="lead">
+          مدیریت کامل چت‌ها، ساعت زنده افق تهران کنار اسم پروفایل، ارسال چندتایی با حافظه دائمی و موتور توربو بدون تاخیر؛ همگی در یک اپلیکیشن سبک، امن و اختصاصی.
+        </p>
+
+        <div class="hero-cta-row">
+          <a href="#download" class="btn btn-primary">⚡ فعال‌سازی و دانلود مستقیم</a>
+          <a href="#demo-video" class="btn btn-glass">🎬 تماشای ویدیو تست</a>
+        </div>
+
+        <div class="hero-metrics">
+          <div class="metric-box">
+            <strong>نسخه 2.1.1</strong>
+            <span>آخرین آپدیت پایدار</span>
+          </div>
+          <div class="metric-box">
+            <strong>بدون فیلترشکن</strong>
+            <span>متصل به api.v3xsys.ir</span>
+          </div>
+          <div class="metric-box">
+            <strong>قفل امنیتی</strong>
+            <span>لایسنس اختصاصی هر دستگاه</span>
+          </div>
+        </div>
       </div>
 
-      <!-- آیکون اختصاصی مرکزی -->
-      <div class="flex justify-center pt-1">
-        <div id="hero-logo-slot" class="w-24 h-24 sm:w-28 sm:h-28 emblem-float"></div>
-      </div>
+      <!-- پیش‌نمایش زنده موتور برنامه -->
+      <div class="engine-card">
+        <div class="engine-top">
+          <div class="dots">
+            <i style="background:#ef4444"></i>
+            <i style="background:#f59e0b"></i>
+            <i style="background:#10b981"></i>
+          </div>
+          <span style="font-size:12px;color:var(--text-dim);font-weight:700;">V3X CORE ENGINE v2.1.1</span>
+        </div>
 
-      <h1 class="text-3xl sm:text-5xl font-black leading-tight tracking-tight text-white">
-        قدرت مطلق در <span class="text-transparent bg-clip-text bg-gradient-to-l from-[#FF1E42] via-red-500 to-rose-400">سروش‌پلاس</span> با سلف‌بات اختصاصی V3X
-      </h1>
+        <div class="engine-tabs">
+          <button type="button" class="engine-tab active" data-tab="clock">⏰ ساعت زنده</button>
+          <button type="button" class="engine-tab" data-tab="turbo">🚀 ارسال توربو</button>
+          <button type="button" class="engine-tab" data-tab="multi">📨 چندتایی</button>
+        </div>
 
-      <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-        مدیریت هوشمند چت‌ها، ارسال توربو و چندتایی بدون محدودیت، ساعت زنده افق تهران روی پروفایل و ریپلای سریع با رابط کاربری مشکی کهکشانی و اشتراک اختصاصی.
-      </p>
-
-      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
-        <button onclick="scrollToPortal()" class="px-6 py-3.5 rounded-2xl btn-neon text-sm sm:text-base font-extrabold text-white flex items-center gap-2 cursor-pointer">
-          <span>🚀</span>
-          <span>ورود به بخش دانلود و اشتراک</span>
-        </button>
-        <button onclick="openTicketModal()" class="px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-red-500/30 text-sm sm:text-base font-bold text-slate-200 flex items-center gap-2 transition cursor-pointer">
-          <span>💬</span>
-          <span>پشتیبانی و دریافت اشتراک (@V3XSYS)</span>
-        </button>
+        <div class="console-screen" id="consoleScreen">
+          <div>
+            <div class="console-line"><span class="tag">&gt;</span> بررسی اعتبار لایسنس روی api.v3xsys.ir ... تایید شد</div>
+            <div class="console-line"><span class="tag">&gt;</span> همگام‌سازی ساعت افق تهران (UTC+3:30) فعال شد</div>
+            <div class="console-line"><span class="tag">&gt;</span> پیش‌نمایش پروفایل: <strong style="color:#fff;">Hadi | 𝟏𝟒:𝟑𝟎</strong></div>
+          </div>
+          <div class="console-footer">
+            <span>● وضعیت: متصل و در حال اجرا</span>
+            <span>پینگ سرور: 24ms</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- بخش مرکزی پورتال لایسنس و دانلود (Locked State / VIP Dashboard) -->
-    <section id="license-portal" class="scroll-mt-24 max-w-3xl mx-auto">
-      
-      <!-- حالت ۱: قفل دانلود پیش از ورود با کد لایسنس -->
-      <div id="locked-portal-card" class="cosmic-card-glow rounded-3xl p-6 sm:p-10 text-center space-y-6 relative overflow-hidden">
-        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#FF1E42] to-transparent"></div>
-
-        <div class="w-16 h-16 mx-auto rounded-2xl bg-[#FF1E42]/15 border border-[#FF1E42]/40 flex items-center justify-center text-3xl shadow-lg shadow-[#FF1E42]/20">
-          🔒
-        </div>
-
-        <div class="space-y-2.5">
-          <span class="inline-block px-3 py-1 rounded-lg bg-red-500/15 border border-red-500/30 text-xs font-bold text-red-400">
-            دسترسی محدود به اعضای دارای اشتراک اختصاصی
-          </span>
-          <h2 class="text-2xl sm:text-3xl font-black text-white">
-            برای داشتن لایسنس تیکت دهید
-          </h2>
-          <p class="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-            لینک دانلود مستقیم نسخه <span class="text-white font-bold">2.1.0</span> صرفاً پس از احراز هویت با کد لایسنس معتبر و ثبت لقب اختصاصی شما فعال می‌شود.
-          </p>
-        </div>
-
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
-          <button onclick="openLicenseModal()" class="px-6 py-3.5 rounded-2xl btn-neon text-sm sm:text-base font-extrabold text-white flex items-center justify-center gap-2 cursor-pointer">
-            <span>🔑</span>
-            <span>ورود با کد لایسنس</span>
-          </button>
-          <button onclick="openTicketModal()" class="px-6 py-3.5 rounded-2xl bg-[#991B1B]/25 hover:bg-[#991B1B]/40 border border-red-500/40 text-sm sm:text-base font-bold text-red-200 flex items-center justify-center gap-2 transition cursor-pointer">
-            <span>📩</span>
-            <span>ثبت تیکت پشتیبانی (@V3XSYS)</span>
-          </button>
-        </div>
+    <!-- بخش ویدیو تست عملکرد برنامه -->
+    <section id="demo-video">
+      <div class="section-head">
+        <div class="kicker">LIVE SHOWCASE</div>
+        <h2>ویدیو تست و عملکرد واقعی برنامه</h2>
+        <p>پیش از نصب، محیط برنامه و سرعت اجرای دستورات سلف‌بات V3X را در عمل ببینید</p>
       </div>
 
-      <!-- حالت ۲: داشبورد VIP پس از تایید لایسنس -->
-      <div id="vip-dashboard-card" class="hidden cosmic-card-glow rounded-3xl p-6 sm:p-9 space-y-6 relative overflow-hidden">
-        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#FF1E42] to-transparent"></div>
+      <div class="video-showcase">
+        <div class="video-frame" id="videoFrame">
+          <video id="demoPlayer" controls playsinline preload="metadata"></video>
+          <iframe id="demoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
 
-        <!-- هدر داشبورد با آیکون یکپارچه و خوش‌آمدگویی -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-red-500/20">
-          <div class="flex items-center gap-3.5">
-            <div id="vip-logo-slot" class="w-13 h-13 shrink-0"></div>
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg sm:text-xl font-black text-white">
-                  خوش آمدید، <span id="vip-nickname-display" class="text-[#FF1E42]">کاربر VIP</span> عزیز 👑
-                </h2>
-                <button onclick="toggleEditNickname()" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-red-500/30 text-[11px] font-semibold text-slate-300 transition cursor-pointer">
-                  ✏️ تغییر لقب
-                </button>
-              </div>
-              <p class="text-xs text-emerald-400 font-semibold mt-1">● اشتراک اختصاصی شما فعال و تایید شده است</p>
-            </div>
-          </div>
-
-          <button onclick="logoutSession()" class="self-start sm:self-center px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/35 text-xs font-bold text-red-300 transition cursor-pointer">
-            🚪 خروج از پنل
-          </button>
-        </div>
-
-        <!-- فرم تغییر لقب درون‌صفحه‌ای -->
-        <div id="edit-nickname-box" class="hidden p-4 rounded-2xl bg-[#030306]/80 border border-red-500/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          <input id="new-nickname-input" type="text" maxlength="24" placeholder="لقب جدید خود را وارد کنید..." class="flex-1 px-4 py-2.5 rounded-xl bg-[#0A0A12] border border-red-500/35 text-sm text-white focus:outline-none focus:border-[#FF1E42]" />
-          <div class="flex items-center gap-2">
-            <button onclick="saveNewNickname()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-neon text-xs font-bold text-white cursor-pointer">ثبت لقب</button>
-            <button onclick="toggleEditNickname(false)" class="px-3 py-2.5 rounded-xl bg-white/5 text-xs text-slate-400 hover:text-white cursor-pointer">انصراف</button>
-          </div>
-        </div>
-
-        <!-- باکس کلید لایسنس و تایمر معکوس زنده -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- کارت کلید لایسنس -->
-          <div class="p-4 sm:p-5 rounded-2xl bg-[#030306]/90 border border-red-500/25 flex flex-col justify-between gap-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-400 font-semibold">کلید اشتراک اختصاصی شما</span>
-              <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-bold">فعال</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 bg-[#0A0A12] px-3.5 py-2.5 rounded-xl border border-red-500/20">
-              <code id="vip-key-display" dir="ltr" class="text-sm sm:text-base font-mono font-bold text-[#FF1E42] tracking-wider select-all">V3X-XXXX-XXXX</code>
-              <button onclick="copyActiveKey()" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-xs font-bold text-red-200 transition cursor-pointer shrink-0">
-                📋 کپی
-              </button>
-            </div>
-          </div>
-
-          <!-- کارت تایمر معکوس زنده -->
-          <div class="p-4 sm:p-5 rounded-2xl bg-[#030306]/90 border border-red-500/25 flex flex-col justify-between gap-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-slate-400 font-semibold">زمان باقی‌مانده اعتبار</span>
-              <span class="text-[11px] text-red-400 font-semibold">ثبت دائمی</span>
-            </div>
-            <div dir="ltr" class="grid grid-cols-4 gap-2 text-center">
-              <div class="bg-[#0A0A12] border border-red-500/25 rounded-xl py-2">
-                <div id="cd-days" class="text-base sm:text-lg font-black font-mono text-white">00</div>
-                <div class="text-[10px] text-slate-400">روز</div>
-              </div>
-              <div class="bg-[#0A0A12] border border-red-500/25 rounded-xl py-2">
-                <div id="cd-hours" class="text-base sm:text-lg font-black font-mono text-white">00</div>
-                <div class="text-[10px] text-slate-400">ساعت</div>
-              </div>
-              <div class="bg-[#0A0A12] border border-red-500/25 rounded-xl py-2">
-                <div id="cd-mins" class="text-base sm:text-lg font-black font-mono text-white">00</div>
-                <div class="text-[10px] text-slate-400">دقیقه</div>
-              </div>
-              <div class="bg-[#0A0A12] border border-[#FF1E42]/50 rounded-xl py-2">
-                <div id="cd-secs" class="text-base sm:text-lg font-black font-mono text-[#FF1E42]">00</div>
-                <div class="text-[10px] text-slate-400">ثانیه</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- بخش دانلود مستقیم نسخه 2.1.0 -->
-        <div class="p-5 sm:p-6 rounded-2xl bg-gradient-to-l from-[#FF1E42]/15 via-[#991B1B]/15 to-[#030306] border border-[#FF1E42]/40 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
-                <span>📦 فایل نصبی اندروید V3X Selfbot</span>
-                <span class="text-xs px-2 py-0.5 rounded-md bg-[#FF1E42] text-white font-bold">v2.1.0</span>
-              </h3>
-              <p class="text-xs text-slate-300 mt-1">
-                دارای آیکون اختصاصی یکپارچه، تم مشکی کهکشانی و هسته ارسال توربو
-              </p>
-            </div>
-            <button onclick="refreshGlobalConfig(true)" class="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 transition cursor-pointer">
-              🔄 بررسی مجدد لینک
-            </button>
-          </div>
-
-          <!-- دکمه دانلود فعال (در صورت وجود لینک در سرور) -->
-          <div id="vip-download-ready" class="hidden">
-            <a id="vip-download-anchor" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-4 px-6 rounded-2xl btn-neon text-center text-sm sm:text-base font-black text-white flex items-center justify-center gap-2.5 shadow-xl">
-              <span>⬇️</span>
-              <span>دانلود مستقیم نسخه 2.1.0</span>
-            </a>
-          </div>
-
-          <!-- پیام عدم ثبت لینک توسط مدیریت -->
-          <div id="vip-download-missing" class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 text-center space-y-2">
-            <p class="text-sm font-bold text-amber-300">
-              ⚠️ لینک دانلود هنوز توسط مدیریت ثبت نشده است
-            </p>
-            <p class="text-xs text-slate-400">
-              لطفاً چند لحظه دیگر دکمه «بررسی مجدد لینک» را بزنید یا به پشتیبانی <span class="text-red-400 font-bold">@V3XSYS</span> پیام دهید.
+          <div class="video-empty" id="videoEmptyState">
+            <div class="play-circle">▶</div>
+            <h3 style="font-size:17px;margin-bottom:6px;">ویدیو تست در حال آماده‌سازی است</h3>
+            <p style="font-size:13px;color:var(--text-dim);">
+              مدیریت می‌تواند از طریق پنل <strong>مدیریت</strong> لینک ویدیو تست را بارگذاری کند تا برای همه کاربران نمایش داده شود.
             </p>
           </div>
         </div>
-      </div>
 
-    </section>
+        <div class="video-toolbar">
+          <div style="font-size:13px;color:var(--text-dim);">
+            🎥 نمایشگر اختصاصی V3X · کیفیت اصلی
+          </div>
 
-    <!-- بخش ویژگی‌های کلیدی سلف‌بات -->
-    <section class="space-y-8">
-      <div class="text-center space-y-2">
-        <h2 class="text-2xl sm:text-3xl font-black text-white">قابلیت‌های هسته <span class="text-[#FF1E42]">V3X v2.1.0</span></h2>
-        <p class="text-xs sm:text-sm text-slate-400">طراحی‌شده برای سرعت حداکثری، پایداری مداوم و مدیریت حرفه‌ای حساب سروش‌پلاس</p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <div class="cosmic-card rounded-2xl p-5 space-y-3 hover:border-[#FF1E42]/50 transition">
-          <div class="w-11 h-11 rounded-xl bg-[#FF1E42]/15 border border-[#FF1E42]/35 flex items-center justify-center text-xl">🚀</div>
-          <h3 class="text-base font-extrabold text-white">ارسال توربو فوق‌سریع</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">ارسال دسته‌ای پیام‌ها با مدیریت هوشمند صف و حداقل تاخیر بدون قطع شدن اتصال.</p>
-        </div>
-
-        <div class="cosmic-card rounded-2xl p-5 space-y-3 hover:border-[#FF1E42]/50 transition">
-          <div class="w-11 h-11 rounded-xl bg-[#FF1E42]/15 border border-[#FF1E42]/35 flex items-center justify-center text-xl">📨</div>
-          <h3 class="text-base font-extrabold text-white">ارسال چندتایی و گروهی</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">انتخاب همزمان چندین پی‌وی و گروه همراه با حافظه ذخیره‌سازی پیام‌های پیش‌فرض.</p>
-        </div>
-
-        <div class="cosmic-card rounded-2xl p-5 space-y-3 hover:border-[#FF1E42]/50 transition">
-          <div class="w-11 h-11 rounded-xl bg-[#FF1E42]/15 border border-[#FF1E42]/35 flex items-center justify-center text-xl">⏰</div>
-          <h3 class="text-base font-extrabold text-white">ساعت زنده افق تهران</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">به‌روزرسانی خودکار ساعت کنار نام پروفایل هر دقیقه با فونت‌های متنوع و زیبا.</p>
-        </div>
-
-        <div class="cosmic-card rounded-2xl p-5 space-y-3 hover:border-[#FF1E42]/50 transition">
-          <div class="w-11 h-11 rounded-xl bg-[#FF1E42]/15 border border-[#FF1E42]/35 flex items-center justify-center text-xl">🛡️</div>
-          <h3 class="text-base font-extrabold text-white">اشتراک اختصاصی</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">مدیریت متمرکز اعتبار زمانی، احراز هویت سریع و دسترسی اختصاصی به آخرین نسخه‌ها.</p>
+          <div class="speed-group" id="speedControls">
+            <span style="font-size:12px;color:var(--text-dim);margin-left:4px;">سرعت پخش:</span>
+            <button type="button" class="speed-btn" data-speed="0.75">0.75x</button>
+            <button type="button" class="speed-btn active" data-speed="1">1x</button>
+            <button type="button" class="speed-btn" data-speed="1.25">1.25x</button>
+            <button type="button" class="speed-btn" data-speed="1.5">1.5x</button>
+            <button type="button" class="speed-btn" data-speed="2">2x</button>
+          </div>
         </div>
       </div>
     </section>
 
+    <!-- بخش بررسی لایسنس و دانلود مستقیم -->
+    <section id="download">
+      <div class="section-head">
+        <div class="kicker">LICENSE & DOWNLOAD</div>
+        <h2>استعلام لایسنس و دانلود نسخه 2.1.1</h2>
+        <p>کد اشتراک خود را وارد کنید تا لینک دانلود مستقیم فایل نصب (APK) فعال شود</p>
+      </div>
+
+      <div class="portal-box">
+        <label for="licenseInput" style="font-size:13px;color:var(--text-dim);font-weight:600;">
+          کد لایسنس اختصاصی شما:
+        </label>
+        <div class="input-row">
+          <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
+          <button type="button" class="btn btn-primary" id="verifyBtn" style="white-space:nowrap;">
+            🔍 بررسی و دریافت لینک
+          </button>
+        </div>
+
+        <div class="license-result" id="licenseResult"></div>
+
+        <div class="download-actions" id="downloadActions" style="display:none;">
+          <a href="#" target="_blank" rel="noopener" class="btn btn-primary" id="apkDownloadBtn">
+            ⬇️ دانلود مستقیم فایل نصب (APK v2.1.1)
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- مراحل شروع کار -->
+    <section id="how-it-works">
+      <div class="section-head">
+        <div class="kicker">QUICK START</div>
+        <h2>شروع کار در ۳ مرحله ساده</h2>
+        <p>کمتر از ۲ دقیقه سلف‌بات خود را روی سروش‌پلاس فعال کنید</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-num">مرحله ۰۱</span>
+          <h3>دریافت کلید لایسنس</h3>
+          <p>کد اشتراک اختصاصی خود را از پشتیبانی دریافت کنید؛ هر لایسنس به صورت امن روی سخت‌افزار گوشی شما قفل می‌شود.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">مرحله ۰۲</span>
+          <h3>استعلام و دانلود APK</h3>
+          <p>کد لایسنس را در کادر بالا وارد کنید تا اعتبار شما تایید شده و آخرین نسخه اپلیکیشن مستقیم دانلود شود.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">مرحله ۰۳</span>
+          <h3>اتصال و اجرای ابزارها</h3>
+          <p>شماره سروش‌پلاس خود را وارد کنید و از ساعت زنده پروفایل، ارسال توربو و ریپلای سریع لذت ببرید.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- امکانات کلیدی -->
+    <section id="features">
+      <div class="section-head">
+        <div class="kicker">FEATURES</div>
+        <h2>امکانات کلیدی V3X Selfbot</h2>
+        <p>طراحی‌شده برای سرعت بالا، پایداری مداوم و رابط کاربری روان</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feat-card">
+          <div class="feat-icon">⏰</div>
+          <h3>ساعت زنده افق تهران کنار اسم</h3>
+          <p>به‌روزرسانی خودکار و دقیق ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🚀</div>
+          <h3>موتور ارسال توربو فوق‌سریع</h3>
+          <p>ارسال همزمان و بهینه پیام‌ها با مدیریت هوشمند محدودیت‌های سرور و اتصال مجدد خودکار در صورت قطع اینترنت.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📨</div>
+          <h3>ارسال چندتایی با حافظه دائمی</h3>
+          <p>لیست پیام‌های دلخواه خود را بسازید، در حافظه برنامه ذخیره کنید و همزمان به چند پی‌وی یا گروه ارسال نمایید.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">💬</div>
+          <h3>انتخاب چت و ریپلای سریع</h3>
+          <p>مشاهده لیست کامل پی‌وی‌ها و گروه‌ها، خواندن پیام‌های اخیر هر چت و انتخاب دقیق پیام برای ریپلای خودکار.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- فوتر سایت -->
-  <footer class="relative z-10 border-t border-red-500/20 bg-[#030306]/90 backdrop-blur-md py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-[#FF1E42]"></span>
-        <span>پورتال رسمی <strong class="text-white">V3X Soroush+ Selfbot</strong> — نسخه <strong class="text-[#FF1E42]">2.1.0</strong></span>
-      </div>
-      <div class="flex items-center gap-4">
-        <span>پشتیبانی و دریافت اشتراک در سروش‌پلاس:</span>
-        <span class="px-3 py-1 rounded-lg bg-[#FF1E42]/15 border border-[#FF1E42]/35 font-mono font-bold text-[#FF1E42] select-all">@V3XSYS</span>
-      </div>
+  <footer>
+    <div class="container">
+      <p>تمامی حقوق برای <strong>V3XSYS (@V3XSYS)</strong> محفوظ است · دامنه رسمی: <strong>v3xsys.ir</strong></p>
     </div>
   </footer>
 
-  <!-- ========================================================= -->
-  <!-- مودال ۱: ورود با کد لایسنس و لقب اختصاصی -->
-  <!-- ========================================================= -->
-  <div id="license-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="cosmic-card-glow w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-5 relative max-h-[92vh] overflow-y-auto">
-      <button onclick="closeLicenseModal()" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
-
-      <div class="text-center space-y-2.5 pt-1">
-        <div id="modal-logo-slot" class="w-14 h-14 mx-auto"></div>
-        <h3 class="text-xl font-black text-white">ورود با کد لایسنس</h3>
-        <p class="text-xs text-slate-400">لقب دلخواه و کلید اشتراک اختصاصی خود را وارد کنید</p>
+  <!-- مودال پنل مدیریت -->
+  <div class="modal-backdrop" id="adminModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="font-size:17px;">🛡️ پنل مدیریت سراسری V3X</h3>
+        <button type="button" class="btn btn-glass" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
       </div>
 
-      <div id="login-error-box" class="hidden p-3.5 rounded-xl bg-red-500/15 border border-red-500/45 text-xs font-semibold text-red-200 text-center"></div>
-
-      <form onsubmit="handleLicenseLogin(event)" class="space-y-4">
-        <div class="space-y-1.5">
-          <label class="block text-xs font-bold text-slate-300">لقب شما <span class="text-[#FF1E42]">*</span></label>
-          <input id="login-nickname-input" type="text" required maxlength="24" placeholder="مثلاً: امیر" class="w-full px-4 py-3 rounded-xl bg-[#030306] border border-red-500/30 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#FF1E42]" />
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="block text-xs font-bold text-slate-300">کد لایسنس <span class="text-[#FF1E42]">*</span></label>
-          <input id="login-key-input" type="text" required dir="ltr" placeholder="V3X-XXXX-XXXX" class="w-full px-4 py-3 rounded-xl bg-[#030306] border border-red-500/30 text-sm font-mono font-bold text-center text-white tracking-wider placeholder-slate-500 focus:outline-none focus:border-[#FF1E42]" />
-        </div>
-
-        <button id="login-submit-btn" type="submit" class="w-full py-3.5 rounded-xl btn-neon text-sm font-extrabold text-white flex items-center justify-center gap-2 cursor-pointer">
-          <span>🚀</span>
-          <span>تایید لایسنس و ورود به پنل</span>
+      <!-- فرم ورود ادمین -->
+      <div id="adminLoginView">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">
+          برای دسترسی به تنظیمات سایت، ویدیو تست و ساخت لایسنس، رمز مدیریت را وارد کنید:
+        </p>
+        <input type="password" id="adminPassInput" placeholder="رمز مدیریت را وارد کنید..." dir="ltr" />
+        <button type="button" class="btn btn-primary" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
+          ورود به پنل مدیریت
         </button>
-      </form>
-
-      <div class="pt-2 border-t border-red-500/15 text-center">
-        <button onclick="closeLicenseModal(); openTicketModal();" class="text-xs text-slate-400 hover:text-[#FF1E42] transition cursor-pointer">
-          هنوز لایسنس ندارید؟ <span class="underline font-bold text-red-400">ثبت تیکت دریافت اشتراک</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================= -->
-  <!-- مودال ۲: ثبت تیکت پشتیبانی و پیگیری -->
-  <!-- ========================================================= -->
-  <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="cosmic-card-glow w-full max-w-lg rounded-3xl p-6 sm:p-7 space-y-5 relative max-h-[92vh] overflow-y-auto">
-      <button onclick="closeTicketModal()" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
-
-      <div class="space-y-1">
-        <h3 class="text-xl font-black text-white">📩 پشتیبانی و درخواست لایسنس</h3>
-        <p class="text-xs text-slate-400">درخواست خود را ثبت کنید یا مستقیم در سروش‌پلاس به <span class="text-[#FF1E42] font-bold">@V3XSYS</span> پیام دهید.</p>
+        <p id="adminLoginErr" style="color:#fda4af;font-size:13px;margin-top:8px;"></p>
       </div>
 
-      <form onsubmit="submitSupportTicket(event)" class="space-y-3.5">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">نام یا لقب شما *</label>
-            <input id="ticket-name" type="text" required placeholder="نام شما" class="w-full px-3.5 py-2.5 rounded-xl bg-[#030306] border border-red-500/30 text-sm text-white focus:outline-none focus:border-[#FF1E42]" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">آیدی سروش‌پلاس یا شماره *</label>
-            <input id="ticket-contact" type="text" required dir="ltr" placeholder="@username" class="w-full px-3.5 py-2.5 rounded-xl bg-[#030306] border border-red-500/30 text-sm text-white focus:outline-none focus:border-[#FF1E42]" />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">موضوع درخواست</label>
-          <select id="ticket-plan" class="w-full px-3.5 py-2.5 rounded-xl bg-[#030306] border border-red-500/30 text-sm text-white focus:outline-none focus:border-[#FF1E42]">
-            <option value="درخواست اشتراک ۳۰ روزه">درخواست اشتراک ۳۰ روزه</option>
-            <option value="درخواست اشتراک ۹۰ روزه">درخواست اشتراک ۹۰ روزه</option>
-            <option value="درخواست اشتراک نامحدود / سالانه">درخواست اشتراک سالانه</option>
-            <option value="پشتیبانی فنی و راهنما">پشتیبانی فنی و راهنما</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">توضیحات پیام *</label>
-          <textarea id="ticket-msg" rows="3" required placeholder="متن پیام یا درخواست خود را بنویسید..." class="w-full px-3.5 py-2.5 rounded-xl bg-[#030306] border border-red-500/30 text-sm text-white focus:outline-none focus:border-[#FF1E42]"></textarea>
-        </div>
-
-        <button type="submit" class="w-full py-3 rounded-xl btn-neon text-sm font-extrabold text-white cursor-pointer">
-          ارسال تیکت پشتیبانی
-        </button>
-      </form>
-
-      <!-- لیست تیکت‌های ثبت‌شده کاربر و پاسخ مدیریت -->
-      <div class="pt-3 border-t border-red-500/20 space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-300">وضعیت تیکت‌های اخیر شما</span>
-          <span class="text-[11px] text-red-400 font-mono">@V3XSYS</span>
-        </div>
-        <div id="user-tickets-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================= -->
-  <!-- مودال ۳: پنل مدیریت جامع (کد ورود: V3XSYS) -->
-  <!-- ========================================================= -->
-  <div id="admin-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-    <div class="cosmic-card-glow w-full max-w-2xl rounded-3xl p-6 sm:p-7 space-y-5 relative max-h-[92vh] overflow-y-auto">
-      <button onclick="closeAdminModal()" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
-
-      <!-- فرم احراز هویت مدیر -->
-      <div id="admin-auth-view" class="space-y-4 py-4 max-w-sm mx-auto text-center">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-[#FF1E42]/15 border border-[#FF1E42]/40 flex items-center justify-center text-2xl">🛡️</div>
-        <h3 class="text-xl font-black text-white">ورود به پنل مدیریت</h3>
-        <p class="text-xs text-slate-400">کد امنیتی مدیریت را وارد کنید</p>
-        <div id="admin-auth-err" class="hidden p-2.5 rounded-xl bg-red-500/15 border border-red-500/40 text-xs text-red-300"></div>
-        <form onsubmit="verifyAdminPass(event)" class="space-y-3">
-          <input id="admin-pass-input" type="password" dir="ltr" required placeholder="کد مدیریت..." class="w-full px-4 py-3 rounded-xl bg-[#030306] border border-red-500/35 text-center text-sm font-mono text-white focus:outline-none focus:border-[#FF1E42]" />
-          <button type="submit" class="w-full py-3 rounded-xl btn-neon text-sm font-extrabold text-white cursor-pointer">ورود به مدیریت</button>
-        </form>
-      </div>
-
-      <!-- محتوای اصلی پنل مدیریت -->
-      <div id="admin-panel-view" class="hidden space-y-5">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-red-500/20">
-          <div>
-            <h3 class="text-lg sm:text-xl font-black text-white">🛡️ مرکز کنترل مدیریت V3X</h3>
-            <p class="text-xs text-slate-400">تنظیم سراسری لینک دانلود، صدور لایسنس و پاسخ به تیکت‌ها</p>
-          </div>
-          <button onclick="logoutAdmin()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-xs text-red-300 cursor-pointer">قفل کردن پنل</button>
-        </div>
-
-        <!-- تب‌های پنل مدیریت -->
-        <div class="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-[#030306] border border-red-500/25">
-          <button id="tab-btn-link" onclick="switchAdminTab('link')" class="py-2.5 px-2 rounded-xl btn-neon text-xs sm:text-sm font-bold text-white cursor-pointer transition">
-            🔗 جایگزینی لینک دانلود
-          </button>
-          <button id="tab-btn-keys" onclick="switchAdminTab('keys')" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white cursor-pointer transition">
-            🔑 ساخت لایسنس
-          </button>
-          <button id="tab-btn-tickets" onclick="switchAdminTab('tickets')" class="py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white cursor-pointer transition">
-            📩 مدیریت تیکت‌ها
+      <!-- داشبورد داخلی ادمین -->
+      <div id="adminPanelView" style="display:none;">
+        <!-- بخش ۱: لینک دانلود APK -->
+        <div class="admin-section">
+          <h4>📦 لینک دانلود مستقیم اپلیکیشن (APK)</h4>
+          <input type="url" id="adminApkUrl" placeholder="https://github.com/.../app-release.apk" dir="ltr" />
+          <button type="button" class="btn btn-primary" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
+            💾 ذخیره سراسری لینک دانلود
           </button>
         </div>
 
-        <!-- تب ۱ (پیش‌فرض): جایگزینی سراسری لینک دانلود + خروجی آیکون اختصاصی اپ -->
-        <div id="admin-tab-link" class="space-y-4">
-          <div class="p-4 rounded-2xl bg-[#030306] border border-red-500/25 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-bold text-slate-300">وضعیت لینک دانلود فعلی روی سرور:</span>
-              <span id="admin-link-sync-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 font-semibold">
-                متصل به سرور
-              </span>
-            </div>
-            <div dir="ltr" id="admin-current-link-display" class="p-2.5 rounded-xl bg-[#0A0A12] border border-white/10 text-xs font-mono text-red-300 break-all select-all">
-              در حال دریافت...
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-xs font-bold text-slate-200">لینک مستقیم جدید فایل نصبی (APK):</label>
-            <input id="admin-new-url-input" type="url" dir="ltr" placeholder="https://github.com/.../V3X-Selfbot.apk" class="w-full px-4 py-3 rounded-xl bg-[#030306] border border-red-500/35 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-[#FF1E42]" />
-          </div>
-
-          <div class="flex flex-col sm:flex-row gap-2.5">
-            <button id="admin-save-url-btn" onclick="saveGlobalDownloadUrl()" class="flex-1 py-3.5 px-4 rounded-xl btn-neon text-xs sm:text-sm font-extrabold text-white flex items-center justify-center gap-2 cursor-pointer">
-              <span>💾</span>
-              <span>ذخیره و جایگزینی سراسری لینک</span>
-            </button>
-            <button onclick="testDownloadUrl()" class="py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-red-500/30 text-xs sm:text-sm font-bold text-slate-200 flex items-center justify-center gap-1.5 cursor-pointer">
-              <span>🧪</span>
-              <span>تست لینک</span>
-            </button>
-          </div>
-
-          <!-- بخش دانلود آیکون اختصاصی اپ (512x512 PNG) برای یکسان‌سازی کامل سایت و APK -->
-          <div class="pt-4 border-t border-red-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#030306]/70 p-4 rounded-2xl border border-red-500/20">
-            <div class="space-y-1 text-center sm:text-right">
-              <div class="text-xs sm:text-sm font-extrabold text-white">آیکون اختصاصی اپلیکیشن اندروید (512×512)</div>
-              <p class="text-[11px] text-slate-400">فایل PNG همین آیکون سایت را دانلود کنید تا هنگام ساخت APK دقیقاً یکسان باشد.</p>
-            </div>
-            <button onclick="downloadAppIconPng()" class="w-full sm:w-auto px-4 py-3 rounded-xl bg-[#991B1B]/35 hover:bg-[#991B1B]/55 border border-[#FF1E42]/50 text-xs font-extrabold text-white flex items-center justify-center gap-2 shrink-0 transition cursor-pointer">
-              <span>🖼️</span>
-              <span>دانلود فایل آیکون اختصاصی اپ (icon.png)</span>
-            </button>
-          </div>
+        <!-- بخش ۲: آپلود / لینک ویدیو تست -->
+        <div class="admin-section">
+          <h4>🎬 ویدیو تست عملکرد برنامه (نمایش در صفحه اصلی)</h4>
+          <input type="url" id="adminVideoUrl" placeholder="لینک مستقیم MP4 یا لینک آپارات / گیت‌هاب..." dir="ltr" />
+          <label class="file-upload-label" for="localVideoPicker">
+            📁 انتخاب فایل ویدیو از سیستم (پیش‌نمایش آنی)
+          </label>
+          <input type="file" id="localVideoPicker" accept="video/*" style="display:none;" />
+          <p style="font-size:11.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;">
+            نکته: برای اینکه همه کاربران در گوشی و کامپیوتر ویدیو را ببینند، فایل MP4 را در بخش <strong>Releases</strong> مخزن گیت‌هاب آپلود کنید و لینک مستقیم آن را در کادر بالا قرار دهید.
+          </p>
+          <button type="button" class="btn btn-primary" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
+            💾 ذخیره سراسری ویدیو تست
+          </button>
         </div>
 
-        <!-- تب ۲: ساخت لایسنس سراسری -->
-        <div id="admin-tab-keys" class="hidden space-y-4">
-          <div class="p-4 rounded-2xl bg-[#030306] border border-red-500/25 space-y-3">
-            <label class="block text-xs font-bold text-slate-200">مدت اعتبار اشتراک (به روز):</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button type="button" onclick="setGenDays(7)" class="py-2 rounded-xl bg-[#0A0A12] hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-slate-200 cursor-pointer">۷ روزه</button>
-              <button type="button" onclick="setGenDays(30)" class="py-2 rounded-xl bg-[#0A0A12] hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-slate-200 cursor-pointer">۳۰ روزه</button>
-              <button type="button" onclick="setGenDays(90)" class="py-2 rounded-xl bg-[#0A0A12] hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-slate-200 cursor-pointer">۹۰ روزه</button>
-              <button type="button" onclick="setGenDays(365)" class="py-2 rounded-xl bg-[#0A0A12] hover:bg-red-500/20 border border-red-500/30 text-xs font-bold text-slate-200 cursor-pointer">۳۶۵ روزه</button>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2.5">
-              <input id="admin-days-input" type="number" min="1" max="3650" value="30" dir="ltr" class="sm:w-32 px-4 py-3 rounded-xl bg-[#0A0A12] border border-red-500/35 text-center text-sm font-mono font-bold text-white focus:outline-none focus:border-[#FF1E42]" />
-              <button id="admin-gen-btn" onclick="generateGlobalLicense()" class="flex-1 py-3 px-4 rounded-xl btn-neon text-xs sm:text-sm font-extrabold text-white flex items-center justify-center gap-2 cursor-pointer">
-                <span>⚡</span>
-                <span>تولید و ثبت سراسری کلید لایسنس</span>
-              </button>
-            </div>
+        <!-- بخش ۳: ساخت لایسنس -->
+        <div class="admin-section">
+          <h4>🔑 ساخت کلید لایسنس جدید</h4>
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="genDaysInput" value="30" min="1" placeholder="تعداد روز" />
+            <button type="button" class="btn btn-primary" id="genKeyBtn" style="white-space:nowrap;">
+              ⚡ ساخت کد
+            </button>
           </div>
-
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs text-slate-400">
-              <span>کلیدهای صادرشده اخیر:</span>
-              <span>قابل استفاده در سایت و اپلیکیشن</span>
-            </div>
-            <div id="admin-keys-list" class="space-y-2 max-h-52 overflow-y-auto"></div>
-          </div>
+          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#05050b;border:1px solid var(--emerald);color:#6ee7b7;font-weight:700;text-align:center;" dir="ltr"></div>
         </div>
 
-        <!-- تب ۳: مدیریت تیکت‌ها -->
-        <div id="admin-tab-tickets" class="hidden space-y-3">
-          <div id="admin-tickets-list" class="space-y-3 max-h-72 overflow-y-auto"></div>
-        </div>
+        <p id="adminFeedback" style="font-size:13px;color:#6ee7b7;text-align:center;margin-top:6px;"></p>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================================================
-    // پیکربندی مرکزی پورتال V3X Selfbot v2.1.0
-    // =========================================================
-    const API_BASE = "https://selfbot-license.krymyhady314.workers.dev";
-    const ADMIN_PASSWORD = "V3XSYS";
+    const API_BASE = "https://api.v3xsys.ir";
+    const ADMIN_CODE = "krymyhady314";
 
-    // آیکون اختصاصی یکپارچه V3X (SVG)
-    const V3X_SHIELD_SVG = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" class="w-full h-full">
-        <defs>
-          <linearGradient id="v3x-shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FF1E42"/>
-            <stop offset="55%" stop-color="#EF4444"/>
-            <stop offset="100%" stop-color="#991B1B"/>
-          </linearGradient>
-          <radialGradient id="v3x-core-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#FF1E42" stop-opacity="0.32"/>
-            <stop offset="100%" stop-color="#030306" stop-opacity="0"/>
-          </radialGradient>
-        </defs>
-        <rect width="120" height="120" rx="28" fill="#030306"/>
-        <circle cx="60" cy="60" r="46" fill="url(#v3x-core-glow)"/>
-        <path d="M60 10 L102 27 V61 C102 86 84 103 60 112 C36 103 18 86 18 61 V27 Z" fill="#0A0A12" stroke="url(#v3x-shield-grad)" stroke-width="4.5" stroke-linejoin="round"/>
-        <path d="M60 20 L93 33 V60 C93 80 79 94 60 102 C41 94 27 80 27 60 V33 Z" fill="none" stroke="#991B1B" stroke-width="1.5" stroke-opacity="0.8"/>
-        <path d="M35 41 L53 84 L60 70 L67 84 L85 41 L74 41 L60 72 L46 41 Z" fill="#FFFFFF"/>
-        <path d="M48 41 L60 66 L72 41 L65 41 L60 52 L55 41 Z" fill="#FF1E42"/>
-        <polygon points="60,77 65,83 60,89 55,83" fill="#FF1E42"/>
-      </svg>
-    `.trim();
+    let globalDownloadUrl = localStorage.getItem("v3x_dl_url") || "";
+    let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
+    let isAdminLogged = false;
 
-    // وضعیت سراسری برنامه
-    let globalDownloadUrl = localStorage.getItem("v3x_global_download_url") || "";
-    let serverConfigSynced = false;
-    let countdownInterval = null;
-    let isAdminAuthenticated = false;
-    let currentAdminTab = "link";
+    // تعویض تب‌های پیش‌نمایش زنده در Hero
+    const tabContents = {
+      clock: [
+        "بررسی اعتبار لایسنس روی api.v3xsys.ir ... تایید شد",
+        "همگام‌سازی ساعت افق تهران (UTC+3:30) فعال شد",
+        "پیش‌نمایش پروفایل: <strong style='color:#fff;'>Hadi | 𝟏𝟒:𝟑𝟎</strong>"
+      ],
+      turbo: [
+        "اتصال مستقیم به سرور سروش‌پلاس ... پایدار",
+        "ارسال دسته‌ای ۵ پیام همزمان با تاخیر صفر",
+        "وضعیت صف: <strong style='color:#fff;'>100/100 پیام با موفقیت ارسال شد ✅</strong>"
+      ],
+      multi: [
+        "بارگذاری لیست پیام‌های ذخیره‌شده از حافظه",
+        "انتخاب همزمان ۳ گروه و ۲ پی‌وی هدف",
+        "وضعیت عملیات: <strong style='color:#fff;'>ارسال گروهی فعال و بدون خطا</strong>"
+      ]
+    };
 
-    // =========================================================
-    // تزریق آیکون یکپارچه در تمام بخش‌ها و ساخت Apple Touch PNG
-    // =========================================================
-    function injectUnifiedIcons() {
-      const slots = ["nav-logo-slot", "hero-logo-slot", "modal-logo-slot", "vip-logo-slot"];
-      slots.forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = V3X_SHIELD_SVG;
+    document.querySelectorAll(".engine-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".engine-tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const key = btn.getAttribute("data-tab");
+        const lines = tabContents[key] || tabContents.clock;
+        const screen = document.getElementById("consoleScreen");
+        screen.querySelector("div").innerHTML = lines
+          .map((l) => `<div class="console-line"><span class="tag">&gt;</span> ${l}</div>`)
+          .join("");
       });
-
-      // ساخت تصویر PNG با رندر کانواس برای آیکون میانبر موبایل
-      try {
-        const svgBlob = new Blob([V3X_SHIELD_SVG], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
-        const img = new Image();
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width = 180;
-          c.height = 180;
-          const ctx = c.getContext("2d");
-          ctx.drawImage(img, 0, 0, 180, 180);
-          const pngUrl = c.toDataURL("image/png");
-          const appleLink = document.getElementById("dynamic-apple-icon");
-          if (appleLink) appleLink.href = pngUrl;
-          URL.revokeObjectURL(url);
-        };
-        img.src = url;
-      } catch (_) {}
-    }
-
-    // =========================================================
-    // پس‌زمینه کهکشانی متحرک (Responsive Starfield Canvas)
-    // =========================================================
-    function initStarfield() {
-      const canvas = document.getElementById("starfield-canvas");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      let stars = [];
-
-      function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const count = Math.min(130, Math.floor((canvas.width * canvas.height) / 11000));
-        stars = Array.from({ length: count }, () => ({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          r: Math.random() * 1.5 + 0.3,
-          vx: (Math.random() - 0.5) * 0.14,
-          vy: (Math.random() - 0.5) * 0.14,
-          alpha: Math.random() * 0.7 + 0.2,
-          isRed: Math.random() < 0.24,
-        }));
-      }
-
-      function animateStars() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const s of stars) {
-          s.x += s.vx;
-          s.y += s.vy;
-          if (s.x < 0) s.x = canvas.width;
-          if (s.x > canvas.width) s.x = 0;
-          if (s.y < 0) s.y = canvas.height;
-          if (s.y > canvas.height) s.y = 0;
-
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = s.isRed
-            ? `rgba(255, 30, 66, ${s.alpha})`
-            : `rgba(255, 255, 255, ${s.alpha * 0.75})`;
-          ctx.fill();
-        }
-        requestAnimationFrame(animateStars);
-      }
-
-      resizeCanvas();
-      window.addEventListener("resize", resizeCanvas);
-      animateStars();
-    }
-
-    // =========================================================
-    // ابزارهای کمکی: پیام Toast، کپی کلیپ‌بورد و نرمال‌سازی کلید
-    // =========================================================
-    function showToast(message, type = "info") {
-      const container = document.getElementById("toast-container");
-      if (!container) return;
-      const colors = {
-        success: "bg-emerald-950/95 border-emerald-500/50 text-emerald-200",
-        error: "bg-red-950/95 border-[#FF1E42]/60 text-red-200",
-        warning: "bg-amber-950/95 border-amber-500/50 text-amber-200",
-        info: "bg-[#0A0A12]/95 border-red-500/45 text-white",
-      };
-      const el = document.createElement("div");
-      el.className = `pointer-events-auto px-4 py-3 rounded-2xl border shadow-2xl text-xs sm:text-sm font-bold backdrop-blur-md transition-all duration-300 ${colors[type] || colors.info}`;
-      el.textContent = message;
-      container.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = "0";
-        el.style.transform = "translateY(8px)";
-        setTimeout(() => el.remove(), 300);
-      }, 3600);
-    }
-
-    function copyTextToClipboard(text) {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand("copy");
-        showToast("در حافظه کپی شد ✅", "success");
-      } catch (_) {
-        showToast("کپی خودکار انجام نشد؛ متن را دستی کپی کنید.", "warning");
-      }
-      document.body.removeChild(ta);
-    }
-
-    function normalizeLicenseKey(raw) {
-      let txt = String(raw || "");
-      const persian = "۰۱۲۳۴۵۶۷۸۹";
-      const arabic = "٠١٢٣٤٥٦٧٨٩";
-      for (let i = 0; i < 10; i++) {
-        txt = txt.replaceAll(persian[i], String(i)).replaceAll(arabic[i], String(i));
-      }
-      txt = txt.replace(/[–—−]/g, "-").replace(/[\u200b-\u200f\ufeff`"' \t\r\n]/g, "");
-      const match = txt.match(/(V3X-[A-Za-z0-9\-_]{3,})/i);
-      return (match ? match[1] : txt).toUpperCase();
-    }
-
-    // =========================================================
-    // همگام‌سازی سراسری لینک دانلود با سرور (GET /api/config)
-    // =========================================================
-    async function refreshGlobalConfig(notifyUser = false) {
-      try {
-        const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const remoteUrl = String(data.download_url || data.url || data.apk_url || "").trim();
-          serverConfigSynced = true;
-          if (remoteUrl) {
-            globalDownloadUrl = remoteUrl;
-            localStorage.setItem("v3x_global_download_url", remoteUrl);
-          } else if (data.download_url === "") {
-            globalDownloadUrl = "";
-            localStorage.removeItem("v3x_global_download_url");
-          }
-          if (notifyUser) {
-            showToast(
-              globalDownloadUrl
-                ? "لینک دانلود از سرور به‌روزرسانی شد ✅"
-                : "هنوز لینکی روی سرور ثبت نشده است.",
-              globalDownloadUrl ? "success" : "warning"
-            );
-          }
-        } else {
-          serverConfigSynced = false;
-        }
-      } catch (_) {
-        serverConfigSynced = false;
-        globalDownloadUrl = localStorage.getItem("v3x_global_download_url") || "";
-        if (notifyUser) {
-          showToast("عدم دسترسی موقت به سرور؛ نسخه ذخیره‌شده بررسی شد.", "warning");
-        }
-      }
-      updateDownloadSectionUI();
-      updateAdminLinkUI();
-    }
-
-    function updateDownloadSectionUI() {
-      const readyBox = document.getElementById("vip-download-ready");
-      const missingBox = document.getElementById("vip-download-missing");
-      const anchor = document.getElementById("vip-download-anchor");
-      if (!readyBox || !missingBox || !anchor) return;
-
-      if (globalDownloadUrl && /^https?:\/\//i.test(globalDownloadUrl)) {
-        anchor.href = globalDownloadUrl;
-        readyBox.classList.remove("hidden");
-        missingBox.classList.add("hidden");
-      } else {
-        anchor.href = "#";
-        readyBox.classList.add("hidden");
-        missingBox.classList.remove("hidden");
-      }
-    }
-
-    function updateAdminLinkUI() {
-      const display = document.getElementById("admin-current-link-display");
-      const input = document.getElementById("admin-new-url-input");
-      const badge = document.getElementById("admin-link-sync-badge");
-      if (display) {
-        display.textContent = globalDownloadUrl || "هنوز لینکی ثبت نشده است";
-      }
-      if (input && !input.value && globalDownloadUrl) {
-        input.value = globalDownloadUrl;
-      }
-      if (badge) {
-        if (serverConfigSynced) {
-          badge.textContent = "● همگام با سرور سراسری";
-          badge.className = "text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 font-semibold";
-        } else {
-          badge.textContent = "● ذخیره محلی / در انتظار همگام‌سازی سرور";
-          badge.className = "text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/35 font-semibold";
-        }
-      }
-    }
-
-    // =========================================================
-    // مدیریت پایدار زمان اشتراک‌ها (بدون ریست شدن هنگام خروج)
-    // =========================================================
-    function getPersistentExpiries() {
-      try {
-        const raw = localStorage.getItem("v3x_persistent_expiries");
-        const parsed = raw ? JSON.parse(raw) : {};
-        return parsed && typeof parsed === "object" ? parsed : {};
-      } catch (_) {
-        return {};
-      }
-    }
-
-    function setPersistentExpiry(cleanKey, expiryMs) {
-      const map = getPersistentExpiries();
-      map[cleanKey] = expiryMs;
-      localStorage.setItem("v3x_persistent_expiries", JSON.stringify(map));
-    }
-
-    function resolveKeyExpiryTimestamp(cleanKey, serverData) {
-      const map = getPersistentExpiries();
-      // اگر سرور تاریخ انقضای مشخص دارد، همیشه دقیقاً همان را ملاک قرار بده
-      if (serverData && serverData.expires_at) {
-        const parsedExp = Date.parse(serverData.expires_at);
-        if (!Number.isNaN(parsedExp) && parsedExp > 0) {
-          setPersistentExpiry(cleanKey, parsedExp);
-          return parsedExp;
-        }
-      }
-      // اگر قبلاً برای این کلید زمان ثبت شده و هنوز منقضی نشده، همان تایمر قبلی را ادامه بده
-      if (map[cleanKey] && Number(map[cleanKey]) > Date.now()) {
-        return Number(map[cleanKey]);
-      }
-      // در غیر این صورت برای اولین بار بر اساس روزهای اعتبار ثبت کن
-      const days = Math.max(1, Number(serverData?.days_left || serverData?.days || 30));
-      const newExpiry = Date.now() + days * 86400 * 1000;
-      setPersistentExpiry(cleanKey, newExpiry);
-      return newExpiry;
-    }
-
-    // =========================================================
-    // احراز هویت لایسنس کاربر و نمایش داشبورد VIP
-    // =========================================================
-    function openLicenseModal() {
-      const m = document.getElementById("license-modal");
-      document.getElementById("login-error-box").classList.add("hidden");
-      m.classList.remove("hidden");
-      m.classList.add("flex");
-    }
-
-    function closeLicenseModal() {
-      const m = document.getElementById("license-modal");
-      m.classList.add("hidden");
-      m.classList.remove("flex");
-    }
-
-    function scrollToPortal() {
-      const el = document.getElementById("license-portal");
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-    }
-
-    async function handleLicenseLogin(e) {
-      e.preventDefault();
-      const nickInput = document.getElementById("login-nickname-input");
-      const keyInput = document.getElementById("login-key-input");
-      const errBox = document.getElementById("login-error-box");
-      const btn = document.getElementById("login-submit-btn");
-
-      const nickname = (nickInput.value || "").trim();
-      const cleanKey = normalizeLicenseKey(keyInput.value || "");
-      keyInput.value = cleanKey;
-
-      if (!nickname || !cleanKey) {
-        errBox.textContent = "لطفاً لقب و کد لایسنس معتبر خود را وارد کنید.";
-        errBox.classList.remove("hidden");
-        return;
-      }
-
-      errBox.classList.add("hidden");
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳</span><span>در حال استعلام اشتراک...</span>`;
-
-      let verified = false;
-      let serverPayload = null;
-      let errorMsg = "کد لایسنس نامعتبر است یا در سیستم یافت نشد.";
-
-      // ۱) استعلام از سرور مرکزی
-      try {
-        const res = await fetch(`${API_BASE}/api/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ source: "web", key: cleanKey }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.valid === true || data.ok === true) {
-            verified = true;
-            serverPayload = data;
-          } else if (data.msg || data.message) {
-            errorMsg = data.msg || data.message;
-          }
-        }
-      } catch (_) {
-        errorMsg = "خطا در اتصال به سرور؛ اتصال اینترنت خود را بررسی کنید.";
-      }
-
-      // ۲) بررسی کلیدهای ساخته‌شده در پنل محلی (پشتیبان)
-      if (!verified) {
-        try {
-          const localKeys = JSON.parse(localStorage.getItem("v3x_local_keys") || "[]");
-          const found = localKeys.find((item) => normalizeLicenseKey(item.key) === cleanKey);
-          if (found) {
-            verified = true;
-            serverPayload = { days: found.days || 30, days_left: found.days || 30 };
-          }
-        } catch (_) {}
-      }
-
-      btn.disabled = false;
-      btn.innerHTML = `<span>🚀</span><span>تایید لایسنس و ورود به پنل</span>`;
-
-      if (!verified) {
-        errBox.textContent = errorMsg;
-        errBox.classList.remove("hidden");
-        return;
-      }
-
-      const expiryMs = resolveKeyExpiryTimestamp(cleanKey, serverPayload);
-      const session = {
-        nickname,
-        key: cleanKey,
-        expiryMs,
-      };
-      localStorage.setItem("v3x_active_session", JSON.stringify(session));
-
-      closeLicenseModal();
-      await refreshGlobalConfig(false);
-      activateVipDashboard(session);
-      showToast(`خوش آمدید ${nickname} عزیز! اشتراک شما فعال است 👑`, "success");
-    }
-
-    function activateVipDashboard(session) {
-      document.getElementById("locked-portal-card").classList.add("hidden");
-      document.getElementById("vip-dashboard-card").classList.remove("hidden");
-      document.getElementById("nav-login-btn").classList.add("hidden");
-      document.getElementById("nav-vip-btn").classList.remove("hidden");
-
-      document.getElementById("nav-vip-nick").textContent = session.nickname;
-      document.getElementById("vip-nickname-display").textContent = session.nickname;
-      document.getElementById("vip-key-display").textContent = session.key;
-
-      updateDownloadSectionUI();
-      startLiveCountdown(session.key, session.expiryMs);
-    }
-
-    function startLiveCountdown(cleanKey, expiryMs) {
-      if (countdownInterval) clearInterval(countdownInterval);
-
-      function tick() {
-        // همیشه از دیکشنری ماندگار بخوان تا با آخرین مقدار هماهنگ باشد
-        const map = getPersistentExpiries();
-        const targetExp = Number(map[cleanKey] || expiryMs);
-        const diff = Math.max(0, targetExp - Date.now());
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const mins = Math.floor((diff / (1000 * 60)) % 60);
-        const secs = Math.floor((diff / 1000) % 60);
-
-        document.getElementById("cd-days").textContent = String(days).padStart(2, "0");
-        document.getElementById("cd-hours").textContent = String(hours).padStart(2, "0");
-        document.getElementById("cd-mins").textContent = String(mins).padStart(2, "0");
-        document.getElementById("cd-secs").textContent = String(secs).padStart(2, "0");
-      }
-
-      tick();
-      countdownInterval = setInterval(tick, 1000);
-    }
-
-    function logoutSession() {
-      // فقط نشست فعلی پاک می‌شود و v3x_persistent_expiries دست‌نخورده باقی می‌ماند!
-      localStorage.removeItem("v3x_active_session");
-      if (countdownInterval) clearInterval(countdownInterval);
-
-      document.getElementById("vip-dashboard-card").classList.add("hidden");
-      document.getElementById("locked-portal-card").classList.remove("hidden");
-      document.getElementById("nav-vip-btn").classList.add("hidden");
-      document.getElementById("nav-login-btn").classList.remove("hidden");
-      showToast("از پنل کاربری خارج شدید. زمان اشتراک شما محفوظ است.", "info");
-    }
-
-    function toggleEditNickname(forceState) {
-      const box = document.getElementById("edit-nickname-box");
-      const show = typeof forceState === "boolean" ? forceState : box.classList.contains("hidden");
-      if (show) {
-        const session = JSON.parse(localStorage.getItem("v3x_active_session") || "{}");
-        document.getElementById("new-nickname-input").value = session.nickname || "";
-        box.classList.remove("hidden");
-      } else {
-        box.classList.add("hidden");
-      }
-    }
-
-    function saveNewNickname() {
-      const val = (document.getElementById("new-nickname-input").value || "").trim();
-      if (!val) {
-        showToast("لطفاً یک لقب معتبر وارد کنید.", "warning");
-        return;
-      }
-      const session = JSON.parse(localStorage.getItem("v3x_active_session") || "{}");
-      if (session.key) {
-        session.nickname = val;
-        localStorage.setItem("v3x_active_session", JSON.stringify(session));
-        document.getElementById("vip-nickname-display").textContent = val;
-        document.getElementById("nav-vip-nick").textContent = val;
-        toggleEditNickname(false);
-        showToast("لقب جدید شما ثبت شد ✅", "success");
-      }
-    }
-
-    function copyActiveKey() {
-      const key = document.getElementById("vip-key-display").textContent.trim();
-      if (key) copyTextToClipboard(key);
-    }
-
-    // =========================================================
-    // سیستم تیکت پشتیبانی
-    // =========================================================
-    function openTicketModal() {
-      renderUserTickets();
-      const m = document.getElementById("ticket-modal");
-      m.classList.remove("hidden");
-      m.classList.add("flex");
-    }
-
-    function closeTicketModal() {
-      const m = document.getElementById("ticket-modal");
-      m.classList.add("hidden");
-      m.classList.remove("flex");
-    }
-
-    function getStoredTickets() {
-      try {
-        return JSON.parse(localStorage.getItem("v3x_tickets") || "[]");
-      } catch (_) {
-        return [];
-      }
-    }
-
-    function saveStoredTickets(list) {
-      localStorage.setItem("v3x_tickets", JSON.stringify(list));
-    }
-
-    function submitSupportTicket(e) {
-      e.preventDefault();
-      const name = document.getElementById("ticket-name").value.trim();
-      const contact = document.getElementById("ticket-contact").value.trim();
-      const plan = document.getElementById("ticket-plan").value;
-      const msg = document.getElementById("ticket-msg").value.trim();
-
-      if (!name || !contact || !msg) return;
-
-      const tickets = getStoredTickets();
-      tickets.unshift({
-        id: "TK-" + Math.floor(1000 + Math.random() * 9000),
-        name,
-        contact,
-        plan,
-        msg,
-        reply: "",
-        issuedKey: "",
-        createdAt: new Date().toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }),
-      });
-      saveStoredTickets(tickets);
-
-      document.getElementById("ticket-msg").value = "";
-      renderUserTickets();
-      showToast("تیکت شما ثبت شد. برای تسریع می‌توانید به @V3XSYS پیام دهید.", "success");
-    }
-
-    function renderUserTickets() {
-      const host = document.getElementById("user-tickets-list");
-      const tickets = getStoredTickets();
-      if (!tickets.length) {
-        host.innerHTML = `<div class="text-xs text-slate-500 text-center py-3">هنوز تیکتی ثبت نکرده‌اید.</div>`;
-        return;
-      }
-      host.innerHTML = tickets
-        .map(
-          (t) => `
-          <div class="p-3 rounded-xl bg-[#030306] border border-red-500/20 space-y-1.5 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white">${t.name} — <span class="text-red-400">${t.plan}</span></span>
-              <span class="font-mono text-[11px] text-slate-400">${t.id}</span>
-            </div>
-            <p class="text-slate-300">${t.msg}</p>
-            ${
-              t.reply
-                ? `<div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 space-y-1">
-                    <div><strong>پاسخ مدیریت:</strong> ${t.reply}</div>
-                    ${
-                      t.issuedKey
-                        ? `<div class="flex items-center justify-between bg-black/40 px-2 py-1 rounded">
-                            <code dir="ltr" class="font-mono font-bold text-[#FF1E42]">${t.issuedKey}</code>
-                            <button type="button" onclick="copyTextToClipboard('${t.issuedKey}')" class="text-[11px] text-emerald-300 underline cursor-pointer">کپی کد</button>
-                          </div>`
-                        : ""
-                    }
-                  </div>`
-                : `<div class="text-[11px] text-amber-400">⏳ در انتظار بررسی مدیریت (@V3XSYS)</div>`
-            }
-          </div>
-        `
-        )
-        .join("");
-    }
-
-    // =========================================================
-    // پنل مدیریت جامع (کد ورود: V3XSYS)
-    // =========================================================
-    function openAdminModal() {
-      const m = document.getElementById("admin-modal");
-      document.getElementById("admin-auth-err").classList.add("hidden");
-      if (isAdminAuthenticated) {
-        document.getElementById("admin-auth-view").classList.add("hidden");
-        document.getElementById("admin-panel-view").classList.remove("hidden");
-        updateAdminLinkUI();
-        renderAdminKeys();
-        renderAdminTickets();
-      } else {
-        document.getElementById("admin-auth-view").classList.remove("hidden");
-        document.getElementById("admin-panel-view").classList.add("hidden");
-      }
-      m.classList.remove("hidden");
-      m.classList.add("flex");
-    }
-
-    function closeAdminModal() {
-      const m = document.getElementById("admin-modal");
-      m.classList.add("hidden");
-      m.classList.remove("flex");
-    }
-
-    function verifyAdminPass(e) {
-      e.preventDefault();
-      const val = (document.getElementById("admin-pass-input").value || "").trim();
-      const err = document.getElementById("admin-auth-err");
-      if (val === ADMIN_PASSWORD) {
-        isAdminAuthenticated = true;
-        document.getElementById("admin-pass-input").value = "";
-        err.classList.add("hidden");
-        document.getElementById("admin-auth-view").classList.add("hidden");
-        document.getElementById("admin-panel-view").classList.remove("hidden");
-        switchAdminTab("link");
-        updateAdminLinkUI();
-        renderAdminKeys();
-        renderAdminTickets();
-        showToast("ورود موفق به پنل مدیریت 🛡️", "success");
-      } else {
-        err.textContent = "کد مدیریت اشتباه است.";
-        err.classList.remove("hidden");
-      }
-    }
-
-    function logoutAdmin() {
-      isAdminAuthenticated = false;
-      closeAdminModal();
-      showToast("پنل مدیریت قفل شد.", "info");
-    }
-
-    function switchAdminTab(tabName) {
-      currentAdminTab = tabName;
-      const tabs = ["link", "keys", "tickets"];
-      tabs.forEach((t) => {
-        const view = document.getElementById(`admin-tab-${t}`);
-        const btn = document.getElementById(`tab-btn-${t}`);
-        if (t === tabName) {
-          view.classList.remove("hidden");
-          btn.className = "py-2.5 px-2 rounded-xl btn-neon text-xs sm:text-sm font-bold text-white cursor-pointer transition";
-        } else {
-          view.classList.add("hidden");
-          btn.className = "py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white cursor-pointer transition";
-        }
-      });
-    }
-
-    // ذخیره و جایگزینی سراسری لینک دانلود روی سرور و کلاینت
-    async function saveGlobalDownloadUrl() {
-      const input = document.getElementById("admin-new-url-input");
-      const btn = document.getElementById("admin-save-url-btn");
-      const url = (input.value || "").trim();
-
-      if (!url || !/^https?:\/\//i.test(url)) {
-        showToast("لطفاً یک لینک مستقیم معتبر که با http:// یا https:// شروع می‌شود وارد کنید.", "error");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳</span><span>در حال ثبت سراسری روی سرور...</span>`;
-
-      globalDownloadUrl = url;
-      localStorage.setItem("v3x_global_download_url", url);
-      updateDownloadSectionUI();
-
-      try {
-        const res = await fetch(`${API_BASE}/api/config`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            admin_code: ADMIN_PASSWORD,
-            download_url: url,
-          }),
-        });
-        if (res.ok) {
-          serverConfigSynced = true;
-          showToast("لینک دانلود با موفقیت روی سرور جایگزین شد و برای همه گوشی‌ها فعال است ✅", "success");
-        } else {
-          serverConfigSynced = false;
-          showToast("لینک در این مرورگر ذخیره شد؛ برای همگام‌سازی سراسری مسیر /api/config را روی سرور فعال کنید.", "warning");
-        }
-      } catch (_) {
-        serverConfigSynced = false;
-        showToast("لینک در این مرورگر ذخیره شد (خطا در اتصال به سرور).", "warning");
-      }
-
-      btn.disabled = false;
-      btn.innerHTML = `<span>💾</span><span>ذخیره و جایگزینی سراسری لینک</span>`;
-      updateAdminLinkUI();
-    }
-
-    function testDownloadUrl() {
-      const inputVal = (document.getElementById("admin-new-url-input").value || "").trim();
-      const target = inputVal || globalDownloadUrl;
-      if (!target || !/^https?:\/\//i.test(target)) {
-        showToast("ابتدا یک لینک معتبر در کادر بالا وارد کنید.", "warning");
-        return;
-      }
-      window.open(target, "_blank", "noopener,noreferrer");
-    }
-
-    // رندر آیکون اختصاصی V3X روی کانواس 512x512 و دانلود icon.png
-    function downloadAppIconPng() {
-      try {
-        const svgBlob = new Blob([V3X_SHIELD_SVG], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(svgBlob);
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = 512;
-          canvas.height = 512;
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, 512, 512);
-          ctx.drawImage(img, 0, 0, 512, 512);
-          canvas.toBlob((blob) => {
-            if (!blob) return;
-            const dlUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = dlUrl;
-            a.download = "icon.png";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(dlUrl), 1500);
-            showToast("فایل آیکون اختصاصی اپ (icon.png) با کیفیت 512×512 دانلود شد 🖼️✅", "success");
-          }, "image/png");
-          URL.revokeObjectURL(url);
-        };
-        img.onerror = () => {
-          showToast("خطا در تولید تصویر آیکون.", "error");
-        };
-        img.src = url;
-      } catch (_) {
-        showToast("مرورگر اجازه خروجی تصویر نداد.", "error");
-      }
-    }
-
-    // ساخت کلید لایسنس و ثبت سراسری در دیتابیس
-    function setGenDays(d) {
-      document.getElementById("admin-days-input").value = d;
-    }
-
-    function makeRandomV3XKey() {
-      const hex = () => {
-        if (window.crypto && window.crypto.getRandomValues) {
-          const arr = new Uint16Array(1);
-          window.crypto.getRandomValues(arr);
-          return arr[0].toString(16).toUpperCase().padStart(4, "0");
-        }
-        return Math.floor(Math.random() * 0xffff).toString(16).toUpperCase().padStart(4, "0");
-      };
-      return `V3X-${hex()}-${hex()}`;
-    }
-
-    async function createLicenseRecord(days) {
-      const newKey = makeRandomV3XKey();
-      let syncedRemote = false;
-
-      try {
-        const res = await fetch(`${API_BASE}/api/admin-gen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            admin_code: ADMIN_PASSWORD,
-            days,
-            key: newKey,
-          }),
-        });
-        if (res.ok) {
-          const d = await res.json();
-          if (d.ok || d.valid || d.key) syncedRemote = true;
-        }
-      } catch (_) {}
-
-      const localKeys = JSON.parse(localStorage.getItem("v3x_local_keys") || "[]");
-      localKeys.unshift({
-        key: newKey,
-        days,
-        syncedRemote,
-        createdAt: new Date().toLocaleDateString("fa-IR"),
-      });
-      localStorage.setItem("v3x_local_keys", JSON.stringify(localKeys.slice(0, 50)));
-      return { key: newKey, days, syncedRemote };
-    }
-
-    async function generateGlobalLicense() {
-      const days = Math.max(1, parseInt(document.getElementById("admin-days-input").value || "30", 10));
-      const btn = document.getElementById("admin-gen-btn");
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳</span><span>در حال صدور کلید...</span>`;
-
-      const rec = await createLicenseRecord(days);
-
-      btn.disabled = false;
-      btn.innerHTML = `<span>⚡</span><span>تولید و ثبت سراسری کلید لایسنس</span>`;
-      renderAdminKeys();
-      copyTextToClipboard(rec.key);
-      showToast(
-        rec.syncedRemote
-          ? `لایسنس ${days} روزه ساخته و در سرور ثبت شد ✅`
-          : `لایسنس ${days} روزه ساخته و کپی شد ✅`,
-        "success"
-      );
-    }
-
-    function renderAdminKeys() {
-      const host = document.getElementById("admin-keys-list");
-      const list = JSON.parse(localStorage.getItem("v3x_local_keys") || "[]");
-      if (!list.length) {
-        host.innerHTML = `<div class="text-xs text-slate-500 text-center py-4">هنوز کلیدی از این پنل صادر نشده است.</div>`;
-        return;
-      }
-      host.innerHTML = list
-        .map(
-          (item) => `
-          <div class="p-3 rounded-xl bg-[#030306] border border-red-500/20 flex items-center justify-between gap-2 text-xs">
-            <div class="space-y-0.5">
-              <div class="flex items-center gap-2">
-                <code dir="ltr" class="font-mono font-bold text-[#FF1E42] text-sm">${item.key}</code>
-                <span class="px-2 py-0.5 rounded bg-white/5 text-slate-300 text-[11px]">${item.days} روزه</span>
-              </div>
-              <div class="text-[11px] text-slate-500">تاریخ صدور: ${item.createdAt}</div>
-            </div>
-            <button onclick="copyTextToClipboard('${item.key}')" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-200 font-bold cursor-pointer">
-              📋 کپی
-            </button>
-          </div>
-        `
-        )
-        .join("");
-    }
-
-    // پاسخ به تیکت‌ها همراه با صدور خودکار لایسنس
-    function renderAdminTickets() {
-      const host = document.getElementById("admin-tickets-list");
-      const tickets = getStoredTickets();
-      if (!tickets.length) {
-        host.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">هیچ تیکتی ثبت نشده است.</div>`;
-        return;
-      }
-      host.innerHTML = tickets
-        .map(
-          (t, idx) => `
-          <div class="p-3.5 rounded-2xl bg-[#030306] border border-red-500/25 space-y-2.5 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-white">${t.name} (<span dir="ltr" class="text-red-400">${t.contact}</span>)</span>
-              <span class="text-[11px] text-slate-400">${t.plan} | ${t.id}</span>
-            </div>
-            <p class="text-slate-300 bg-[#0A0A12] p-2.5 rounded-xl">${t.msg}</p>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input id="reply-input-${idx}" type="text" value="${t.reply || ""}" placeholder="متن پاسخ مدیریت..." class="flex-1 px-3 py-2 rounded-xl bg-[#0A0A12] border border-red-500/30 text-xs text-white focus:outline-none focus:border-[#FF1E42]" />
-              <button onclick="replyTicketWithKey(${idx}, true)" class="px-3 py-2 rounded-xl btn-neon text-[11px] font-bold text-white cursor-pointer shrink-0">
-                ⚡ پاسخ + صدور لایسنس ۳۰ روزه
-              </button>
-              <button onclick="replyTicketWithKey(${idx}, false)" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-[11px] font-bold text-slate-200 cursor-pointer shrink-0">
-                ثبت پاسخ
-              </button>
-            </div>
-            ${
-              t.issuedKey
-                ? `<div class="text-[11px] text-emerald-400 font-mono">کلید صادرشده: ${t.issuedKey}</div>`
-                : ""
-            }
-          </div>
-        `
-        )
-        .join("");
-    }
-
-    async function replyTicketWithKey(index, withKey) {
-      const tickets = getStoredTickets();
-      if (!tickets[index]) return;
-      const replyInput = document.getElementById(`reply-input-${index}`);
-      let replyText = (replyInput?.value || "").trim();
-
-      if (withKey) {
-        const rec = await createLicenseRecord(30);
-        tickets[index].issuedKey = rec.key;
-        if (!replyText) {
-          replyText = "اشتراک اختصاصی ۳۰ روزه شما صادر شد. کد زیر را در بخش ورود با لایسنس وارد کنید:";
-        }
-        renderAdminKeys();
-      } else if (!replyText) {
-        showToast("متن پاسخ را وارد کنید.", "warning");
-        return;
-      }
-
-      tickets[index].reply = replyText;
-      saveStoredTickets(tickets);
-      renderAdminTickets();
-      renderUserTickets();
-      showToast("پاسخ تیکت با موفقیت ثبت شد ✅", "success");
-    }
-
-    // =========================================================
-    // راه‌اندازی اولیه صفحه
-    // =========================================================
-    window.addEventListener("DOMContentLoaded", async () => {
-      injectUnifiedIcons();
-      initStarfield();
-      updateDownloadSectionUI();
-
-      // بازیابی نشست فعال کاربر در صورت وجود
-      try {
-        const savedSession = JSON.parse(localStorage.getItem("v3x_active_session") || "null");
-        if (savedSession && savedSession.key && savedSession.nickname) {
-          activateVipDashboard(savedSession);
-        }
-      } catch (_) {}
-
-      // دریافت همزمان لینک دانلود سراسری از سرور
-      await refreshGlobalConfig(false);
     });
+
+    // تنظیم و نمایش ویدیو تست
+    const demoPlayer = document.getElementById("demoPlayer");
+    const demoIframe = document.getElementById("demoIframe");
+    const videoEmptyState = document.getElementById("videoEmptyState");
+
+    function renderShowcaseVideo(url) {
+      const clean = String(url || "").trim();
+      demoPlayer.style.display = "none";
+      demoIframe.style.display = "none";
+      demoPlayer.pause();
+
+      if (!clean) {
+        videoEmptyState.style.display = "block";
+        return;
+      }
+
+      videoEmptyState.style.display = "none";
+
+      // پشتیبانی هوشمند از لینک آپارات یا یوتیوب در کنار فایل مستقیم MP4
+      const aparatMatch = clean.match(/aparat\.com\/v\/([A-Za-z0-9]+)/i);
+      const ytMatch = clean.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/i);
+
+      if (aparatMatch) {
+        demoIframe.src = `https://www.aparat.com/video/video/embed/videohash/${aparatMatch[1]}/vt/frame`;
+        demoIframe.style.display = "block";
+      } else if (ytMatch) {
+        demoIframe.src = `https://www.youtube.com/embed/${ytMatch[1]}`;
+        demoIframe.style.display = "block";
+      } else {
+        demoPlayer.src = clean;
+        demoPlayer.style.display = "block";
+      }
+    }
+
+    // کنترل سرعت پخش ویدیو
+    document.querySelectorAll(".speed-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".speed-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const spd = parseFloat(btn.getAttribute("data-speed") || "1");
+        demoPlayer.playbackRate = spd;
+      });
+    });
+
+    // دریافت تنظیمات سراسری از سرور کلودفلر
+    async function loadGlobalConfig() {
+      renderShowcaseVideo(globalVideoUrl);
+      try {
+        const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`);
+        const data = await res.json();
+        if (data && data.ok) {
+          if (data.download_url !== undefined) {
+            globalDownloadUrl = data.download_url;
+            localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          }
+          if (data.video_url !== undefined) {
+            globalVideoUrl = data.video_url;
+            localStorage.setItem("v3x_vid_url", globalVideoUrl);
+            renderShowcaseVideo(globalVideoUrl);
+          }
+        }
+      } catch (e) {
+        console.warn("Config fetch warning:", e);
+      }
+    }
+
+    // استعلام لایسنس کاربر
+    document.getElementById("verifyBtn").addEventListener("click", async () => {
+      const key = document.getElementById("licenseInput").value.trim().toUpperCase();
+      const resBox = document.getElementById("licenseResult");
+      const dlBox = document.getElementById("downloadActions");
+      const dlBtn = document.getElementById("apkDownloadBtn");
+
+      if (!key) {
+        resBox.className = "license-result err";
+        resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
+        dlBox.style.display = "none";
+        return;
+      }
+
+      resBox.className = "license-result ok";
+      resBox.textContent = "⏳ در حال بررسی اعتبار لایسنس در سرور...";
+      dlBox.style.display = "none";
+
+      try {
+        const r = await fetch(`${API_BASE}/api/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, source: "web" })
+        });
+        const d = await r.json();
+        if (d.valid || d.ok) {
+          resBox.className = "license-result ok";
+          resBox.innerHTML = `✅ <strong>لایسنس معتبر است!</strong> (اعتبار: ${d.days_left || d.days} روز)`;
+          if (globalDownloadUrl) {
+            dlBtn.href = globalDownloadUrl;
+            dlBox.style.display = "flex";
+          } else {
+            resBox.innerHTML += "<br><span style='color:#fde68a;'>⚠️ لینک دانلود هنوز توسط مدیریت تنظیم نشده است.</span>";
+          }
+        } else {
+          resBox.className = "license-result err";
+          resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است.");
+        }
+      } catch (err) {
+        resBox.className = "license-result err";
+        resBox.textContent = "❌ خطا در ارتباط با سرور لایسنس. اتصال اینترنت خود را بررسی کنید.";
+      }
+    });
+
+    // مدیریت مودال ادمین
+    const adminModal = document.getElementById("adminModal");
+    document.getElementById("openAdminBtn").addEventListener("click", () => {
+      adminModal.classList.add("open");
+      if (isAdminLogged) {
+        document.getElementById("adminApkUrl").value = globalDownloadUrl;
+        document.getElementById("adminVideoUrl").value = globalVideoUrl;
+      }
+    });
+
+    document.getElementById("closeAdminBtn").addEventListener("click", () => {
+      adminModal.classList.remove("open");
+    });
+
+    document.getElementById("adminLoginSubmit").addEventListener("click", () => {
+      const pass = document.getElementById("adminPassInput").value.trim();
+      const errEl = document.getElementById("adminLoginErr");
+      if (pass === ADMIN_CODE) {
+        isAdminLogged = true;
+        errEl.textContent = "";
+        document.getElementById("adminLoginView").style.display = "none";
+        document.getElementById("adminPanelView").style.display = "block";
+        document.getElementById("adminApkUrl").value = globalDownloadUrl;
+        document.getElementById("adminVideoUrl").value = globalVideoUrl;
+      } else {
+        errEl.textContent = "❌ رمز مدیریت اشتباه است.";
+      }
+    });
+
+    // پیش‌نمایش فایل ویدیو محلی انتخاب‌شده
+    document.getElementById("localVideoPicker").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const localBlobUrl = URL.createObjectURL(file);
+      renderShowcaseVideo(localBlobUrl);
+      document.getElementById("adminFeedback").textContent =
+        `🎬 پیش‌نمایش فایل «${file.name}» در سایت نمایش داده شد. برای ثبت دائمی، لینک مستقیم آن را ذخیره کنید.`;
+    });
+
+    // ذخیره سراسری لینک دانلود APK
+    document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
+      const newUrl = document.getElementById("adminApkUrl").value.trim();
+      const fb = document.getElementById("adminFeedback");
+      fb.textContent = "⏳ در حال ذخیره لینک دانلود...";
+      try {
+        const r = await fetch(`${API_BASE}/api/config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, download_url: newUrl })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          globalDownloadUrl = d.download_url;
+          localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          fb.textContent = "✅ لینک دانلود برای تمام گوشی‌ها و کامپیوترها ذخیره شد!";
+        } else {
+          fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
+        }
+      } catch {
+        fb.textContent = "❌ خطا در ارتباط با سرور";
+      }
+    });
+
+    // ذخیره سراسری لینک ویدیو تست
+    document.getElementById("saveVideoUrlBtn").addEventListener("click", async () => {
+      const newVid = document.getElementById("adminVideoUrl").value.trim();
+      const fb = document.getElementById("adminFeedback");
+      fb.textContent = "⏳ در حال ذخیره ویدیو تست...";
+      try {
+        const r = await fetch(`${API_BASE}/api/config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, video_url: newVid })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          globalVideoUrl = d.video_url;
+          localStorage.setItem("v3x_vid_url", globalVideoUrl);
+          renderShowcaseVideo(globalVideoUrl);
+          fb.textContent = "✅ ویدیو تست با موفقیت ثبت شد و برای همه کاربران نمایش داده می‌شود!";
+        } else {
+          fb.textContent = "❌ " + (d.error || "خطا در ذخیره ویدیو");
+        }
+      } catch {
+        fb.textContent = "❌ خطا در ارتباط با سرور";
+      }
+    });
+
+    // ساخت کد لایسنس جدید
+    document.getElementById("genKeyBtn").addEventListener("click", async () => {
+      const days = parseInt(document.getElementById("genDaysInput").value || "30", 10);
+      const box = document.getElementById("generatedKeyBox");
+      box.style.display = "block";
+      box.textContent = "⏳ در حال ساخت...";
+      try {
+        const r = await fetch(`${API_BASE}/api/admin-gen`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, days })
+        });
+        const d = await r.json();
+        if (d.ok && d.key) {
+          box.textContent = d.key;
+          navigator.clipboard?.writeText(d.key);
+          document.getElementById("adminFeedback").textContent = "✅ کد لایسنس ساخته و در کلیپ‌بورد کپی شد!";
+        } else {
+          box.textContent = "❌ خطا در ساخت کد";
+        }
+      } catch {
+        box.textContent = "❌ خطای اتصال به سرور";
+      }
+    });
+
+    loadGlobalConfig();
   </script>
 </body>
 </html>
