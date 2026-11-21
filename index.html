@@ -1,604 +1,2149 @@
-const TG_BOT_TOKEN = "9289318545:AAHDd11_l6wsWgisMVXwHCqLPw6U8KxQR4U";
-const ADMIN_SECRET = "Hadi2026";
-const SITE_ADMIN_CODE = "krymyhady314";
-const DEFAULT_ADMIN_ID = "";
-
-const MIN_APP_VERSION = "2.1.1";
-const SITE_URL = "https://v3xsys.ir/";
-
-function isVersionOutdated(verStr, minVer) {
-  const clean = String(verStr || "").trim();
-  if (!clean) return true;
-  const a = clean.split(".").map((n) => parseInt(n, 10) || 0);
-  const b = minVer.split(".").map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    if ((a[i] || 0) < (b[i] || 0)) return true;
-    if ((a[i] || 0) > (b[i] || 0)) return false;
-  }
-  return false;
-}
-
-export default {
-  async fetch(request, env) {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    };
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>V3X Selfbot | نسل جدید سلف‌بات سروش‌پلاس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #020205;
+      --surface: rgba(11, 9, 18, 0.88);
+      --surface-strong: rgba(14, 10, 22, 0.96);
+      --crimson: #ff0a34;
+      --crimson-hot: #ff2e55;
+      --crimson-deep: #88081e;
+      --crimson-glow: rgba(255, 10, 52, 0.42);
+      --crimson-soft: rgba(255, 10, 52, 0.14);
+      --border-dim: rgba(255, 255, 255, 0.08);
+      --border-red: rgba(255, 10, 52, 0.42);
+      --text-white: #f8fafc;
+      --text-dim: #94a3b8;
+      --emerald: #10b981;
     }
 
-    const url = new URL(request.url);
-    const path = url.pathname.replace(/\/+$/, "") || "/";
-    const token = env.TG_BOT_TOKEN || TG_BOT_TOKEN;
-    const secretKey = env.ADMIN_SECRET || ADMIN_SECRET;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Vazirmatn", system-ui, -apple-system, sans-serif;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
 
-    const json = (data, status = 200) =>
-      new Response(JSON.stringify(data), {
-        status,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "no-store, no-cache, must-revalidate",
-          ...corsHeaders,
-        },
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    html {
+      width: 100%;
+      background-color: var(--void);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      width: 100%;
+      overflow-x: clip;
+      background-color: var(--void);
+      color: var(--text-white);
+      min-height: 100vh;
+      line-height: 1.75;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    main {
+      width: 100%;
+    }
+
+    #galaxyCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+
+    .nebula-aura {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 80% 12%, rgba(255, 10, 52, 0.2), transparent 38%),
+        radial-gradient(circle at 15% 55%, rgba(136, 8, 30, 0.22), transparent 45%),
+        radial-gradient(circle at 75% 88%, rgba(255, 46, 85, 0.14), transparent 40%);
+      transform: translateZ(0);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 18px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* هدر شناور */
+    header {
+      position: sticky;
+      top: 12px;
+      z-index: 50;
+      width: 100%;
+      max-width: 1160px;
+      margin: 12px auto 0;
+      padding: 0 16px;
+    }
+
+    .nav-hud {
+      width: 100%;
+      background: rgba(8, 6, 14, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-red);
+      border-radius: 20px;
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.75);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-white);
+      flex-shrink: 0;
+    }
+
+    .reactor-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: radial-gradient(circle at 30% 30%, var(--crimson), #4c0519);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 22px var(--crimson-glow);
+      flex-shrink: 0;
+    }
+
+    .reactor-logo svg {
+      width: 24px;
+      height: 24px;
+      animation: spinSlow 12s linear infinite;
+    }
+
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .brand-title span {
+      color: var(--crimson-hot);
+    }
+
+    .live-clock-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 10, 52, 0.12);
+      border: 1px solid rgba(255, 10, 52, 0.35);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffe4e6;
+      white-space: nowrap;
+    }
+
+    .pulse-beacon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--crimson-hot);
+      box-shadow: 0 0 10px var(--crimson-hot);
+      animation: beacon 1.2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes beacon {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.45; }
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 13px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-crimson {
+      background: linear-gradient(135deg, var(--crimson), #b91c1c);
+      color: #fff;
+      box-shadow: 0 6px 22px var(--crimson-glow);
+    }
+
+    .btn-crimson:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 10, 52, 0.55);
+    }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      border: 1px solid var(--border-dim);
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 10, 52, 0.14);
+      border-color: var(--border-red);
+    }
+
+    .tilt-card {
+      position: relative;
+      min-width: 0;
+      max-width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border-dim);
+      border-radius: 22px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      overflow: hidden;
+    }
+
+    .tilt-card:hover {
+      border-color: var(--border-red);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(255, 10, 52, 0.14);
+    }
+
+    /* بخش Hero */
+    .hero {
+      padding: 54px 0 42px;
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .hero > * {
+      min-width: 0;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 15px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.32);
+      color: #6ee7b7;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      max-width: 100%;
+    }
+
+    .hero-tag i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: beacon 1.5s infinite;
+      flex-shrink: 0;
+    }
+
+    .hero h1 {
+      font-size: clamp(27px, 4.4vw, 48px);
+      font-weight: 900;
+      line-height: 1.28;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .neon-crimson {
+      background: linear-gradient(90deg, #ff0a34, #ff5c7c, #ff0a34);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shineGradient 4s linear infinite;
+    }
+
+    @keyframes shineGradient {
+      to { background-position: 200% center; }
+    }
+
+    .hero p.lead {
+      color: var(--text-dim);
+      font-size: 15.5px;
+      margin-bottom: 26px;
+      max-width: 540px;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .live-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 530px;
+    }
+
+    .kpi-box {
+      padding: 13px 14px;
+      border-radius: 16px;
+    }
+
+    .kpi-box strong {
+      display: block;
+      font-size: 15.5px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .kpi-box span {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* پنل مرکز فرماندهی زنده */
+    .hud-panel {
+      width: 100%;
+      padding: 20px;
+      border-color: var(--border-red);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.8);
+    }
+
+    .hud-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .hud-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      min-width: 0;
+    }
+
+    .hud-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--crimson-soft);
+      border: 1px solid var(--border-red);
+      color: #fda4af;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .hud-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+
+    .hud-tab {
+      flex: 1;
+      min-width: 0;
+      padding: 8px 8px;
+      border-radius: 11px;
+      border: 1px solid var(--border-dim);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hud-tab.active {
+      background: linear-gradient(135deg, rgba(255, 10, 52, 0.28), rgba(136, 8, 30, 0.35));
+      border-color: var(--crimson);
+      color: #fff;
+    }
+
+    .scope-frame {
+      position: relative;
+      width: 100%;
+      height: 205px;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 10, 52, 0.12), rgba(3, 2, 7, 0.96));
+      border: 1px solid rgba(255, 10, 52, 0.25);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    #telemetryCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .scope-stats {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .scope-chip {
+      background: rgba(4, 3, 9, 0.88);
+      border: 1px solid rgba(255, 10, 52, 0.3);
+      border-radius: 9px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .live-ticker-box {
+      margin-top: 12px;
+      background: rgba(4, 3, 9, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .ticker-text {
+      color: #e2e8f0;
+      font-weight: 600;
+      transition: opacity 0.25s;
+    }
+
+    section {
+      padding: 42px 0;
+      width: 100%;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 0 6px;
+    }
+
+    .section-title .kicker {
+      color: var(--crimson-hot);
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      margin-bottom: 4px;
+    }
+
+    .section-title h2 {
+      font-size: clamp(22px, 3.2vw, 33px);
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .section-title p {
+      color: var(--text-dim);
+      font-size: 14.5px;
+    }
+
+    /* بخش ویدیو تست */
+    .video-shell {
+      padding: 20px;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      border-color: var(--border-red);
+    }
+
+    .video-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: radial-gradient(circle at center, #0e060c 0%, #030206 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 10, 52, 0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-viewport video,
+    .video-viewport iframe {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border: none;
+      display: none;
+    }
+
+    .video-empty-view {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .radar-ring {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 10, 52, 0.25), rgba(255, 10, 52, 0.05));
+      border: 1.5px solid var(--crimson);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 14px;
+      animation: radarPulse 2.2s infinite;
+    }
+
+    @keyframes radarPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 10, 52, 0.5); }
+      70% { box-shadow: 0 0 0 18px rgba(255, 10, 52, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 10, 52, 0); }
+    }
+
+    .video-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .speed-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .spd-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-dim);
+      color: var(--text-dim);
+      border-radius: 8px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .spd-btn.active {
+      background: var(--crimson);
+      border-color: var(--crimson);
+      color: #fff;
+    }
+
+    /* باکس استعلام لایسنس و داشبورد زنده اشتراک */
+    .portal-card {
+      padding: 26px;
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      border-color: var(--border-red);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      width: 100%;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="url"] {
+      width: 100%;
+      min-width: 0;
+      background: rgba(3, 2, 8, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 13px;
+      padding: 13px 16px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--crimson);
+    }
+
+    .status-banner {
+      margin-top: 14px;
+      padding: 13px 16px;
+      border-radius: 13px;
+      display: none;
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .status-banner.loading {
+      display: block;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
+    }
+
+    .status-banner.err {
+      display: block;
+      background: rgba(255, 10, 52, 0.14);
+      border: 1px solid rgba(255, 10, 52, 0.45);
+      color: #fecdd3;
+    }
+
+    /* داشبورد زنده اشتراک کاربر (Live License HUD) */
+    .license-hud {
+      display: none;
+      margin-top: 18px;
+      background: linear-gradient(160deg, rgba(16, 11, 24, 0.96), rgba(5, 4, 10, 0.98));
+      border: 1px solid var(--border-red);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 0 32px rgba(255, 10, 52, 0.16);
+      animation: fadeSlideUp 0.35s ease-out;
+    }
+
+    .license-hud.active {
+      display: block;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .lic-hud-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 16px;
+    }
+
+    .lic-key-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 10, 52, 0.14);
+      border: 1px solid rgba(255, 10, 52, 0.4);
+      padding: 6px 14px;
+      border-radius: 11px;
+      font-weight: 900;
+      font-size: 14px;
+      color: #fff;
+      letter-spacing: 0.6px;
+    }
+
+    .lic-state-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .lic-state-pill.running {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+
+    .lic-state-pill.standby {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fcd34d;
+    }
+
+    /* تایمر شمارش معکوس ۴ ستونه زنده */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+      direction: ltr;
+    }
+
+    .cd-cell {
+      background: rgba(4, 3, 9, 0.92);
+      border: 1px solid rgba(255, 10, 52, 0.3);
+      border-radius: 15px;
+      padding: 12px 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cd-cell::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--crimson), transparent);
+    }
+
+    .cd-num {
+      display: block;
+      font-size: clamp(22px, 3.6vw, 30px);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+      text-shadow: 0 0 18px rgba(255, 10, 52, 0.45);
+    }
+
+    .cd-lbl {
+      display: block;
+      font-size: 11.5px;
+      color: #fda4af;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    /* نوار پیشرفت نئونی زمان باقی‌مانده */
+    .lic-progress-wrap {
+      margin-bottom: 16px;
+    }
+
+    .lic-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .lic-progress-track {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .lic-progress-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #b91c1c, #ff0a34, #ff5c7c);
+      box-shadow: 0 0 16px var(--crimson-glow);
+      transition: width 0.6s ease;
+    }
+
+    /* کارت‌های جزئیات لایسنس */
+    .lic-details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .lic-detail-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 13px;
+      padding: 10px 12px;
+    }
+
+    .lic-detail-item span {
+      display: block;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+
+    .lic-detail-item strong {
+      display: block;
+      font-size: 13.5px;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .lic-hud-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* کارت‌های امکانات */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      width: 100%;
+    }
+
+    .feat-box {
+      padding: 22px;
+    }
+
+    .svg-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 10, 52, 0.22), rgba(136, 8, 30, 0.12));
+      border: 1px solid var(--border-red);
+      display: grid;
+      place-items: center;
+      margin-bottom: 14px;
+    }
+
+    .svg-icon-wrap svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--crimson-hot);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feat-box h3 {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .feat-box p {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    footer {
+      border-top: 1px solid var(--border-dim);
+      padding: 26px 0 38px;
+      margin-top: 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      position: relative;
+      z-index: 2;
+    }
+
+    footer strong {
+      color: var(--crimson-hot);
+    }
+
+    /* مودال پنل مدیریت */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 1, 5, 0.9);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--surface-strong);
+      border: 1px solid var(--border-red);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 22px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.92);
+    }
+
+    .modal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .admin-block {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-dim);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 14px;
+    }
+
+    .admin-block h4 {
+      font-size: 14px;
+      color: #fda4af;
+      margin-bottom: 10px;
+    }
+
+    .upload-drop {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 11px;
+      border: 1px dashed var(--crimson);
+      background: rgba(255, 10, 52, 0.08);
+      color: #fecdd3;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links {
+        display: none;
+      }
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 28px;
+        gap: 26px;
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      header {
+        top: 8px;
+        margin-top: 8px;
+        padding: 0 12px;
+      }
+      .nav-hud {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        border-radius: 16px;
+        gap: 8px;
+      }
+      .reactor-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+      .brand-title {
+        font-size: 15.5px;
+      }
+      .nav-actions .btn {
+        padding: 7px 11px;
+        font-size: 12px;
+        border-radius: 10px;
+      }
+      .live-clock-pill {
+        order: 3;
+        width: 100%;
+        font-size: 12px;
+        padding: 5px 12px;
+      }
+      .container {
+        padding: 0 14px;
+      }
+      .hero-cta {
+        flex-direction: column;
+      }
+      .hero-cta .btn {
+        width: 100%;
+      }
+      .live-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .live-kpi-row .kpi-box:last-child {
+        grid-column: span 2;
+      }
+      .hud-panel {
+        padding: 14px;
+      }
+      .hud-tab {
+        font-size: 11px;
+        padding: 7px 4px;
+      }
+      .scope-frame {
+        height: 185px;
+      }
+      .video-shell,
+      .portal-card {
+        padding: 16px;
+      }
+      .input-group {
+        flex-direction: column;
+      }
+      .input-group .btn {
+        width: 100%;
+      }
+      .countdown-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .lic-details-grid {
+        grid-template-columns: 1fr;
+      }
+      .lic-hud-actions .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="galaxyCanvas"></canvas>
+  <div class="nebula-aura"></div>
+
+  <header>
+    <div class="nav-hud">
+      <a href="#" class="brand">
+        <div class="reactor-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+            <circle cx="12" cy="12" r="3" fill="#ffffff" />
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+        </div>
+        <div class="brand-title">V3X <span>SELFBOT</span></div>
+      </a>
+
+      <div class="live-clock-pill" title="ساعت زنده به افق تهران">
+        <span class="pulse-beacon"></span>
+        <span>افق تهران:</span>
+        <span id="liveTehranHeaderClock" dir="ltr">--:--:--</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#telemetry">نوسان‌نگار زنده</a>
+        <a href="#demo-video">ویدیو تست</a>
+        <a href="#download">وضعیت لایسنس</a>
+        <a href="#features">امکانات</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#download" class="btn btn-crimson" id="headerLicenseBtn">ورود لایسنس</a>
+        <button type="button" class="btn btn-glass" id="openAdminBtn">مدیریت</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- بخش Hero -->
+    <section class="hero" id="telemetry">
+      <div>
+        <div class="hero-tag">
+          <i></i>
+          <span>هسته اختصاصی فعال · نسخه 2.1.1</span>
+        </div>
+
+        <h1>
+          قدرت مطلق در <span class="neon-crimson">سلف‌بات سروش‌پلاس</span> با سرعت توربو و هوش زنده
+        </h1>
+
+        <p class="lead">
+          همگام‌سازی لحظه‌ای ساعت افق تهران کنار نام پروفایل، ارسال چندتایی با حافظه دائمی و موتور توربو بدون تاخیر؛ طراحی‌شده برای پایداری بی‌وقفه و اتصال مستقیم.
+        </p>
+
+        <div class="hero-cta">
+          <a href="#download" class="btn btn-crimson">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            بررسی لایسنس و دانلود مستقیم
+          </a>
+          <a href="#demo-video" class="btn btn-glass">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            تماشای ویدیو تست
+          </a>
+        </div>
+
+        <div class="live-kpi-row">
+          <div class="tilt-card kpi-box">
+            <strong id="liveProfilePreview" dir="ltr">V3X | 14:30</strong>
+            <span>پیش‌نمایش زنده ساعت</span>
+          </div>
+          <div class="tilt-card kpi-box">
+            <strong id="livePingCounter" dir="ltr">16 ms</strong>
+            <span>تاخیر هسته مرکزی</span>
+          </div>
+          <div class="tilt-card kpi-box">
+            <strong>نسخه 2.1.1</strong>
+            <span>ضدقطعی و رمزنگاری‌شده</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- پنل نوسان‌نگار و طیف‌سنج زنده -->
+      <div class="tilt-card hud-panel">
+        <div class="hud-top">
+          <div class="hud-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff2e55" stroke-width="2.2" style="flex-shrink:0;">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+            <span>نوسان‌نگار زنده پردازش هسته V3X</span>
+          </div>
+          <span class="hud-badge" id="hudModeBadge">TURBO PULSE</span>
+        </div>
+
+        <div class="hud-tabs">
+          <button type="button" class="hud-tab active" data-mode="turbo">موتور توربو</button>
+          <button type="button" class="hud-tab" data-mode="clock">ساعت افق تهران</button>
+          <button type="button" class="hud-tab" data-mode="multi">ارسال چندتایی</button>
+        </div>
+
+        <div class="scope-frame">
+          <canvas id="telemetryCanvas"></canvas>
+          <div class="scope-stats">
+            <div class="scope-chip" style="color:#fda4af;" id="scopeStat1">سرعت: 52 msg/s</div>
+            <div class="scope-chip" style="color:#6ee7b7;" id="scopeStat2">پایداری: 99.9%</div>
+          </div>
+        </div>
+
+        <div class="live-ticker-box">
+          <span class="ticker-text" id="liveEventTicker">⚡ آماده دریافت دستورات و همگام‌سازی لحظه‌ای...</span>
+          <span style="color:#10b981;font-weight:800;white-space:nowrap;">● LIVE 60FPS</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش ویدیو تست -->
+    <section id="demo-video">
+      <div class="section-title">
+        <div class="kicker">LIVE SHOWCASE</div>
+        <h2>ویدیو تست و عملکرد برنامه</h2>
+        <p>مشاهده محیط کاربری و سرعت اجرای دستورات سلف‌بات V3X</p>
+      </div>
+
+      <div class="tilt-card video-shell">
+        <div class="video-viewport">
+          <video id="demoPlayer" controls playsinline preload="metadata"></video>
+          <iframe id="demoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
+
+          <div class="video-empty-view" id="videoEmptyState">
+            <div class="radar-ring">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="#ff2e55">
+                <polygon points="6 4 20 12 6 20 6 4" />
+              </svg>
+            </div>
+            <h3 style="font-size:16px;color:#fff;">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
+          </div>
+        </div>
+
+        <div class="video-bar">
+          <span style="font-size:13px;color:var(--text-dim);">پخش‌کننده اختصاصی V3X · کیفیت اصلی</span>
+          <div class="speed-group">
+            <span style="font-size:12px;color:var(--text-dim);margin-left:4px;">سرعت پخش:</span>
+            <button type="button" class="spd-btn" data-speed="0.75">0.75x</button>
+            <button type="button" class="spd-btn active" data-speed="1">1x</button>
+            <button type="button" class="spd-btn" data-speed="1.25">1.25x</button>
+            <button type="button" class="spd-btn" data-speed="1.5">1.5x</button>
+            <button type="button" class="spd-btn" data-speed="2">2x</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش استعلام لایسنس و داشبورد زنده اشتراک -->
+    <section id="download">
+      <div class="section-title">
+        <div class="kicker">LIVE LICENSE TELEMETRY</div>
+        <h2>پنل زنده اشتراک و دریافت نسخه 2.1.1</h2>
+        <p>با وارد کردن کد لایسنس، تایمر زنده اعتبار باقی‌مانده و لینک دانلود مستقیم برای شما فعال می‌شود</p>
+      </div>
+
+      <div class="tilt-card portal-card">
+        <div id="licenseFormWrap">
+          <label for="licenseInput" style="font-size:13.5px;color:var(--text-dim);font-weight:700;">
+            کلید لایسنس اختصاصی شما:
+          </label>
+          <div class="input-group">
+            <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
+            <button type="button" class="btn btn-glass" id="pasteLicenseBtn" style="white-space:nowrap;">
+              چسباندن
+            </button>
+            <button type="button" class="btn btn-crimson" id="verifyBtn" style="white-space:nowrap;">
+              ورود و نمایش تایم لایسنس
+            </button>
+          </div>
+        </div>
+
+        <div class="status-banner" id="licenseResult"></div>
+
+        <!-- داشبورد زنده اشتراک پس از ورود موفق -->
+        <div class="license-hud" id="licenseHud">
+          <div class="lic-hud-header">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="lic-key-badge" id="hudKeyText" dir="ltr">V3X-XXXX-XXXX</span>
+              <span class="lic-state-pill running" id="hudStatePill">
+                <i class="pulse-beacon" style="background:#10b981;box-shadow:0 0 8px #10b981;"></i>
+                <span id="hudStateLabel">اشتراک فعال</span>
+              </span>
+            </div>
+            <button type="button" class="btn btn-glass" id="logoutLicenseBtn" style="padding:6px 12px;font-size:12px;">
+              تغییر / خروج لایسنس
+            </button>
+          </div>
+
+          <!-- شمارشگر معکوس زنده ثانیه‌به‌ثانیه -->
+          <div class="countdown-grid">
+            <div class="cd-cell">
+              <span class="cd-num" id="cdDays">00</span>
+              <span class="cd-lbl">روز</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdHours">00</span>
+              <span class="cd-lbl">ساعت</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdMins">00</span>
+              <span class="cd-lbl">دقیقه</span>
+            </div>
+            <div class="cd-cell">
+              <span class="cd-num" id="cdSecs" style="color:#ff2e55;">00</span>
+              <span class="cd-lbl">ثانیه</span>
+            </div>
+          </div>
+
+          <!-- نوار پیشرفت زنده اعتبار -->
+          <div class="lic-progress-wrap">
+            <div class="lic-progress-meta">
+              <span id="licProgressLabel">میزان اعتبار باقی‌مانده</span>
+              <span id="licProgressPct" dir="ltr">100%</span>
+            </div>
+            <div class="lic-progress-track">
+              <div class="lic-progress-fill" id="licProgressFill"></div>
+            </div>
+          </div>
+
+          <!-- جزئیات کامل لایسنس -->
+          <div class="lic-details-grid">
+            <div class="lic-detail-item">
+              <span>مدت کل اشتراک</span>
+              <strong id="hudTotalDays">30 روز</strong>
+            </div>
+            <div class="lic-detail-item">
+              <span>وضعیت اتصال گوشی</span>
+              <strong id="hudDeviceStatus">فعال و متصل</strong>
+            </div>
+            <div class="lic-detail-item">
+              <span>تاریخ و ساعت انقضا</span>
+              <strong id="hudExpiryDate">--</strong>
+            </div>
+          </div>
+
+          <div class="lic-hud-actions">
+            <a href="#" target="_blank" rel="noopener" class="btn btn-crimson" id="apkDownloadBtn" style="flex:1;">
+              ⬇️ دانلود مستقیم اپلیکیشن (APK v2.1.1)
+            </a>
+            <button type="button" class="btn btn-glass" id="refreshLicenseBtn">
+              🔄 بروزرسانی لحظه‌ای
+            </button>
+          </div>
+          <p id="noApkHint" style="display:none;margin-top:10px;font-size:12.5px;color:#fcd34d;text-align:center;">
+            ⚠️ لینک فایل نصب هنوز توسط مدیریت قرار داده نشده است.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- بخش امکانات -->
+    <section id="features">
+      <div class="section-title">
+        <div class="kicker">CORE ARCHITECTURE</div>
+        <h2>امکانات کلیدی V3X Selfbot</h2>
+        <p>طراحی‌شده برای بالاترین سرعت پاسخ‌گویی، زیبایی بصری و پایداری در سروش‌پلاس</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 14" />
+            </svg>
+          </div>
+          <h3>ساعت زنده افق تهران کنار اسم</h3>
+          <p>به‌روزرسانی خودکار و دقیق ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
+        </div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </div>
+          <h3>موتور ارسال توربو فوق‌سریع</h3>
+          <p>ارسال همزمان و بهینه پیام‌ها با مدیریت هوشمند محدودیت‌های سرور و اتصال مجدد خودکار در صورت نوسان اینترنت.</p>
+        </div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="14" rx="3" />
+              <path d="M8 21h8M12 18v3" />
+            </svg>
+          </div>
+          <h3>ارسال چندتایی با حافظه دائمی</h3>
+          <p>لیست پیام‌های دلخواه خود را بسازید، در حافظه برنامه ذخیره کنید و همزمان به چند پی‌وی یا گروه ارسال نمایید.</p>
+        </div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
+          </div>
+          <h3>انتخاب چت و ریپلای سریع</h3>
+          <p>مشاهده لیست کامل پی‌وی‌ها و گروه‌ها، خواندن پیام‌های اخیر هر چت و انتخاب دقیق پیام برای ریپلای خودکار.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>طراحی و توسعه توسط <strong>V3XSYS (@V3XSYS)</strong> · دامنه رسمی: <strong>v3xsys.ir</strong></p>
+    </div>
+  </footer>
+
+  <!-- مودال پنل مدیریت -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-box">
+      <div class="modal-top">
+        <h3 style="font-size:17px;">پنل مدیریت سراسری V3X</h3>
+        <button type="button" class="btn btn-glass" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
+      </div>
+
+      <div id="adminLoginView">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">
+          برای دسترسی به تنظیمات سایت، ویدیو تست و ساخت لایسنس، رمز مدیریت را وارد کنید:
+        </p>
+        <input type="password" id="adminPassInput" placeholder="رمز مدیریت را وارد کنید..." dir="ltr" />
+        <button type="button" class="btn btn-crimson" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
+          ورود به پنل مدیریت
+        </button>
+        <p id="adminLoginErr" style="color:#fda4af;font-size:13px;margin-top:8px;"></p>
+      </div>
+
+      <div id="adminPanelView" style="display:none;">
+        <div class="admin-block">
+          <h4>لینک دانلود مستقیم اپلیکیشن (APK)</h4>
+          <input type="url" id="adminApkUrl" placeholder="https://github.com/.../app-release.apk" dir="ltr" />
+          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
+            ذخیره سراسری لینک دانلود
+          </button>
+        </div>
+
+        <div class="admin-block">
+          <h4>ویدیو تست عملکرد برنامه</h4>
+          <input type="url" id="adminVideoUrl" placeholder="لینک مستقیم MP4 یا لینک آپارات / گیت‌هاب..." dir="ltr" />
+          <label class="upload-drop" for="localVideoPicker">
+            انتخاب فایل ویدیو از سیستم (پیش‌نمایش آنی)
+          </label>
+          <input type="file" id="localVideoPicker" accept="video/*" style="display:none;" />
+          <button type="button" class="btn btn-crimson" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
+            ذخیره سراسری ویدیو تست
+          </button>
+        </div>
+
+        <div class="admin-block">
+          <h4>ساخت کلید لایسنس جدید</h4>
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="genDaysInput" value="30" min="1" placeholder="تعداد روز" />
+            <button type="button" class="btn btn-crimson" id="genKeyBtn" style="white-space:nowrap;">
+              ساخت کد
+            </button>
+          </div>
+          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#030207;border:1px solid var(--emerald);color:#6ee7b7;font-weight:800;text-align:center;" dir="ltr"></div>
+        </div>
+
+        <p id="adminFeedback" style="font-size:13px;color:#6ee7b7;text-align:center;margin-top:6px;"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://api.v3xsys.ir";
+    const ADMIN_CODE = "krymyhady314";
+
+    let globalDownloadUrl = localStorage.getItem("v3x_dl_url") || "";
+    let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
+    let savedUserKey = localStorage.getItem("v3x_user_license") || "";
+    let activeLicenseData = null;
+    let countdownTimerId = null;
+    let isAdminLogged = false;
+
+    // ========================================================
+    // ۱. کهکشان زنده سبک و روان بدون لگ اسکرول
+    // ========================================================
+    const gCanvas = document.getElementById("galaxyCanvas");
+    const gCtx = gCanvas.getContext("2d", { alpha: true });
+    let gw = 0, gh = 0;
+    const pointer = { x: -9999, y: -9999 };
+
+    window.addEventListener("mousemove", (e) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+    }, { passive: true });
+
+    function resizeGalaxy() {
+      gw = window.innerWidth;
+      gh = window.innerHeight;
+      gCanvas.width = gw;
+      gCanvas.height = gh;
+    }
+    window.addEventListener("resize", resizeGalaxy, { passive: true });
+    resizeGalaxy();
+
+    const starCount = Math.min(48, Math.floor((window.innerWidth * window.innerHeight) / 26000));
+    const stars = Array.from({ length: starCount }, () => ({
+      x: Math.random() * gw,
+      y: Math.random() * gh,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.8 + 0.8,
+      crimson: Math.random() > 0.35
+    }));
+
+    let shootingStar = null;
+
+    function animateGalaxy() {
+      gCtx.clearRect(0, 0, gw, gh);
+
+      if (!shootingStar && Math.random() < 0.006) {
+        shootingStar = {
+          x: Math.random() * gw,
+          y: Math.random() * (gh * 0.35),
+          vx: (Math.random() > 0.5 ? 1 : -1) * (7 + Math.random() * 4),
+          vy: 4 + Math.random() * 2.5,
+          life: 1
+        };
+      }
+
+      if (shootingStar) {
+        gCtx.beginPath();
+        gCtx.moveTo(shootingStar.x, shootingStar.y);
+        gCtx.lineTo(shootingStar.x - shootingStar.vx * 5, shootingStar.y - shootingStar.vy * 5);
+        gCtx.strokeStyle = `rgba(255, 46, 85, ${shootingStar.life * 0.65})`;
+        gCtx.lineWidth = 2;
+        gCtx.stroke();
+
+        shootingStar.x += shootingStar.vx;
+        shootingStar.y += shootingStar.vy;
+        shootingStar.life -= 0.032;
+        if (shootingStar.life <= 0) shootingStar = null;
+      }
+
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.x += s.vx;
+        s.y += s.vy;
+
+        if (s.x < 0) s.x = gw;
+        if (s.x > gw) s.x = 0;
+        if (s.y < 0) s.y = gh;
+        if (s.y > gh) s.y = 0;
+
+        const dxp = s.x - pointer.x;
+        const dyp = s.y - pointer.y;
+        const distP = dxp * dxp + dyp * dyp;
+        if (distP < 22500) {
+          gCtx.beginPath();
+          gCtx.moveTo(s.x, s.y);
+          gCtx.lineTo(pointer.x, pointer.y);
+          gCtx.strokeStyle = "rgba(255, 10, 52, 0.25)";
+          gCtx.lineWidth = 1;
+          gCtx.stroke();
+        }
+
+        for (let j = i + 1; j < stars.length; j++) {
+          const s2 = stars[j];
+          const dx = s.x - s2.x;
+          const dy = s.y - s2.y;
+          if (dx * dx + dy * dy < 12100) {
+            gCtx.beginPath();
+            gCtx.moveTo(s.x, s.y);
+            gCtx.lineTo(s2.x, s2.y);
+            gCtx.strokeStyle = "rgba(255, 10, 52, 0.12)";
+            gCtx.lineWidth = 0.8;
+            gCtx.stroke();
+          }
+        }
+
+        gCtx.beginPath();
+        gCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        gCtx.fillStyle = s.crimson ? "rgba(255, 30, 66, 0.85)" : "rgba(255, 255, 255, 0.5)";
+        gCtx.fill();
+      }
+
+      requestAnimationFrame(animateGalaxy);
+    }
+    requestAnimationFrame(animateGalaxy);
+
+    // ========================================================
+    // ۲. ساعت زنده افق تهران
+    // ========================================================
+    function toBoldDigits(str) {
+      const map = { "0":"𝟎","1":"𝟏","2":"𝟐","3":"𝟑","4":"𝟒","5":"𝟓","6":"𝟔","7":"𝟕","8":"𝟖","9":"𝟗" };
+      return str.replace(/[0-9]/g, (d) => map[d] || d);
+    }
+
+    function updateLiveTehranClocks() {
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      const tehran = new Date(utcMs + 3.5 * 3600000);
+      const hh = String(tehran.getHours()).padStart(2, "0");
+      const mm = String(tehran.getMinutes()).padStart(2, "0");
+      const ss = String(tehran.getSeconds()).padStart(2, "0");
+
+      const headerEl = document.getElementById("liveTehranHeaderClock");
+      const profileEl = document.getElementById("liveProfilePreview");
+      if (headerEl) headerEl.textContent = `${hh}:${mm}:${ss}`;
+      if (profileEl) profileEl.textContent = `V3X | ${toBoldDigits(`${hh}:${mm}`)}`;
+    }
+    updateLiveTehranClocks();
+    setInterval(updateLiveTehranClocks, 1000);
+
+    setInterval(() => {
+      const pingEl = document.getElementById("livePingCounter");
+      if (pingEl) {
+        const ms = 14 + Math.floor(Math.random() * 6);
+        pingEl.textContent = `${ms} ms`;
+      }
+    }, 2400);
+
+    // ========================================================
+    // ۳. نوسان‌نگار زنده با رندر GPU
+    // ========================================================
+    const tCanvas = document.getElementById("telemetryCanvas");
+    const tCtx = tCanvas.getContext("2d");
+    let scopeMode = "turbo";
+    let scopeVisible = true;
+    let wavePoints = Array.from({ length: 44 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
+    let bars = Array.from({ length: 24 }, () => 30 + Math.random() * 40);
+    let phase = 0;
+
+    const scopeModes = {
+      turbo: {
+        badge: "TURBO PULSE",
+        s1: "سرعت: 52 msg/s",
+        s2: "پایداری: 99.9%",
+        base: 62,
+        amp: 24,
+        stroke: "#ff0a34",
+        outerStroke: "rgba(255, 10, 52, 0.25)",
+        glow: "rgba(255, 10, 52, 0.34)",
+        events: [
+          "⚡ ارسال دسته‌ای ۵ پیام همزمان با تاخیر صفر تکمیل شد",
+          "🛡️ سیستم ضد‌محدودیت هوشمند در حالت آماده به کار است",
+          "🚀 هسته توربو روی بالاترین توان پردازش قرار دارد"
+        ]
+      },
+      clock: {
+        badge: "TEHRAN ATOMIC",
+        s1: "دقت: ±0.01s",
+        s2: "منطقه: UTC+3:30",
+        base: 50,
+        amp: 14,
+        stroke: "#ff4d6d",
+        outerStroke: "rgba(255, 77, 109, 0.25)",
+        glow: "rgba(255, 77, 109, 0.3)",
+        events: [
+          "⏰ نام پروفایل با ساعت افق تهران همگام‌سازی شد",
+          "✨ فونت ضخیم و فانتزی ساعت بدون خطا فعال است",
+          "🔄 پایش خودکار تغییر دقیقه در پس‌زمینه فعال است"
+        ]
+      },
+      multi: {
+        badge: "MULTI STREAM",
+        s1: "کانال‌ها: همزمان",
+        s2: "حافظه: دائمی",
+        base: 68,
+        amp: 18,
+        stroke: "#10b981",
+        outerStroke: "rgba(16, 185, 129, 0.25)",
+        glow: "rgba(16, 185, 129, 0.3)",
+        events: [
+          "📨 لیست پیام‌های پیش‌فرض از حافظه داخلی بارگذاری شد",
+          "💬 قابلیت ریپلای سریع روی آخرین پیام چت آماده است",
+          "🟢 اتصال مستقیم و پایدار به شبکه سروش‌پلاس برقرار است"
+        ]
+      }
+    };
+
+    document.querySelectorAll(".hud-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".hud-tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        scopeMode = btn.getAttribute("data-mode") || "turbo";
+        const cfg = scopeModes[scopeMode];
+        document.getElementById("hudModeBadge").textContent = cfg.badge;
+        document.getElementById("scopeStat1").textContent = cfg.s1;
+        document.getElementById("scopeStat2").textContent = cfg.s2;
+        document.getElementById("liveEventTicker").textContent = cfg.events[0];
       });
+    });
 
-    await env.DB.prepare(
-      `CREATE TABLE IF NOT EXISTS licenses (
-        license_key TEXT PRIMARY KEY,
-        days INTEGER NOT NULL,
-        device_id TEXT,
-        expires_at TEXT,
-        banned INTEGER DEFAULT 0,
-        owner_name TEXT
-      )`
-    ).run();
-
-    try {
-      await env.DB.prepare("ALTER TABLE licenses ADD COLUMN owner_name TEXT").run();
-    } catch (_) {}
-
-    await env.DB.prepare(
-      `CREATE TABLE IF NOT EXISTS settings (
-        k TEXT PRIMARY KEY,
-        v TEXT
-      )`
-    ).run();
-
-    const getAdminId = async () => {
-      if (env.ADMIN_ID || DEFAULT_ADMIN_ID) {
-        return String(env.ADMIN_ID || DEFAULT_ADMIN_ID).trim();
+    let eventIdx = 0;
+    setInterval(() => {
+      if (!scopeVisible) return;
+      const cfg = scopeModes[scopeMode];
+      eventIdx = (eventIdx + 1) % cfg.events.length;
+      const ticker = document.getElementById("liveEventTicker");
+      if (ticker) {
+        ticker.style.opacity = "0.25";
+        setTimeout(() => {
+          ticker.textContent = cfg.events[eventIdx];
+          ticker.style.opacity = "1";
+        }, 200);
       }
-      const row = await env.DB.prepare("SELECT v FROM settings WHERE k = 'tg_admin_id'").first();
-      return row ? String(row.v).trim() : "";
-    };
+    }, 3200);
 
-    const sendTgMsg = async (chatId, text) => {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text }),
+    function resizeScope() {
+      const rect = tCanvas.parentElement.getBoundingClientRect();
+      tCanvas.width = rect.width;
+      tCanvas.height = rect.height;
+    }
+    window.addEventListener("resize", resizeScope, { passive: true });
+    resizeScope();
+
+    const scopeObserver = new IntersectionObserver((entries) => {
+      scopeVisible = entries[0].isIntersecting;
+    }, { threshold: 0.05 });
+    scopeObserver.observe(tCanvas);
+
+    function renderScope() {
+      if (scopeVisible) {
+        const w = tCanvas.width;
+        const h = tCanvas.height;
+        const cfg = scopeModes[scopeMode];
+
+        phase += 0.09;
+        if (Math.round(phase * 10) % 2 === 0) {
+          const val = cfg.base + Math.sin(phase * 1.5) * cfg.amp + Math.cos(phase * 2.9) * (cfg.amp * 0.45) + (Math.random() - 0.5) * 7;
+          wavePoints.push(Math.max(16, Math.min(92, val)));
+          wavePoints.shift();
+
+          for (let b = 0; b < bars.length; b++) {
+            const target = 15 + Math.abs(Math.sin(phase + b * 0.45)) * 45 + Math.random() * 14;
+            bars[b] += (target - bars[b]) * 0.25;
+          }
+        }
+
+        tCtx.clearRect(0, 0, w, h);
+
+        tCtx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+        tCtx.lineWidth = 1;
+        for (let y = 34; y < h; y += 36) {
+          tCtx.beginPath();
+          tCtx.moveTo(0, y);
+          tCtx.lineTo(w, y);
+          tCtx.stroke();
+        }
+
+        const barW = w / bars.length;
+        tCtx.fillStyle = "rgba(255, 10, 52, 0.11)";
+        for (let b = 0; b < bars.length; b++) {
+          const bh = (bars[b] / 100) * (h * 0.55);
+          tCtx.fillRect(b * barW + 3, h - bh, Math.max(2, barW - 6), bh);
+        }
+
+        const stepX = w / (wavePoints.length - 1);
+        const pts = wavePoints.map((v, i) => ({
+          x: i * stepX,
+          y: h - (v / 100) * (h - 48) - 14
+        }));
+
+        const grad = tCtx.createLinearGradient(0, 20, 0, h);
+        grad.addColorStop(0, cfg.glow);
+        grad.addColorStop(1, "rgba(2, 2, 5, 0)");
+
+        tCtx.beginPath();
+        tCtx.moveTo(pts[0].x, h);
+        tCtx.lineTo(pts[0].x, pts[0].y);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const xc = (pts[i].x + pts[i + 1].x) / 2;
+          const yc = (pts[i].y + pts[i + 1].y) / 2;
+          tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+        }
+        const last = pts[pts.length - 1];
+        tCtx.lineTo(last.x, last.y);
+        tCtx.lineTo(last.x, h);
+        tCtx.closePath();
+        tCtx.fillStyle = grad;
+        tCtx.fill();
+
+        tCtx.beginPath();
+        tCtx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const xc = (pts[i].x + pts[i + 1].x) / 2;
+          const yc = (pts[i].y + pts[i + 1].y) / 2;
+          tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+        }
+        tCtx.lineTo(last.x, last.y);
+        tCtx.strokeStyle = cfg.outerStroke;
+        tCtx.lineWidth = 7;
+        tCtx.stroke();
+
+        tCtx.strokeStyle = cfg.stroke;
+        tCtx.lineWidth = 2.5;
+        tCtx.stroke();
+
+        tCtx.beginPath();
+        tCtx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
+        tCtx.fillStyle = "#ffffff";
+        tCtx.fill();
+      }
+      requestAnimationFrame(renderScope);
+    }
+    requestAnimationFrame(renderScope);
+
+    // ========================================================
+    // ۴. داشبورد زنده لایسنس و تایمر شمارش معکوس ثانیه‌به‌ثانیه
+    // ========================================================
+    function pad2(n) {
+      return String(Math.max(0, Math.floor(n))).padStart(2, "0");
+    }
+
+    function updateDownloadButtonState() {
+      const dlBtn = document.getElementById("apkDownloadBtn");
+      const noApkHint = document.getElementById("noApkHint");
+      if (globalDownloadUrl) {
+        dlBtn.href = globalDownloadUrl;
+        dlBtn.style.display = "inline-flex";
+        noApkHint.style.display = "none";
+      } else {
+        dlBtn.style.display = "none";
+        noApkHint.style.display = "block";
+      }
+    }
+
+    function renderLiveLicenseHud(key, data) {
+      activeLicenseData = { key, ...data };
+      const hud = document.getElementById("licenseHud");
+      const formWrap = document.getElementById("licenseFormWrap");
+      const resBox = document.getElementById("licenseResult");
+      const headerBtn = document.getElementById("headerLicenseBtn");
+
+      resBox.style.display = "none";
+      formWrap.style.display = "none";
+      hud.classList.add("active");
+      if (headerBtn) headerBtn.textContent = "🟢 اشتراک فعال";
+
+      document.getElementById("hudKeyText").textContent = key;
+      const totalDays = Number(data.days || data.days_left || 30);
+      document.getElementById("hudTotalDays").textContent = `${totalDays} روز`;
+
+      updateDownloadButtonState();
+
+      if (countdownTimerId) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+      }
+
+      const pill = document.getElementById("hudStatePill");
+      const stateLabel = document.getElementById("hudStateLabel");
+      const devStatus = document.getElementById("hudDeviceStatus");
+      const expDateEl = document.getElementById("hudExpiryDate");
+      const progFill = document.getElementById("licProgressFill");
+      const progPct = document.getElementById("licProgressPct");
+      const progLabel = document.getElementById("licProgressLabel");
+
+      if (data.expires_at) {
+        const targetMs = Date.parse(data.expires_at);
+        const totalMs = Math.max(1, totalDays * 86400000);
+
+        pill.className = "lic-state-pill running";
+        stateLabel.textContent = "اشتراک فعال و در حال اجرا";
+        devStatus.textContent = "متصل و قفل‌شده روی گوشی";
+
+        try {
+          expDateEl.textContent = new Date(targetMs).toLocaleString("fa-IR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch {
+          expDateEl.textContent = new Date(targetMs).toLocaleDateString("fa-IR");
+        }
+
+        const tickCountdown = () => {
+          const diff = Math.max(0, targetMs - Date.now());
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+
+          document.getElementById("cdDays").textContent = pad2(d);
+          document.getElementById("cdHours").textContent = pad2(h);
+          document.getElementById("cdMins").textContent = pad2(m);
+          document.getElementById("cdSecs").textContent = pad2(s);
+
+          const pct = Math.max(2, Math.min(100, Math.round((diff / totalMs) * 100)));
+          progFill.style.width = `${pct}%`;
+          progPct.textContent = `${pct}%`;
+          progLabel.textContent = diff > 0 ? "تایمر زنده اعتبار باقی‌مانده" : "اعتبار اشتراک به پایان رسیده است";
+        };
+
+        tickCountdown();
+        countdownTimerId = setInterval(tickCountdown, 1000);
+      } else {
+        // لایسنس جدید که هنوز روی گوشی وارد نشده است
+        pill.className = "lic-state-pill standby";
+        stateLabel.textContent = "آماده فعال‌سازی روی گوشی";
+        devStatus.textContent = "آزاد (در انتظار اولین ورود در اپ)";
+        expDateEl.textContent = "از لحظه ورود در اپلیکیشن";
+
+        document.getElementById("cdDays").textContent = pad2(totalDays);
+        document.getElementById("cdHours").textContent = "00";
+        document.getElementById("cdMins").textContent = "00";
+        document.getElementById("cdSecs").textContent = "00";
+
+        progFill.style.width = "100%";
+        progPct.textContent = "100%";
+        progLabel.textContent = `اعتبار کامل ${totalDays} روزه آماده استارت`;
+      }
+    }
+
+    async function verifyLicenseKey(rawKey, silent = false) {
+      const key = String(rawKey || "").trim().toUpperCase();
+      const resBox = document.getElementById("licenseResult");
+
+      if (!key) {
+        if (!silent) {
+          resBox.className = "status-banner err";
+          resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
+        }
+        return;
+      }
+
+      if (!silent) {
+        resBox.className = "status-banner loading";
+        resBox.textContent = "⏳ در حال دریافت اطلاعات زنده لایسنس...";
+      }
+
+      try {
+        const r = await fetch(`${API_BASE}/api/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, source: "web" })
+        });
+        const d = await r.json();
+        if (d.valid || d.ok) {
+          savedUserKey = key;
+          localStorage.setItem("v3x_user_license", key);
+          renderLiveLicenseHud(key, d);
+        } else {
+          localStorage.removeItem("v3x_user_license");
+          savedUserKey = "";
+          document.getElementById("licenseHud").classList.remove("active");
+          document.getElementById("licenseFormWrap").style.display = "block";
+          resBox.className = "status-banner err";
+          resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است یا منقضی شده.");
+        }
+      } catch (err) {
+        if (!silent) {
+          resBox.className = "status-banner err";
+          resBox.textContent = "❌ خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.";
+        }
+      }
+    }
+
+    document.getElementById("pasteLicenseBtn").addEventListener("click", async () => {
+      try {
+        const txt = await navigator.clipboard.readText();
+        if (txt) document.getElementById("licenseInput").value = txt.trim();
+      } catch (e) {}
+    });
+
+    document.getElementById("verifyBtn").addEventListener("click", () => {
+      verifyLicenseKey(document.getElementById("licenseInput").value, false);
+    });
+
+    document.getElementById("licenseInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        verifyLicenseKey(document.getElementById("licenseInput").value, false);
+      }
+    });
+
+    document.getElementById("refreshLicenseBtn").addEventListener("click", () => {
+      if (savedUserKey) {
+        verifyLicenseKey(savedUserKey, false);
+      }
+    });
+
+    document.getElementById("logoutLicenseBtn").addEventListener("click", () => {
+      if (countdownTimerId) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+      }
+      savedUserKey = "";
+      activeLicenseData = null;
+      localStorage.removeItem("v3x_user_license");
+      document.getElementById("licenseHud").classList.remove("active");
+      document.getElementById("licenseFormWrap").style.display = "block";
+      document.getElementById("licenseInput").value = "";
+      document.getElementById("licenseResult").style.display = "none";
+      const headerBtn = document.getElementById("headerLicenseBtn");
+      if (headerBtn) headerBtn.textContent = "ورود لایسنس";
+    });
+
+    // ========================================================
+    // ۵. ویدیو تست و پنل مدیریت
+    // ========================================================
+    const demoPlayer = document.getElementById("demoPlayer");
+    const demoIframe = document.getElementById("demoIframe");
+    const videoEmptyState = document.getElementById("videoEmptyState");
+
+    function renderShowcaseVideo(url) {
+      const clean = String(url || "").trim();
+      demoPlayer.style.display = "none";
+      demoIframe.style.display = "none";
+      demoPlayer.pause();
+
+      if (!clean) {
+        videoEmptyState.style.display = "block";
+        return;
+      }
+
+      videoEmptyState.style.display = "none";
+      const aparatMatch = clean.match(/aparat\.com\/v\/([A-Za-z0-9]+)/i);
+      const ytMatch = clean.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/i);
+
+      if (aparatMatch) {
+        demoIframe.src = `https://www.aparat.com/video/video/embed/videohash/${aparatMatch[1]}/vt/frame`;
+        demoIframe.style.display = "block";
+      } else if (ytMatch) {
+        demoIframe.src = `https://www.youtube.com/embed/${ytMatch[1]}`;
+        demoIframe.style.display = "block";
+      } else {
+        demoPlayer.src = clean;
+        demoPlayer.style.display = "block";
+      }
+    }
+
+    document.querySelectorAll(".spd-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".spd-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        demoPlayer.playbackRate = parseFloat(btn.getAttribute("data-speed") || "1");
       });
-    };
+    });
 
-    const generateKey = async (days, ownerName = "کاربر ویژه") => {
-      const randHex = () =>
-        Math.floor(Math.random() * 0xffff)
-          .toString(16)
-          .toUpperCase()
-          .padStart(4, "0");
-      const newKey = `V3X-${randHex()}-${randHex()}`;
-      const cleanName = String(ownerName || "کاربر ویژه").trim() || "کاربر ویژه";
-      await env.DB.prepare(
-        "INSERT INTO licenses (license_key, days, owner_name) VALUES (?, ?, ?)"
-      )
-        .bind(newKey, days, cleanName)
-        .run();
-      return newKey;
-    };
-
-    // ==========================================================
-    // همگام‌سازی سراسری لینک دانلود APK و لینک ویدیو تست
-    // ==========================================================
-    if (path === "/api/config" || path === "/config") {
-      if (request.method === "GET") {
-        const dlRow = await env.DB.prepare(
-          "SELECT v FROM settings WHERE k = 'apk_download_url'"
-        ).first();
-        const vidRow = await env.DB.prepare(
-          "SELECT v FROM settings WHERE k = 'demo_video_url'"
-        ).first();
-        const savedUrl = dlRow && dlRow.v ? String(dlRow.v).trim() : "";
-        const savedVideo = vidRow && vidRow.v ? String(vidRow.v).trim() : "";
-        return json({
-          ok: true,
-          download_url: savedUrl,
-          video_url: savedVideo,
-          url: savedUrl,
-        });
+    async function initPortal() {
+      renderShowcaseVideo(globalVideoUrl);
+      if (savedUserKey) {
+        document.getElementById("licenseInput").value = savedUserKey;
+        verifyLicenseKey(savedUserKey, true);
       }
-
-      if (request.method === "POST") {
-        let body = {};
-        try {
-          body = await request.json();
-        } catch {
-          return json({ ok: false, error: "درخواست نامعتبر است." }, 400);
-        }
-
-        const providedSecret = String(
-          body.secret ||
-            body.admin_code ||
-            body.code ||
-            body.password ||
-            url.searchParams.get("secret") ||
-            ""
-        ).trim();
-
-        if (providedSecret !== secretKey && providedSecret !== SITE_ADMIN_CODE) {
-          return json({ ok: false, error: "کد مدیریت اشتباه است." }, 403);
-        }
-
-        if (body.download_url !== undefined || body.url !== undefined || body.link !== undefined) {
-          const newUrl = String(body.download_url ?? body.url ?? body.link ?? "").trim();
-          await env.DB.prepare(
-            "INSERT OR REPLACE INTO settings (k, v) VALUES ('apk_download_url', ?)"
-          )
-            .bind(newUrl)
-            .run();
-        }
-
-        if (body.video_url !== undefined) {
-          const newVid = String(body.video_url ?? "").trim();
-          await env.DB.prepare(
-            "INSERT OR REPLACE INTO settings (k, v) VALUES ('demo_video_url', ?)"
-          )
-            .bind(newVid)
-            .run();
-        }
-
-        const dlRow = await env.DB.prepare(
-          "SELECT v FROM settings WHERE k = 'apk_download_url'"
-        ).first();
-        const vidRow = await env.DB.prepare(
-          "SELECT v FROM settings WHERE k = 'demo_video_url'"
-        ).first();
-
-        return json({
-          ok: true,
-          download_url: dlRow && dlRow.v ? String(dlRow.v).trim() : "",
-          video_url: vidRow && vidRow.v ? String(vidRow.v).trim() : "",
-          message: "تنظیمات با موفقیت در سرور ذخیره شد.",
-        });
-      }
-    }
-
-    // ==========================================================
-    // ساخت کلید لایسنس همراه با نام کاربر از پنل مدیریت سایت
-    // ==========================================================
-    if (path === "/api/admin-gen" || path === "/admin-gen") {
-      if (request.method === "POST") {
-        let body = {};
-        try {
-          body = await request.json();
-        } catch {
-          body = {};
-        }
-        const providedSecret = String(body.secret || body.admin_code || "").trim();
-        if (providedSecret !== secretKey && providedSecret !== SITE_ADMIN_CODE) {
-          return json({ ok: false, error: "دسترسی غیرمجاز" }, 403);
-        }
-        const days = Math.max(1, parseInt(body.days || "30", 10) || 30);
-        const ownerName = String(body.owner_name || body.name || "کاربر ویژه").trim() || "کاربر ویژه";
-        const customKey = String(body.key || body.license_key || "").trim().toUpperCase();
-        let finalKey = customKey;
-        if (finalKey) {
-          await env.DB.prepare(
-            "INSERT OR REPLACE INTO licenses (license_key, days, owner_name) VALUES (?, ?, ?)"
-          )
-            .bind(finalKey, days, ownerName)
-            .run();
-        } else {
-          finalKey = await generateKey(days, ownerName);
-        }
-        return json({
-          ok: true,
-          valid: true,
-          key: finalKey,
-          license_key: finalKey,
-          owner_name: ownerName,
-          days,
-        });
-      }
-    }
-
-    // ==========================================================
-    // وب‌هوک ربات تلگرام
-    // ==========================================================
-    if (path === "/tg-webhook" && request.method === "POST") {
       try {
-        const update = await request.json();
-        const msg = update.message || {};
-        const chatId = String(msg.chat?.id || "").trim();
-        const text = String(msg.text || "").trim();
-
-        if (!chatId || !text) return json({ ok: true });
-
-        const parts = text.split(/\s+/);
-        const cmd = parts[0].toLowerCase().split("@")[0];
-        const currentAdmin = await getAdminId();
-
-        if (cmd === "/myid") {
-          await sendTgMsg(chatId, `🆔 شناسه عددی تلگرام شما:\n${chatId}`);
-          return json({ ok: true });
+        const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`);
+        const data = await res.json();
+        if (data && data.ok) {
+          if (data.download_url !== undefined) {
+            globalDownloadUrl = data.download_url;
+            localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+            if (activeLicenseData) updateDownloadButtonState();
+          }
+          if (data.video_url !== undefined) {
+            globalVideoUrl = data.video_url;
+            localStorage.setItem("v3x_vid_url", globalVideoUrl);
+            renderShowcaseVideo(globalVideoUrl);
+          }
         }
-
-        if (cmd === "/claim") {
-          if (currentAdmin) {
-            await sendTgMsg(chatId, "⚠️ مالک این ربات قبلاً ثبت شده است.");
-            return json({ ok: true });
-          }
-          if ((parts[1] || "") !== secretKey) {
-            await sendTgMsg(chatId, "❌ رمز ادمین اشتباه است.");
-            return json({ ok: true });
-          }
-          await env.DB.prepare("INSERT OR REPLACE INTO settings (k, v) VALUES ('tg_admin_id', ?)")
-            .bind(chatId)
-            .run();
-          await sendTgMsg(
-            chatId,
-            "✅ مالکیت ربات با موفقیت به نام شما ثبت شد!\nبرای مشاهده پنل دستور /start را بفرستید."
-          );
-          return json({ ok: true });
-        }
-
-        if (!currentAdmin || chatId !== currentAdmin) {
-          await sendTgMsg(
-            chatId,
-            "⛔ شما دسترسی مدیریت ندارید.\nاگر مالک ربات هستید دستور زیر را بفرستید:\n/claim Hadi2026"
-          );
-          return json({ ok: true });
-        }
-
-        let reply = "";
-
-        if (cmd === "/start" || cmd === "/help") {
-          reply =
-            "🛡️ پنل مدیریت ۲۴ ساعته لایسنس V3X:\n\n" +
-            "🔹 /gen 30 علی رضایی — ساخت لایسنس با نام کاربر\n" +
-            "🔹 /list — نمایش ۱۵ لایسنس اخیر\n" +
-            "🔹 /info KEY — استعلام وضعیت و نام لایسنس\n" +
-            "🔹 /addtime KEY 7 — تمدید ۷ روزه\n" +
-            "🔹 /reset KEY — باز کردن قفل گوشی\n" +
-            "🔹 /ban KEY — مسدود کردن لایسنس\n" +
-            "🔹 /unban KEY — رفع مسدودی لایسنس";
-        } else if (cmd === "/gen") {
-          const days = Math.max(1, parseInt(parts[1] || "30", 10) || 30);
-          const ownerName = parts.slice(2).join(" ").trim() || "کاربر ویژه";
-          const key = await generateKey(days, ownerName);
-          reply = `✅ لایسنس ${days} روزه ساخته شد:\n👤 نام: ${ownerName}\n🔑 کد: ${key}`;
-        } else if (cmd === "/list") {
-          const res = await env.DB.prepare(
-            "SELECT license_key, days, device_id, banned, owner_name FROM licenses ORDER BY rowid DESC LIMIT 15"
-          ).all();
-          const rows = res.results || [];
-          if (rows.length === 0) {
-            reply = "هنوز هیچ لایسنسی ساخته نشده است.";
-          } else {
-            const lines = rows.map((r) => {
-              const st = r.banned ? "🚫" : r.device_id ? "🔒" : "🟢";
-              const nm = r.owner_name ? ` [${r.owner_name}]` : "";
-              return `${st} ${r.license_key}${nm} (${r.days} روز)`;
-            });
-            reply = "📋 آخرین لایسنس‌ها:\n\n" + lines.join("\n");
-          }
-        } else if (cmd === "/addtime" && parts.length >= 3) {
-          const target = parts[1].toUpperCase();
-          const extra = parseInt(parts[2], 10);
-          const row = await env.DB.prepare(
-            "SELECT days, expires_at FROM licenses WHERE license_key = ?"
-          )
-            .bind(target)
-            .first();
-          if (!row) {
-            reply = "❌ کد لایسنس پیدا نشد.";
-          } else if (!row.expires_at) {
-            const total = row.days + extra;
-            await env.DB.prepare("UPDATE licenses SET days = ? WHERE license_key = ?")
-              .bind(total, target)
-              .run();
-            reply = `✅ ${extra} روز اضافه شد (مجموع اعتبار: ${total} روز).`;
-          } else {
-            const base = Math.max(Date.now(), Date.parse(row.expires_at));
-            const newExp = new Date(base + extra * 86400 * 1000).toISOString();
-            await env.DB.prepare("UPDATE licenses SET expires_at = ? WHERE license_key = ?")
-              .bind(newExp, target)
-              .run();
-            const left = Math.ceil((Date.parse(newExp) - Date.now()) / (86400 * 1000));
-            reply = `✅ تمدید انجام شد. اعتبار باقی‌مانده: ${left} روز.`;
-          }
-        } else if (cmd === "/info" && parts.length >= 2) {
-          const target = parts[1].toUpperCase();
-          const row = await env.DB.prepare(
-            "SELECT days, device_id, expires_at, banned, owner_name FROM licenses WHERE license_key = ?"
-          )
-            .bind(target)
-            .first();
-          if (!row) {
-            reply = "❌ کد لایسنس پیدا نشد.";
-          } else {
-            const status = row.banned ? "🚫 مسدود" : "✅ فعال";
-            const lock = row.device_id ? `قفل روی: ${row.device_id}` : "آزاد (منتظر ورود اپ)";
-            const left = row.expires_at
-              ? `${Math.max(0, Math.ceil((Date.parse(row.expires_at) - Date.now()) / 86400000))} روز`
-              : `${row.days} روز (شروع نشده)`;
-            reply = `📋 مشخصات ${target}:\n👤 نام کاربر: ${row.owner_name || "کاربر ویژه"}\nوضعیت: ${status}\nاعتبار: ${left}\nدستگاه: ${lock}`;
-          }
-        } else if (cmd === "/ban" && parts.length >= 2) {
-          const target = parts[1].toUpperCase();
-          await env.DB.prepare("UPDATE licenses SET banned = 1 WHERE license_key = ?")
-            .bind(target)
-            .run();
-          reply = `🚫 لایسنس ${target} مسدود شد.`;
-        } else if (cmd === "/unban" && parts.length >= 2) {
-          const target = parts[1].toUpperCase();
-          await env.DB.prepare("UPDATE licenses SET banned = 0 WHERE license_key = ?")
-            .bind(target)
-            .run();
-          reply = `✅ مسدودیت ${target} برداشته شد.`;
-        } else if (cmd === "/reset" && parts.length >= 2) {
-          const target = parts[1].toUpperCase();
-          await env.DB.prepare("UPDATE licenses SET device_id = NULL WHERE license_key = ?")
-            .bind(target)
-            .run();
-          reply = `🔓 قفل گوشی برای ${target} باز شد.`;
-        } else {
-          reply = "دستور نامعتبر است. برای دیدن راهنما /start را بفرستید.";
-        }
-
-        if (reply) await sendTgMsg(chatId, reply);
-      } catch (_) {}
-      return json({ ok: true });
+      } catch (e) {}
     }
 
-    // ==========================================================
-    // API اعتبارسنجی یکپارچه (وب‌سایت + اپلیکیشن + تایمر زنده)
-    // ==========================================================
-    const verifyPaths = ["/api/verify", "/verify", "/check", "/validate", "/activate"];
-    const isVerifyRequest =
-      verifyPaths.includes(path) || (path === "/" && request.method === "POST");
+    const adminModal = document.getElementById("adminModal");
+    document.getElementById("openAdminBtn").addEventListener("click", () => {
+      adminModal.classList.add("open");
+      if (isAdminLogged) {
+        document.getElementById("adminApkUrl").value = globalDownloadUrl;
+        document.getElementById("adminVideoUrl").value = globalVideoUrl;
+      }
+    });
 
-    if (isVerifyRequest) {
-      let body = {};
+    document.getElementById("closeAdminBtn").addEventListener("click", () => {
+      adminModal.classList.remove("open");
+    });
+
+    document.getElementById("adminLoginSubmit").addEventListener("click", () => {
+      const pass = document.getElementById("adminPassInput").value.trim();
+      const errEl = document.getElementById("adminLoginErr");
+      if (pass === ADMIN_CODE) {
+        isAdminLogged = true;
+        errEl.textContent = "";
+        document.getElementById("adminLoginView").style.display = "none";
+        document.getElementById("adminPanelView").style.display = "block";
+        document.getElementById("adminApkUrl").value = globalDownloadUrl;
+        document.getElementById("adminVideoUrl").value = globalVideoUrl;
+      } else {
+        errEl.textContent = "❌ رمز مدیریت اشتباه است.";
+      }
+    });
+
+    document.getElementById("localVideoPicker").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      renderShowcaseVideo(URL.createObjectURL(file));
+      document.getElementById("adminFeedback").textContent =
+        `پیش‌نمایش فایل «${file.name}» بارگذاری شد.`;
+    });
+
+    document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
+      const newUrl = document.getElementById("adminApkUrl").value.trim();
+      const fb = document.getElementById("adminFeedback");
+      fb.textContent = "در حال ذخیره لینک دانلود...";
       try {
-        if (request.method === "POST") {
-          body = await request.json();
+        const r = await fetch(`${API_BASE}/api/config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, download_url: newUrl })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          globalDownloadUrl = d.download_url;
+          localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          if (activeLicenseData) updateDownloadButtonState();
+          fb.textContent = "✅ لینک دانلود برای تمام دستگاه‌ها ذخیره شد!";
+        } else {
+          fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
         }
       } catch {
-        body = {};
+        fb.textContent = "❌ خطا در ارتباط با سرور";
       }
+    });
 
-      const key = String(
-        body.key ||
-          body.license ||
-          body.license_key ||
-          body.code ||
-          url.searchParams.get("key") ||
-          url.searchParams.get("license") ||
-          ""
-      )
-        .trim()
-        .toUpperCase();
-
-      const devId = String(
-        body.device_id ||
-          body.hwid ||
-          body.device ||
-          url.searchParams.get("device_id") ||
-          url.searchParams.get("hwid") ||
-          ""
-      ).trim();
-
-      const source = String(body.source || url.searchParams.get("source") || "")
-        .trim()
-        .toLowerCase();
-
-      const appVer = String(
-        body.app_version ||
-          body.version ||
-          url.searchParams.get("app_version") ||
-          url.searchParams.get("version") ||
-          ""
-      ).trim();
-
-      if (source === "web") {
-        if (!key) {
-          return json({
-            ok: false,
-            valid: false,
-            msg: "کد لایسنس وارد نشده است.",
-            message: "کد لایسنس وارد نشده است.",
-          });
+    document.getElementById("saveVideoUrlBtn").addEventListener("click", async () => {
+      const newVid = document.getElementById("adminVideoUrl").value.trim();
+      const fb = document.getElementById("adminFeedback");
+      fb.textContent = "در حال ذخیره ویدیو تست...";
+      try {
+        const r = await fetch(`${API_BASE}/api/config`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, video_url: newVid })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          globalVideoUrl = d.video_url;
+          localStorage.setItem("v3x_vid_url", globalVideoUrl);
+          renderShowcaseVideo(globalVideoUrl);
+          fb.textContent = "✅ ویدیو تست با موفقیت ثبت شد!";
+        } else {
+          fb.textContent = "❌ " + (d.error || "خطا در ذخیره ویدیو");
         }
+      } catch {
+        fb.textContent = "❌ خطا در ارتباط با سرور";
+      }
+    });
 
-        const row = await env.DB.prepare(
-          "SELECT days, device_id, expires_at, banned, owner_name FROM licenses WHERE license_key = ?"
-        )
-          .bind(key)
-          .first();
-
-        if (!row) {
-          return json({
-            ok: false,
-            valid: false,
-            msg: "کد لایسنس در سیستم یافت نشد.",
-            message: "کد لایسنس در سیستم یافت نشد.",
-          });
+    document.getElementById("genKeyBtn").addEventListener("click", async () => {
+      const days = parseInt(document.getElementById("genDaysInput").value || "30", 10);
+      const box = document.getElementById("generatedKeyBox");
+      box.style.display = "block";
+      box.textContent = "در حال ساخت...";
+      try {
+        const r = await fetch(`${API_BASE}/api/admin-gen`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: ADMIN_CODE, days })
+        });
+        const d = await r.json();
+        if (d.ok && d.key) {
+          box.textContent = d.key;
+          navigator.clipboard?.writeText(d.key);
+          document.getElementById("adminFeedback").textContent = "✅ کد لایسنس ساخته و کپی شد!";
+        } else {
+          box.textContent = "❌ خطا در ساخت کد";
         }
-        if (row.banned === 1) {
-          return json({
-            ok: false,
-            valid: false,
-            msg: "این لایسنس توسط مدیریت مسدود شده است.",
-            message: "این لایسنس توسط مدیریت مسدود شده است.",
-          });
-        }
-
-        const now = Date.now();
-        let expIso = row.expires_at;
-
-        // شروع خودکار تایمر زنده هنگام اولین ورود با لایسنس
-        if (!expIso) {
-          expIso = new Date(now + row.days * 86400 * 1000).toISOString();
-          await env.DB.prepare("UPDATE licenses SET expires_at = ? WHERE license_key = ?")
-            .bind(expIso, key)
-            .run();
-        }
-
-        const expMs = Date.parse(expIso);
-        if (now >= expMs) {
-          return json({
-            ok: false,
-            valid: false,
-            msg: "اعتبار زمانی این لایسنس به پایان رسیده است.",
-            message: "اعتبار زمانی این لایسنس به پایان رسیده است.",
-          });
-        }
-
-        const daysLeft = Math.max(1, Math.ceil((expMs - now) / (86400 * 1000)));
-
-        return json({
-          ok: true,
-          valid: true,
-          owner_name: row.owner_name || "کاربر ویژه",
-          days: row.days,
-          days_left: daysLeft,
-          expires_at: expIso,
-          device_locked: Boolean(row.device_id),
-          msg: "لایسنس معتبر است.",
-          message: "لایسنس معتبر است.",
-        });
+      } catch {
+        box.textContent = "❌ خطای اتصال به سرور";
       }
+    });
 
-      if (isVersionOutdated(appVer, MIN_APP_VERSION)) {
-        const blockMsg = `⚠️ این نسخه قدیمی و غیرفعال شده است. برای دانلود نسخه جدید (${MIN_APP_VERSION}) وارد سایت زیر شوید:\n${SITE_URL}`;
-        return json({
-          ok: false,
-          valid: false,
-          outdated: true,
-          force_update: true,
-          status: "outdated",
-          min_version: MIN_APP_VERSION,
-          update_url: SITE_URL,
-          download_url: SITE_URL,
-          days_left: 0,
-          msg: blockMsg,
-          message: blockMsg,
-        });
-      }
-
-      if (!key || !devId) {
-        return json({
-          ok: false,
-          valid: false,
-          days_left: 0,
-          msg: "کد لایسنس یا شناسه دستگاه وارد نشده است.",
-          message: "کد لایسنس یا شناسه دستگاه وارد نشده است.",
-        });
-      }
-
-      const row = await env.DB.prepare(
-        "SELECT days, device_id, expires_at, banned, owner_name FROM licenses WHERE license_key = ?"
-      )
-        .bind(key)
-        .first();
-
-      if (!row) {
-        return json({
-          ok: false,
-          valid: false,
-          days_left: 0,
-          msg: "کد لایسنس اشتباه است یا در سیستم یافت نشد.",
-          message: "کد لایسنس اشتباه است یا در سیستم یافت نشد.",
-        });
-      }
-      if (row.banned === 1) {
-        return json({
-          ok: false,
-          valid: false,
-          days_left: 0,
-          msg: "این لایسنس توسط مدیریت مسدود شده است.",
-          message: "این لایسنس توسط مدیریت مسدود شده است.",
-        });
-      }
-
-      const now = Date.now();
-      let expiresMs = row.expires_at ? Date.parse(row.expires_at) : null;
-
-      if (!row.device_id) {
-        if (!expiresMs) {
-          expiresMs = now + row.days * 86400 * 1000;
-        }
-        const expIso = new Date(expiresMs).toISOString();
-        await env.DB.prepare(
-          "UPDATE licenses SET device_id = ?, expires_at = ? WHERE license_key = ?"
-        )
-          .bind(devId, expIso, key)
-          .run();
-      } else if (row.device_id !== devId) {
-        return json({
-          ok: false,
-          valid: false,
-          days_left: 0,
-          msg: "این کد قبلاً روی یک گوشی دیگر فعال شده است.",
-          message: "این کد قبلاً روی یک گوشی دیگر فعال شده است.",
-        });
-      }
-
-      if (now >= expiresMs) {
-        return json({
-          ok: false,
-          valid: false,
-          days_left: 0,
-          msg: "اعتبار زمانی لایسنس شما به پایان رسیده است.",
-          message: "اعتبار زمانی لایسنس شما به پایان رسیده است.",
-        });
-      }
-
-      const daysLeft = Math.max(1, Math.ceil((expiresMs - now) / (86400 * 1000)));
-      return json({
-        ok: true,
-        valid: true,
-        owner_name: row.owner_name || "کاربر ویژه",
-        days_left: daysLeft,
-        expires_at: new Date(expiresMs).toISOString(),
-        msg: "لایسنس معتبر است.",
-        message: "لایسنس معتبر است.",
-      });
-    }
-
-    if (path === "/") {
-      return json({ status: "online", min_version: MIN_APP_VERSION, site: SITE_URL });
-    }
-
-    if (path.startsWith("/admin/")) {
-      const secret = url.searchParams.get("secret") || "";
-      if (secret !== secretKey && secret !== SITE_ADMIN_CODE) {
-        return json({ error: "رمز ادمین اشتباه است" }, 403);
-      }
-
-      if (path === "/admin/setup-tg") {
-        const webhookUrl = `${url.origin}/tg-webhook`;
-        const resp = await fetch(
-          `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`
-        );
-        const resultData = await resp.json();
-        return json({ webhook_set_to: webhookUrl, telegram_response: resultData });
-      }
-    }
-
-    return json({ error: "Not Found" }, 404);
-  },
-};
+    initPortal();
+  </script>
+</body>
+</html>
