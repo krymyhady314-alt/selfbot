@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>V3X Selfbot | نسل جدید سلف‌بات سروش‌پلاس</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,7 +11,7 @@
     :root {
       --void: #020205;
       --surface: rgba(10, 8, 16, 0.72);
-      --surface-strong: rgba(14, 10, 22, 0.92);
+      --surface-strong: rgba(14, 10, 22, 0.94);
       --crimson: #ff0a34;
       --crimson-hot: #ff2e55;
       --crimson-deep: #88081e;
@@ -31,16 +31,21 @@
       font-family: "Vazirmatn", system-ui, -apple-system, sans-serif;
     }
 
-    html {
-      scroll-behavior: smooth;
-    }
-
+    html,
     body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
       background-color: var(--void);
       color: var(--text-white);
       min-height: 100vh;
-      overflow-x: hidden;
       line-height: 1.75;
+    }
+
+    main {
+      width: 100%;
+      overflow-x: hidden;
     }
 
     /* بوم کهکشان زنده تمام‌صفحه */
@@ -72,9 +77,10 @@
     }
 
     .container {
+      width: 100%;
       max-width: 1180px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 18px;
       position: relative;
       z-index: 2;
     }
@@ -82,15 +88,17 @@
     /* هدر شناور شیشه‌ای */
     header {
       position: sticky;
-      top: 14px;
+      top: 12px;
       z-index: 50;
+      width: 100%;
       max-width: 1160px;
-      margin: 14px auto 0;
+      margin: 12px auto 0;
       padding: 0 16px;
     }
 
     .nav-hud {
-      background: rgba(8, 6, 14, 0.78);
+      width: 100%;
+      background: rgba(8, 6, 14, 0.82);
       backdrop-filter: blur(22px);
       -webkit-backdrop-filter: blur(22px);
       border: 1px solid var(--border-red);
@@ -99,32 +107,34 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 12px;
       box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-decoration: none;
       color: var(--text-white);
+      flex-shrink: 0;
     }
 
     .reactor-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
       background: radial-gradient(circle at 30% 30%, var(--crimson), #4c0519);
       display: grid;
       place-items: center;
       box-shadow: 0 0 26px var(--crimson-glow);
       position: relative;
+      flex-shrink: 0;
     }
 
     .reactor-logo svg {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       animation: spinSlow 10s linear infinite;
     }
 
@@ -133,9 +143,10 @@
     }
 
     .brand-title {
-      font-size: 19px;
+      font-size: 18px;
       font-weight: 900;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
     }
 
     .brand-title span {
@@ -147,6 +158,7 @@
     .live-clock-pill {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
       background: rgba(255, 10, 52, 0.1);
       border: 1px solid rgba(255, 10, 52, 0.35);
@@ -156,6 +168,7 @@
       font-weight: 800;
       color: #ffe4e6;
       box-shadow: 0 0 20px rgba(255, 10, 52, 0.18);
+      white-space: nowrap;
     }
 
     .pulse-beacon {
@@ -165,6 +178,7 @@
       background: var(--crimson-hot);
       box-shadow: 0 0 12px var(--crimson-hot);
       animation: beacon 1.2s infinite;
+      flex-shrink: 0;
     }
 
     @keyframes beacon {
@@ -175,7 +189,7 @@
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 20px;
     }
 
     .nav-links a {
@@ -184,6 +198,7 @@
       font-size: 14px;
       font-weight: 600;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .nav-links a:hover {
@@ -194,7 +209,8 @@
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .btn {
@@ -239,6 +255,8 @@
     /* کارت‌های دارای افکت نوری تعاملی و سه‌بعدی */
     .tilt-card {
       position: relative;
+      min-width: 0;
+      max-width: 100%;
       background: var(--surface);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
@@ -273,11 +291,15 @@
 
     /* بخش Hero */
     .hero {
-      padding: 58px 0 44px;
+      padding: 54px 0 42px;
       display: grid;
       grid-template-columns: 1.04fr 0.96fr;
-      gap: 36px;
+      gap: 34px;
       align-items: center;
+    }
+
+    .hero > * {
+      min-width: 0;
     }
 
     .hero-tag {
@@ -292,6 +314,7 @@
       font-size: 13px;
       font-weight: 700;
       margin-bottom: 18px;
+      max-width: 100%;
     }
 
     .hero-tag i {
@@ -301,13 +324,15 @@
       background: var(--emerald);
       box-shadow: 0 0 12px var(--emerald);
       animation: beacon 1.5s infinite;
+      flex-shrink: 0;
     }
 
     .hero h1 {
-      font-size: clamp(30px, 4.4vw, 48px);
+      font-size: clamp(27px, 4.4vw, 48px);
       font-weight: 900;
-      line-height: 1.24;
+      line-height: 1.28;
       margin-bottom: 16px;
+      word-wrap: break-word;
     }
 
     .hero h1 .neon-crimson {
@@ -341,6 +366,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
+      width: 100%;
       max-width: 530px;
     }
 
@@ -351,7 +377,7 @@
 
     .kpi-box strong {
       display: block;
-      font-size: 16px;
+      font-size: 15.5px;
       font-weight: 900;
       color: #fff;
     }
@@ -363,6 +389,7 @@
 
     /* پنل مرکز فرماندهی زنده (Live Telemetry & Spectrum HUD) */
     .hud-panel {
+      width: 100%;
       padding: 20px;
       border-color: var(--border-red);
       box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 10, 52, 0.16);
@@ -372,37 +399,48 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       margin-bottom: 14px;
     }
 
     .hud-title {
       display: flex;
       align-items: center;
-      gap: 9px;
-      font-size: 14.5px;
+      gap: 8px;
+      font-size: 14px;
       font-weight: 800;
+      min-width: 0;
+    }
+
+    .hud-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .hud-badge {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
       padding: 4px 10px;
       border-radius: 999px;
       background: var(--crimson-soft);
       border: 1px solid var(--border-red);
       color: #fda4af;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .hud-tabs {
       display: flex;
       gap: 6px;
       margin-bottom: 14px;
+      width: 100%;
     }
 
     .hud-tab {
       flex: 1;
-      padding: 8px 10px;
+      min-width: 0;
+      padding: 8px 8px;
       border-radius: 11px;
       border: 1px solid var(--border-dim);
       background: rgba(255, 255, 255, 0.03);
@@ -411,6 +449,9 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .hud-tab.active {
@@ -439,19 +480,22 @@
     .scope-stats {
       position: absolute;
       top: 10px;
-      right: 12px;
+      right: 10px;
+      left: 10px;
       display: flex;
-      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 6px;
       pointer-events: none;
     }
 
     .scope-chip {
-      background: rgba(4, 3, 9, 0.82);
+      background: rgba(4, 3, 9, 0.85);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 10, 52, 0.3);
       border-radius: 9px;
       padding: 4px 10px;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 800;
     }
 
@@ -463,9 +507,10 @@
       border-radius: 12px;
       padding: 9px 12px;
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       font-size: 12px;
     }
 
@@ -477,12 +522,14 @@
 
     /* بخش‌های عمومی */
     section {
-      padding: 44px 0;
+      padding: 42px 0;
+      width: 100%;
     }
 
     .section-title {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 28px;
+      padding: 0 6px;
     }
 
     .section-title .kicker {
@@ -494,7 +541,7 @@
     }
 
     .section-title h2 {
-      font-size: clamp(23px, 3.2vw, 33px);
+      font-size: clamp(22px, 3.2vw, 33px);
       font-weight: 900;
       margin-bottom: 6px;
     }
@@ -506,7 +553,8 @@
 
     /* بخش ویدیو تست */
     .video-shell {
-      padding: 22px;
+      padding: 20px;
+      width: 100%;
       max-width: 900px;
       margin: 0 auto;
       border-color: var(--border-red);
@@ -536,18 +584,18 @@
 
     .video-empty-view {
       text-align: center;
-      padding: 24px;
+      padding: 20px;
     }
 
     .radar-ring {
-      width: 74px;
-      height: 74px;
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(255, 10, 52, 0.25), rgba(255, 10, 52, 0.05));
       border: 1.5px solid var(--crimson);
       display: grid;
       place-items: center;
-      margin: 0 auto 16px;
+      margin: 0 auto 14px;
       box-shadow: 0 0 32px var(--crimson-glow);
       animation: radarPulse 2.2s infinite;
     }
@@ -571,8 +619,9 @@
 
     .speed-group {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .spd-btn {
@@ -580,7 +629,7 @@
       border: 1px solid var(--border-dim);
       color: var(--text-dim);
       border-radius: 8px;
-      padding: 4px 10px;
+      padding: 4px 9px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
@@ -596,7 +645,8 @@
 
     /* باکس استعلام لایسنس و دانلود */
     .portal-card {
-      padding: 30px;
+      padding: 26px;
+      width: 100%;
       max-width: 780px;
       margin: 0 auto;
       border-color: var(--border-red);
@@ -606,6 +656,7 @@
       display: flex;
       gap: 10px;
       margin-top: 14px;
+      width: 100%;
     }
 
     input[type="text"],
@@ -613,6 +664,7 @@
     input[type="number"],
     input[type="url"] {
       width: 100%;
+      min-width: 0;
       background: rgba(3, 2, 8, 0.92);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 13px;
@@ -654,16 +706,17 @@
     .features-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
+      gap: 18px;
+      width: 100%;
     }
 
     .feat-box {
-      padding: 24px;
+      padding: 22px;
     }
 
     .svg-icon-wrap {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
       background: linear-gradient(135deg, rgba(255, 10, 52, 0.22), rgba(136, 8, 30, 0.12));
       border: 1px solid var(--border-red);
@@ -674,8 +727,8 @@
     }
 
     .svg-icon-wrap svg {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       stroke: var(--crimson-hot);
       fill: none;
       stroke-width: 2;
@@ -684,7 +737,7 @@
     }
 
     .feat-box h3 {
-      font-size: 17.5px;
+      font-size: 17px;
       font-weight: 800;
       margin-bottom: 6px;
     }
@@ -708,8 +761,8 @@
 
     footer {
       border-top: 1px solid var(--border-dim);
-      padding: 28px 0 40px;
-      margin-top: 28px;
+      padding: 26px 0 38px;
+      margin-top: 24px;
       text-align: center;
       color: var(--text-dim);
       font-size: 13px;
@@ -746,7 +799,7 @@
       max-width: 550px;
       max-height: 90vh;
       overflow-y: auto;
-      padding: 24px;
+      padding: 22px;
       box-shadow: 0 28px 80px rgba(0, 0, 0, 0.92), 0 0 40px rgba(255, 10, 52, 0.2);
     }
 
@@ -789,19 +842,90 @@
       margin-top: 8px;
     }
 
-    @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-        padding-top: 32px;
-      }
+    /* بهینه‌سازی اختصاصی تبلت و موبایل */
+    @media (max-width: 920px) {
       .nav-links {
         display: none;
+      }
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 28px;
+        gap: 26px;
       }
       .features-grid {
         grid-template-columns: 1fr;
       }
+    }
+
+    @media (max-width: 640px) {
+      header {
+        top: 8px;
+        margin-top: 8px;
+        padding: 0 12px;
+      }
+      .nav-hud {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+        border-radius: 16px;
+        gap: 8px;
+      }
+      .reactor-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+      .brand-title {
+        font-size: 15.5px;
+      }
+      .nav-actions .btn {
+        padding: 7px 11px;
+        font-size: 12px;
+        border-radius: 10px;
+      }
+      .live-clock-pill {
+        order: 3;
+        width: 100%;
+        font-size: 12px;
+        padding: 5px 12px;
+      }
+      .container {
+        padding: 0 14px;
+      }
+      .hero-cta {
+        flex-direction: column;
+      }
+      .hero-cta .btn {
+        width: 100%;
+      }
+      .live-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .live-kpi-row .kpi-box:last-child {
+        grid-column: span 2;
+      }
+      .hud-panel {
+        padding: 14px;
+      }
+      .hud-tab {
+        font-size: 11px;
+        padding: 7px 4px;
+      }
+      .scope-frame {
+        height: 185px;
+      }
+      .video-shell,
+      .portal-card {
+        padding: 16px;
+      }
       .input-group {
         flex-direction: column;
+      }
+      .input-group .btn {
+        width: 100%;
+      }
+      #apkDownloadBtn {
+        width: 100%;
       }
     }
   </style>
@@ -894,7 +1018,7 @@
       <div class="tilt-card hud-panel">
         <div class="hud-top">
           <div class="hud-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff2e55" stroke-width="2.2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff2e55" stroke-width="2.2" style="flex-shrink:0;">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
             <span>نوسان‌نگار زنده پردازش هسته V3X</span>
@@ -938,11 +1062,11 @@
 
           <div class="video-empty-view" id="videoEmptyState">
             <div class="radar-ring">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff2e55">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="#ff2e55">
                 <polygon points="6 4 20 12 6 20 6 4" />
               </svg>
             </div>
-            <h3 style="font-size:17.5px;color:#fff;">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
+            <h3 style="font-size:16px;color:#fff;">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
           </div>
         </div>
 
@@ -1161,7 +1285,6 @@
     function animateGalaxy() {
       gCtx.clearRect(0, 0, gw, gh);
 
-      // شهاب‌سنگ قرمز کهکشانی تصادفی
       if (!shootingStar && Math.random() < 0.008) {
         shootingStar = {
           x: Math.random() * gw,
@@ -1196,7 +1319,6 @@
         if (s.y < 0) s.y = gh;
         if (s.y > gh) s.y = 0;
 
-        // واکنش به مکان‌نما
         const dxp = s.x - pointer.x;
         const dyp = s.y - pointer.y;
         const distP = Math.hypot(dxp, dyp);
@@ -1209,7 +1331,6 @@
           gCtx.stroke();
         }
 
-        // خطوط صورت فلکی قرمز بین ذرات نزدیک
         for (let j = i + 1; j < stars.length; j++) {
           const s2 = stars[j];
           const d = Math.hypot(s.x - s2.x, s.y - s2.y);
@@ -1234,7 +1355,7 @@
     animateGalaxy();
 
     // ========================================================
-    // ۲. ساعت زنده افق تهران (تیک لحظه‌ای هر ثانیه)
+    // ۲. ساعت زنده افق تهران
     // ========================================================
     function toBoldDigits(str) {
       const map = { "0":"𝟎","1":"𝟏","2":"𝟐","3":"𝟑","4":"𝟒","5":"𝟓","6":"𝟔","7":"𝟕","8":"𝟖","9":"𝟗" };
@@ -1257,7 +1378,6 @@
     updateLiveTehranClocks();
     setInterval(updateLiveTehranClocks, 1000);
 
-    // نوسان زنده پینگ نمایشی
     setInterval(() => {
       const pingEl = document.getElementById("livePingCounter");
       if (pingEl) {
@@ -1267,7 +1387,7 @@
     }, 2400);
 
     // ========================================================
-    // ۳. نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم (Telemetry Scope)
+    // ۳. نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم
     // ========================================================
     const tCanvas = document.getElementById("telemetryCanvas");
     const tCtx = tCanvas.getContext("2d");
@@ -1377,7 +1497,6 @@
 
       tCtx.clearRect(0, 0, w, h);
 
-      // شبکه راداری پس‌زمینه
       tCtx.strokeStyle = "rgba(255, 255, 255, 0.045)";
       tCtx.lineWidth = 1;
       for (let y = 34; y < h; y += 36) {
@@ -1387,7 +1506,6 @@
         tCtx.stroke();
       }
 
-      // میله‌های طیف‌سنج پس‌زمینه
       const barW = w / bars.length;
       for (let b = 0; b < bars.length; b++) {
         const bh = (bars[b] / 100) * (h * 0.55);
@@ -1395,7 +1513,6 @@
         tCtx.fillRect(b * barW + 3, h - bh, Math.max(2, barW - 6), bh);
       }
 
-      // منحنی نوسان‌نگار اصلی
       const stepX = w / (wavePoints.length - 1);
       const pts = wavePoints.map((v, i) => ({
         x: i * stepX,
@@ -1436,7 +1553,6 @@
       tCtx.stroke();
       tCtx.shadowBlur = 0;
 
-      // نقطه لیزری انتهای موج
       tCtx.beginPath();
       tCtx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
       tCtx.fillStyle = "#ffffff";
@@ -1447,30 +1563,31 @@
     renderScope();
 
     // ========================================================
-    // ۴. افکت نورپردازی و چرخش سه‌بعدی روی کارت‌ها
+    // ۴. افکت نورپردازی و چرخش سه‌بعدی (فقط روی دسکتاپ)
     // ========================================================
-    document.querySelectorAll(".tilt-card").forEach((card) => {
-      card.addEventListener("mousemove", (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        card.style.setProperty("--mx", `${x}px`);
-        card.style.setProperty("--my", `${y}px`);
-        const rx = ((y - rect.height / 2) / rect.height) * -4;
-        const ry = ((x - rect.width / 2) / rect.width) * 4;
-        card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    if (window.matchMedia("(hover: hover)").matches) {
+      document.querySelectorAll(".tilt-card").forEach((card) => {
+        card.addEventListener("mousemove", (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty("--mx", `${x}px`);
+          card.style.setProperty("--my", `${y}px`);
+          const rx = ((y - rect.height / 2) / rect.height) * -4;
+          const ry = ((x - rect.width / 2) / rect.width) * 4;
+          card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        });
+        card.addEventListener("mouseleave", () => {
+          card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
+        });
       });
-      card.addEventListener("mouseleave", () => {
-        card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
-      });
-    });
+    }
 
-    // انیمیشن ظاهر شدن هنگام اسکرول
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) entry.target.classList.add("visible");
       });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.1 });
     document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
 
     // ========================================================
