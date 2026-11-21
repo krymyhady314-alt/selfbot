@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V3X Selfbot | پورتال رسمی سلف‌بات سروش‌پلاس</title>
+  <title>V3X Selfbot | نسل جدید سلف‌بات سروش‌پلاس</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg-void: #030306;
-      --bg-card: rgba(11, 11, 19, 0.76);
-      --bg-card-solid: #0b0b13;
-      --crimson: #ff1e42;
-      --crimson-soft: rgba(255, 30, 66, 0.16);
-      --crimson-glow: rgba(255, 30, 66, 0.32);
+      --void: #020205;
+      --surface: rgba(10, 8, 16, 0.72);
+      --surface-strong: rgba(14, 10, 22, 0.92);
+      --crimson: #ff0a34;
+      --crimson-hot: #ff2e55;
+      --crimson-deep: #88081e;
+      --crimson-glow: rgba(255, 10, 52, 0.42);
+      --crimson-soft: rgba(255, 10, 52, 0.14);
       --border-dim: rgba(255, 255, 255, 0.07);
-      --border-neon: rgba(255, 30, 66, 0.38);
+      --border-red: rgba(255, 10, 52, 0.42);
       --text-white: #f8fafc;
-      --text-muted: #94a3b8;
+      --text-dim: #94a3b8;
       --emerald: #10b981;
     }
 
@@ -34,85 +36,71 @@
     }
 
     body {
-      background-color: var(--bg-void);
+      background-color: var(--void);
       color: var(--text-white);
       min-height: 100vh;
       overflow-x: hidden;
       line-height: 1.75;
-      background-image:
-        radial-gradient(circle at 82% 6%, rgba(255, 30, 66, 0.18), transparent 38%),
-        radial-gradient(circle at 14% 40%, rgba(153, 27, 27, 0.14), transparent 44%),
-        radial-gradient(circle at 78% 88%, rgba(255, 30, 66, 0.11), transparent 40%);
     }
 
-    .cyber-grid {
+    /* بوم کهکشان زنده تمام‌صفحه */
+    #galaxyCanvas {
       position: fixed;
       inset: 0;
-      background-size: 44px 44px;
-      background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
-      mask-image: radial-gradient(ellipse at center, black 42%, transparent 92%);
-      pointer-events: none;
+      width: 100%;
+      height: 100%;
       z-index: 0;
+      pointer-events: none;
+    }
+
+    /* هاله‌های سحابی قرمز کهکشانی */
+    .nebula-aura {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 80% 12%, rgba(255, 10, 52, 0.2), transparent 38%),
+        radial-gradient(circle at 15% 55%, rgba(136, 8, 30, 0.22), transparent 45%),
+        radial-gradient(circle at 75% 88%, rgba(255, 46, 85, 0.14), transparent 40%);
+      animation: nebulaShift 14s ease-in-out infinite alternate;
+    }
+
+    @keyframes nebulaShift {
+      0% { opacity: 0.85; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.06); }
     }
 
     .container {
-      max-width: 1160px;
+      max-width: 1180px;
       margin: 0 auto;
       padding: 0 20px;
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
 
-    /* نوار باینری متحرک بالای صفحه */
-    .binary-ribbon {
-      width: 100%;
-      overflow: hidden;
-      white-space: nowrap;
-      font-family: monospace;
-      font-size: 11px;
-      letter-spacing: 3px;
-      color: rgba(255, 30, 66, 0.35);
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255, 30, 66, 0.12);
-      background: rgba(5, 5, 10, 0.85);
-      user-select: none;
-      position: relative;
-      z-index: 60;
-    }
-
-    .binary-track {
-      display: inline-block;
-      animation: marqueeBinary 28s linear infinite;
-    }
-
-    @keyframes marqueeBinary {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(50%); }
-    }
-
-    /* هدر شیشه‌ای */
+    /* هدر شناور شیشه‌ای */
     header {
       position: sticky;
-      top: 12px;
+      top: 14px;
       z-index: 50;
-      margin: 12px auto 0;
-      max-width: 1140px;
+      max-width: 1160px;
+      margin: 14px auto 0;
       padding: 0 16px;
     }
 
-    .nav-shell {
-      background: rgba(9, 9, 16, 0.82);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border-dim);
-      border-radius: 18px;
-      padding: 12px 20px;
+    .nav-hud {
+      background: rgba(8, 6, 14, 0.78);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--border-red);
+      border-radius: 20px;
+      padding: 11px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .brand {
@@ -123,47 +111,87 @@
       color: var(--text-white);
     }
 
-    .brand-logo {
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-      background: linear-gradient(135deg, var(--crimson), #7f1d1d);
+    .reactor-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 30% 30%, var(--crimson), #4c0519);
       display: grid;
       place-items: center;
+      box-shadow: 0 0 26px var(--crimson-glow);
+      position: relative;
+    }
+
+    .reactor-logo svg {
+      width: 26px;
+      height: 26px;
+      animation: spinSlow 10s linear infinite;
+    }
+
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+
+    .brand-title {
+      font-size: 19px;
       font-weight: 900;
-      font-size: 16px;
-      box-shadow: 0 0 24px var(--crimson-glow);
+      letter-spacing: 0.5px;
     }
 
-    .brand-name {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.4px;
+    .brand-title span {
+      color: var(--crimson-hot);
+      text-shadow: 0 0 16px var(--crimson-glow);
     }
 
-    .brand-name span {
-      color: var(--crimson);
-    }
-
-    .nav-menu {
+    /* ساعت زنده تهران در هدر */
+    .live-clock-pill {
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 8px;
+      background: rgba(255, 10, 52, 0.1);
+      border: 1px solid rgba(255, 10, 52, 0.35);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffe4e6;
+      box-shadow: 0 0 20px rgba(255, 10, 52, 0.18);
     }
 
-    .nav-menu a {
-      color: var(--text-muted);
+    .pulse-beacon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--crimson-hot);
+      box-shadow: 0 0 12px var(--crimson-hot);
+      animation: beacon 1.2s infinite;
+    }
+
+    @keyframes beacon {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.45); opacity: 0.45; }
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
       text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
-      transition: color 0.2s;
+      font-weight: 600;
+      transition: all 0.2s;
     }
 
-    .nav-menu a:hover {
-      color: var(--text-white);
+    .nav-links a:hover {
+      color: #fff;
+      text-shadow: 0 0 12px var(--crimson-glow);
     }
 
-    .nav-btns {
+    .nav-actions {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -171,295 +199,334 @@
 
     .btn {
       border: none;
-      border-radius: 12px;
+      border-radius: 13px;
       padding: 10px 18px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: all 0.22s ease;
+      transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
       text-decoration: none;
+      position: relative;
+      overflow: hidden;
     }
 
-    .btn-neon {
-      background: linear-gradient(135deg, var(--crimson), #dc2626);
+    .btn-crimson {
+      background: linear-gradient(135deg, var(--crimson), #b91c1c);
       color: #fff;
-      box-shadow: 0 6px 24px var(--crimson-glow);
+      box-shadow: 0 8px 28px var(--crimson-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
-    .btn-neon:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 32px rgba(255, 30, 66, 0.48);
+    .btn-crimson:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 12px 38px rgba(255, 10, 52, 0.6);
     }
 
-    .btn-outline {
+    .btn-glass {
       background: rgba(255, 255, 255, 0.04);
       color: var(--text-white);
       border: 1px solid var(--border-dim);
     }
 
-    .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: var(--border-neon);
+    .btn-glass:hover {
+      background: rgba(255, 10, 52, 0.12);
+      border-color: var(--border-red);
+    }
+
+    /* کارت‌های دارای افکت نوری تعاملی و سه‌بعدی */
+    .tilt-card {
+      position: relative;
+      background: var(--surface);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border-dim);
+      border-radius: 22px;
+      transition: transform 0.18s ease-out, border-color 0.25s ease, box-shadow 0.25s ease;
+      overflow: hidden;
+    }
+
+    .tilt-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        420px circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 10, 52, 0.18),
+        transparent 65%
+      );
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .tilt-card:hover {
+      border-color: var(--border-red);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.75), 0 0 32px rgba(255, 10, 52, 0.16);
+    }
+
+    .tilt-card:hover::before {
+      opacity: 1;
     }
 
     /* بخش Hero */
     .hero {
-      padding: 54px 0 42px;
+      padding: 58px 0 44px;
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 34px;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 36px;
       align-items: center;
     }
 
-    .live-badge {
+    .hero-tag {
       display: inline-flex;
       align-items: center;
       gap: 9px;
-      padding: 6px 14px;
+      padding: 6px 15px;
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.28);
+      border: 1px solid rgba(16, 185, 129, 0.32);
       color: #6ee7b7;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 18px;
     }
 
-    .live-dot {
+    .hero-tag i {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--emerald);
       box-shadow: 0 0 12px var(--emerald);
-      animation: blinkDot 1.7s infinite;
-    }
-
-    @keyframes blinkDot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.35); }
+      animation: beacon 1.5s infinite;
     }
 
     .hero h1 {
-      font-size: clamp(29px, 4.2vw, 46px);
+      font-size: clamp(30px, 4.4vw, 48px);
       font-weight: 900;
-      line-height: 1.26;
+      line-height: 1.24;
       margin-bottom: 16px;
     }
 
-    .hero h1 .glow-text {
-      background: linear-gradient(90deg, #ff1e42, #ff758f);
+    .hero h1 .neon-crimson {
+      background: linear-gradient(90deg, #ff0a34, #ff5c7c, #ff0a34);
+      background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      animation: shineGradient 4s linear infinite;
+      filter: drop-shadow(0 0 18px rgba(255, 10, 52, 0.35));
     }
 
-    .hero p.desc {
-      color: var(--text-muted);
+    @keyframes shineGradient {
+      to { background-position: 200% center; }
+    }
+
+    .hero p.lead {
+      color: var(--text-dim);
       font-size: 15.5px;
       margin-bottom: 26px;
       max-width: 540px;
     }
 
-    .hero-actions {
+    .hero-cta {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       margin-bottom: 28px;
     }
 
-    .stats-strip {
+    .live-kpi-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
-      max-width: 520px;
+      max-width: 530px;
     }
 
-    .stat-pill {
-      background: var(--bg-card);
-      border: 1px solid var(--border-dim);
-      border-radius: 14px;
-      padding: 12px 14px;
+    .kpi-box {
+      padding: 13px 14px;
+      border-radius: 16px;
     }
 
-    .stat-pill strong {
+    .kpi-box strong {
       display: block;
       font-size: 16px;
-      color: var(--text-white);
+      font-weight: 900;
+      color: #fff;
     }
 
-    .stat-pill span {
+    .kpi-box span {
       font-size: 12px;
-      color: var(--text-muted);
+      color: var(--text-dim);
     }
 
-    /* کارت نمودار زنده تله‌متری */
-    .telemetry-card {
-      background: linear-gradient(165deg, rgba(16, 16, 28, 0.94), rgba(6, 6, 12, 0.98));
-      border: 1px solid var(--border-neon);
-      border-radius: 24px;
+    /* پنل مرکز فرماندهی زنده (Live Telemetry & Spectrum HUD) */
+    .hud-panel {
       padding: 20px;
-      box-shadow: 0 26px 65px rgba(0, 0, 0, 0.78), 0 0 45px rgba(255, 30, 66, 0.14);
-      position: relative;
-      overflow: hidden;
+      border-color: var(--border-red);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 10, 52, 0.16);
     }
 
-    .telemetry-header {
+    .hud-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
       margin-bottom: 14px;
     }
 
-    .telemetry-title {
+    .hud-title {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
+      gap: 9px;
+      font-size: 14.5px;
       font-weight: 800;
     }
 
-    .telemetry-tag {
+    .hud-badge {
       font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
+      font-weight: 800;
+      padding: 4px 10px;
       border-radius: 999px;
       background: var(--crimson-soft);
-      border: 1px solid var(--border-neon);
+      border: 1px solid var(--border-red);
       color: #fda4af;
+      letter-spacing: 0.5px;
     }
 
-    .chart-mode-tabs {
+    .hud-tabs {
       display: flex;
       gap: 6px;
       margin-bottom: 14px;
     }
 
-    .mode-btn {
+    .hud-tab {
       flex: 1;
-      padding: 7px 10px;
-      border-radius: 10px;
+      padding: 8px 10px;
+      border-radius: 11px;
       border: 1px solid var(--border-dim);
       background: rgba(255, 255, 255, 0.03);
-      color: var(--text-muted);
+      color: var(--text-dim);
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .mode-btn.active {
-      background: rgba(255, 30, 66, 0.18);
+    .hud-tab.active {
+      background: linear-gradient(135deg, rgba(255, 10, 52, 0.28), rgba(136, 8, 30, 0.35));
       border-color: var(--crimson);
       color: #fff;
-      box-shadow: 0 0 16px rgba(255, 30, 66, 0.2);
+      box-shadow: 0 0 18px rgba(255, 10, 52, 0.25);
     }
 
-    .canvas-wrapper {
+    .scope-frame {
       position: relative;
       width: 100%;
-      height: 195px;
-      background: radial-gradient(circle at 50% 0%, rgba(255, 30, 66, 0.08), rgba(4, 4, 9, 0.95));
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      height: 205px;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 10, 52, 0.12), rgba(3, 2, 7, 0.96));
+      border: 1px solid rgba(255, 10, 52, 0.25);
       border-radius: 16px;
       overflow: hidden;
     }
 
-    canvas#telemetryCanvas {
+    #telemetryCanvas {
       width: 100%;
       height: 100%;
       display: block;
     }
 
-    .chart-overlay-readout {
+    .scope-stats {
       position: absolute;
       top: 10px;
       right: 12px;
       display: flex;
-      align-items: center;
-      gap: 12px;
+      gap: 8px;
       pointer-events: none;
     }
 
-    .readout-chip {
-      background: rgba(5, 5, 11, 0.78);
+    .scope-chip {
+      background: rgba(4, 3, 9, 0.82);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 10, 52, 0.3);
       border-radius: 9px;
       padding: 4px 10px;
       font-size: 11.5px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
-    .telemetry-footer {
+    /* نوار رویدادهای زنده پایین نمودار */
+    .live-ticker-box {
+      margin-top: 12px;
+      background: rgba(4, 3, 9, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 9px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      gap: 10px;
       font-size: 12px;
-      color: var(--text-muted);
     }
 
-    /* بخش‌های صفحه */
+    .ticker-text {
+      color: #e2e8f0;
+      font-weight: 600;
+      transition: opacity 0.25s;
+    }
+
+    /* بخش‌های عمومی */
     section {
-      padding: 42px 0;
+      padding: 44px 0;
     }
 
-    .sec-header {
+    .section-title {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 30px;
     }
 
-    .sec-kicker {
-      color: var(--crimson);
+    .section-title .kicker {
+      color: var(--crimson-hot);
       font-size: 12.5px;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       margin-bottom: 4px;
     }
 
-    .sec-header h2 {
-      font-size: clamp(22px, 3vw, 31px);
+    .section-title h2 {
+      font-size: clamp(23px, 3.2vw, 33px);
       font-weight: 900;
       margin-bottom: 6px;
     }
 
-    .sec-header p {
-      color: var(--text-muted);
+    .section-title p {
+      color: var(--text-dim);
       font-size: 14.5px;
     }
 
     /* بخش ویدیو تست */
-    .video-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-neon);
-      border-radius: 24px;
-      padding: 20px;
-      max-width: 880px;
+    .video-shell {
+      padding: 22px;
+      max-width: 900px;
       margin: 0 auto;
-      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65);
+      border-color: var(--border-red);
     }
 
-    .video-stage {
+    .video-viewport {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
-      background: #05050a;
+      background: radial-gradient(circle at center, #0e060c 0%, #030206 100%);
       border-radius: 16px;
       overflow: hidden;
-      border: 1px solid var(--border-dim);
+      border: 1px solid rgba(255, 10, 52, 0.24);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .video-stage video,
-    .video-stage iframe {
+    .video-viewport video,
+    .video-viewport iframe {
       width: 100%;
       height: 100%;
       object-fit: contain;
@@ -467,26 +534,31 @@
       display: none;
     }
 
-    .video-placeholder {
+    .video-empty-view {
       text-align: center;
       padding: 24px;
     }
 
-    .video-placeholder .icon-ring {
-      width: 64px;
-      height: 64px;
+    .radar-ring {
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
-      background: var(--crimson-soft);
-      border: 1px solid var(--border-neon);
+      background: radial-gradient(circle, rgba(255, 10, 52, 0.25), rgba(255, 10, 52, 0.05));
+      border: 1.5px solid var(--crimson);
       display: grid;
       place-items: center;
-      margin: 0 auto 14px;
-      font-size: 24px;
-      color: var(--crimson);
-      box-shadow: 0 0 25px var(--crimson-glow);
+      margin: 0 auto 16px;
+      box-shadow: 0 0 32px var(--crimson-glow);
+      animation: radarPulse 2.2s infinite;
     }
 
-    .video-controls-bar {
+    @keyframes radarPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 10, 52, 0.5); }
+      70% { box-shadow: 0 0 0 18px rgba(255, 10, 52, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 10, 52, 0); }
+    }
+
+    .video-bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -497,7 +569,7 @@
       border-top: 1px solid var(--border-dim);
     }
 
-    .speed-pills {
+    .speed-group {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -506,32 +578,31 @@
     .spd-btn {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border-dim);
-      color: var(--text-muted);
+      color: var(--text-dim);
       border-radius: 8px;
       padding: 4px 10px;
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: all 0.2s;
     }
 
     .spd-btn.active {
       background: var(--crimson);
       border-color: var(--crimson);
       color: #fff;
+      box-shadow: 0 0 14px var(--crimson-glow);
     }
 
-    /* باکس لایسنس و دانلود */
-    .license-card {
-      background: linear-gradient(150deg, rgba(16, 16, 28, 0.94), rgba(9, 9, 16, 0.97));
-      border: 1px solid var(--border-neon);
-      border-radius: 24px;
-      padding: 28px;
-      max-width: 760px;
+    /* باکس استعلام لایسنس و دانلود */
+    .portal-card {
+      padding: 30px;
+      max-width: 780px;
       margin: 0 auto;
-      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.68);
+      border-color: var(--border-red);
     }
 
-    .form-row {
+    .input-group {
       display: flex;
       gap: 10px;
       margin-top: 14px;
@@ -542,21 +613,22 @@
     input[type="number"],
     input[type="url"] {
       width: 100%;
-      background: rgba(4, 4, 10, 0.92);
-      border: 1px solid var(--border-dim);
-      border-radius: 12px;
+      background: rgba(3, 2, 8, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
       padding: 13px 16px;
       color: #fff;
       font-size: 14px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     input:focus {
       border-color: var(--crimson);
+      box-shadow: 0 0 18px rgba(255, 10, 52, 0.22);
     }
 
-    .verify-msg {
+    .status-banner {
       margin-top: 16px;
       padding: 15px;
       border-radius: 14px;
@@ -564,81 +636,97 @@
       font-size: 14px;
     }
 
-    .verify-msg.ok {
+    .status-banner.ok {
       display: block;
-      background: rgba(16, 185, 129, 0.11);
-      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.38);
       color: #a7f3d0;
     }
 
-    .verify-msg.err {
+    .status-banner.err {
       display: block;
-      background: rgba(255, 30, 66, 0.12);
-      border: 1px solid rgba(255, 30, 66, 0.4);
+      background: rgba(255, 10, 52, 0.14);
+      border: 1px solid rgba(255, 10, 52, 0.45);
       color: #fecdd3;
     }
 
-    /* کارت‌های امکانات */
-    .grid-features {
+    /* کارت‌های امکانات با آیکون‌های برداری متحرک */
+    .features-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 18px;
+      gap: 20px;
     }
 
-    .feature-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border-dim);
-      border-radius: 18px;
-      padding: 22px;
-      transition: border-color 0.22s, transform 0.22s;
+    .feat-box {
+      padding: 24px;
     }
 
-    .feature-item:hover {
-      border-color: var(--border-neon);
-      transform: translateY(-3px);
-    }
-
-    .f-badge {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: var(--crimson-soft);
-      border: 1px solid var(--border-neon);
+    .svg-icon-wrap {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 10, 52, 0.22), rgba(136, 8, 30, 0.12));
+      border: 1px solid var(--border-red);
       display: grid;
       place-items: center;
-      font-size: 20px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 0 22px rgba(255, 10, 52, 0.2);
     }
 
-    .feature-item h3 {
-      font-size: 17px;
+    .svg-icon-wrap svg {
+      width: 26px;
+      height: 26px;
+      stroke: var(--crimson-hot);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feat-box h3 {
+      font-size: 17.5px;
+      font-weight: 800;
       margin-bottom: 6px;
     }
 
-    .feature-item p {
+    .feat-box p {
       font-size: 14px;
-      color: var(--text-muted);
+      color: var(--text-dim);
+    }
+
+    /* انیمیشن ورود نرم عناصر هنگام اسکرول */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     footer {
       border-top: 1px solid var(--border-dim);
-      padding: 26px 0 38px;
-      margin-top: 26px;
+      padding: 28px 0 40px;
+      margin-top: 28px;
       text-align: center;
-      color: var(--text-muted);
+      color: var(--text-dim);
       font-size: 13px;
+      position: relative;
+      z-index: 2;
     }
 
     footer strong {
-      color: var(--crimson);
+      color: var(--crimson-hot);
     }
 
     /* مودال پنل مدیریت */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(2, 2, 6, 0.86);
-      backdrop-filter: blur(12px);
+      background: rgba(2, 1, 5, 0.88);
+      backdrop-filter: blur(14px);
       z-index: 100;
       display: none;
       align-items: center;
@@ -651,15 +739,15 @@
     }
 
     .modal-box {
-      background: var(--bg-card-solid);
-      border: 1px solid var(--border-neon);
-      border-radius: 22px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border-red);
+      border-radius: 24px;
       width: 100%;
       max-width: 550px;
       max-height: 90vh;
       overflow-y: auto;
       padding: 24px;
-      box-shadow: 0 26px 75px rgba(0, 0, 0, 0.9);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.92), 0 0 40px rgba(255, 10, 52, 0.2);
     }
 
     .modal-top {
@@ -674,8 +762,8 @@
     .admin-block {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-dim);
-      border-radius: 14px;
-      padding: 14px;
+      border-radius: 15px;
+      padding: 15px;
       margin-bottom: 14px;
     }
 
@@ -691,156 +779,177 @@
       justify-content: center;
       gap: 8px;
       padding: 10px;
-      border-radius: 10px;
+      border-radius: 11px;
       border: 1px dashed var(--crimson);
-      background: rgba(255, 30, 66, 0.08);
+      background: rgba(255, 10, 52, 0.08);
       color: #fecdd3;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 8px;
     }
 
-    @media (max-width: 880px) {
+    @media (max-width: 900px) {
       .hero {
         grid-template-columns: 1fr;
         padding-top: 32px;
       }
-      .nav-menu {
+      .nav-links {
         display: none;
       }
-      .grid-features {
+      .features-grid {
         grid-template-columns: 1fr;
       }
-      .form-row {
+      .input-group {
         flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
-  <div class="cyber-grid"></div>
-
-  <!-- نوار جریان داده باینری -->
-  <div class="binary-ribbon">
-    <div class="binary-track">
-      V3XSYS CORE // 01101001 10010110 11001010 01011100 // V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101 // V3X SELFBOT v2.1.1 // 01101001 10010110 11001010 01011100 // V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101
-    </div>
-  </div>
+  <canvas id="galaxyCanvas"></canvas>
+  <div class="nebula-aura"></div>
 
   <header>
-    <div class="nav-shell">
+    <div class="nav-hud">
       <a href="#" class="brand">
-        <div class="brand-logo">V3X</div>
-        <div class="brand-name">V3X <span>SELFBOT</span></div>
+        <div class="reactor-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+            <circle cx="12" cy="12" r="3" fill="#ffffff" />
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+          </svg>
+        </div>
+        <div class="brand-title">V3X <span>SELFBOT</span></div>
       </a>
 
-      <nav class="nav-menu">
-        <a href="#telemetry">نمودار عملکرد</a>
+      <div class="live-clock-pill" title="ساعت زنده به افق تهران">
+        <span class="pulse-beacon"></span>
+        <span>افق تهران:</span>
+        <span id="liveTehranHeaderClock" dir="ltr">--:--:--</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#telemetry">نوسان‌نگار زنده</a>
         <a href="#demo-video">ویدیو تست</a>
         <a href="#download">دریافت برنامه</a>
         <a href="#features">امکانات</a>
       </nav>
 
-      <div class="nav-btns">
-        <a href="#download" class="btn btn-neon">ورود لایسنس</a>
-        <button type="button" class="btn btn-outline" id="openAdminBtn">🛡️ مدیریت</button>
+      <div class="nav-actions">
+        <a href="#download" class="btn btn-crimson">ورود لایسنس</a>
+        <button type="button" class="btn btn-glass" id="openAdminBtn">مدیریت</button>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <!-- بخش Hero و نمودار زنده تله‌متری -->
+    <!-- بخش Hero -->
     <section class="hero" id="telemetry">
       <div>
-        <div class="live-badge">
-          <span class="live-dot"></span>
-          <span>سرور اختصاصی متصل · نسخه 2.1.1</span>
+        <div class="hero-tag">
+          <i></i>
+          <span>هسته اختصاصی فعال · نسخه 2.1.1</span>
         </div>
 
         <h1>
-          نسل جدید <span class="glow-text">سلف‌بات سروش‌پلاس</span> با هسته توربو و پایداری لحظه‌ای
+          قدرت مطلق در <span class="neon-crimson">سلف‌بات سروش‌پلاس</span> با سرعت توربو و هوش زنده
         </h1>
 
-        <p class="desc">
-          کنترل کامل چت‌ها، ساعت زنده افق تهران کنار اسم پروفایل، ارسال چندتایی با حافظه دائمی و موتور ارسال توربو بدون تاخیر؛ متصل به شبکه اختصاصی ایران بدون نیاز به فیلترشکن.
+        <p class="lead">
+          همگام‌سازی لحظه‌ای ساعت افق تهران کنار نام پروفایل، ارسال چندتایی با حافظه دائمی و موتور توربو بدون تاخیر؛ طراحی‌شده برای پایداری بی‌وقفه و اتصال مستقیم.
         </p>
 
-        <div class="hero-actions">
-          <a href="#download" class="btn btn-neon">⚡ فعال‌سازی و دانلود مستقیم</a>
-          <a href="#demo-video" class="btn btn-outline">🎬 مشاهده ویدیو تست</a>
+        <div class="hero-cta">
+          <a href="#download" class="btn btn-crimson">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            فعال‌سازی و دانلود مستقیم
+          </a>
+          <a href="#demo-video" class="btn btn-glass">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            تماشای ویدیو تست
+          </a>
         </div>
 
-        <div class="stats-strip">
-          <div class="stat-pill">
+        <div class="live-kpi-row">
+          <div class="tilt-card kpi-box">
+            <strong id="liveProfilePreview" dir="ltr">V3X | 14:30</strong>
+            <span>پیش‌نمایش زنده ساعت</span>
+          </div>
+          <div class="tilt-card kpi-box">
+            <strong id="livePingCounter" dir="ltr">16 ms</strong>
+            <span>تاخیر هسته مرکزی</span>
+          </div>
+          <div class="tilt-card kpi-box">
             <strong>نسخه 2.1.1</strong>
-            <span>پایدار و ضدقطعی</span>
-          </div>
-          <div class="stat-pill">
-            <strong>18ms پینگ</strong>
-            <span>اتصال مستقیم بدون فیلتر</span>
-          </div>
-          <div class="stat-pill">
-            <strong>قفل سخت‌افزار</strong>
-            <span>لایسنس اختصاصی</span>
+            <span>ضدقطعی و رمزنگاری‌شده</span>
           </div>
         </div>
       </div>
 
-      <!-- نمودار زنده گرافیکی -->
-      <div class="telemetry-card">
-        <div class="telemetry-header">
-          <div class="telemetry-title">
-            <span style="color:var(--crimson);font-size:18px;">📈</span>
-            <span>نمودار زنده پردازش و سرعت هسته V3X</span>
+      <!-- پنل نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم -->
+      <div class="tilt-card hud-panel">
+        <div class="hud-top">
+          <div class="hud-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff2e55" stroke-width="2.2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+            <span>نوسان‌نگار زنده پردازش هسته V3X</span>
           </div>
-          <span class="telemetry-tag" id="chartBadge">TURBO STREAM</span>
+          <span class="hud-badge" id="hudModeBadge">TURBO PULSE</span>
         </div>
 
-        <div class="chart-mode-tabs">
-          <button type="button" class="mode-btn active" data-mode="turbo">🚀 سرعت توربو</button>
-          <button type="button" class="mode-btn" data-mode="clock">⏰ همگام‌سازی ساعت</button>
-          <button type="button" class="mode-btn" data-mode="ping">📡 پایداری شبکه</button>
+        <div class="hud-tabs">
+          <button type="button" class="hud-tab active" data-mode="turbo">موتور توربو</button>
+          <button type="button" class="hud-tab" data-mode="clock">ساعت افق تهران</button>
+          <button type="button" class="hud-tab" data-mode="multi">ارسال چندتایی</button>
         </div>
 
-        <div class="canvas-wrapper">
+        <div class="scope-frame">
           <canvas id="telemetryCanvas"></canvas>
-          <div class="chart-overlay-readout">
-            <div class="readout-chip" style="color:#fda4af;" id="metricPrimary">سرعت: 48 msg/s</div>
-            <div class="readout-chip" style="color:#6ee7b7;" id="metricSecondary">پایداری: 99.9%</div>
+          <div class="scope-stats">
+            <div class="scope-chip" style="color:#fda4af;" id="scopeStat1">سرعت: 52 msg/s</div>
+            <div class="scope-chip" style="color:#6ee7b7;" id="scopeStat2">پایداری: 99.9%</div>
           </div>
         </div>
 
-        <div class="telemetry-footer">
-          <span id="chartStatusDesc">پایش لحظه‌ای صف ارسال همزمان سروش‌پلاس</span>
-          <span style="color:#10b981;font-weight:700;">● LIVE 60FPS</span>
+        <div class="live-ticker-box">
+          <span class="ticker-text" id="liveEventTicker">⚡ آماده دریافت دستورات و همگام‌سازی لحظه‌ای...</span>
+          <span style="color:#10b981;font-weight:800;white-space:nowrap;">● LIVE 60FPS</span>
         </div>
       </div>
     </section>
 
     <!-- بخش ویدیو تست -->
-    <section id="demo-video">
-      <div class="sec-header">
-        <div class="sec-kicker">VIDEO SHOWCASE</div>
+    <section id="demo-video" class="reveal">
+      <div class="section-title">
+        <div class="kicker">LIVE SHOWCASE</div>
         <h2>ویدیو تست و عملکرد برنامه</h2>
-        <p>نمایش محیط کاربری و سرعت اجرای دستورات سلف‌بات V3X</p>
+        <p>مشاهده محیط کاربری و سرعت اجرای دستورات سلف‌بات V3X</p>
       </div>
 
-      <div class="video-box">
-        <div class="video-stage">
+      <div class="tilt-card video-shell">
+        <div class="video-viewport">
           <video id="demoPlayer" controls playsinline preload="metadata"></video>
           <iframe id="demoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
 
-          <div class="video-placeholder" id="videoEmptyState">
-            <div class="icon-ring">▶</div>
-            <h3 style="font-size:17px;color:var(--text-white);">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
+          <div class="video-empty-view" id="videoEmptyState">
+            <div class="radar-ring">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#ff2e55">
+                <polygon points="6 4 20 12 6 20 6 4" />
+              </svg>
+            </div>
+            <h3 style="font-size:17.5px;color:#fff;">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
           </div>
         </div>
 
-        <div class="video-controls-bar">
-          <span style="font-size:13px;color:var(--text-muted);">🎥 پخش‌کننده اختصاصی V3X</span>
-          <div class="speed-pills">
-            <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">سرعت پخش:</span>
+        <div class="video-bar">
+          <span style="font-size:13px;color:var(--text-dim);">پخش‌کننده اختصاصی V3X · کیفیت اصلی</span>
+          <div class="speed-group">
+            <span style="font-size:12px;color:var(--text-dim);margin-left:4px;">سرعت پخش:</span>
             <button type="button" class="spd-btn" data-speed="0.75">0.75x</button>
             <button type="button" class="spd-btn active" data-speed="1">1x</button>
             <button type="button" class="spd-btn" data-speed="1.25">1.25x</button>
@@ -851,61 +960,85 @@
       </div>
     </section>
 
-    <!-- بخش استعلام لایسنس و دانلود مستقیم -->
-    <section id="download">
-      <div class="sec-header">
-        <div class="sec-kicker">LICENSE & DOWNLOAD</div>
+    <!-- بخش استعلام لایسنس و دانلود -->
+    <section id="download" class="reveal">
+      <div class="section-title">
+        <div class="kicker">LICENSE & DOWNLOAD</div>
         <h2>استعلام لایسنس و دریافت نسخه 2.1.1</h2>
         <p>کلید اشتراک خود را وارد کنید تا لینک دانلود مستقیم فایل نصب (APK) فعال شود</p>
       </div>
 
-      <div class="license-card">
-        <label for="licenseInput" style="font-size:13px;color:var(--text-muted);font-weight:600;">
+      <div class="tilt-card portal-card">
+        <label for="licenseInput" style="font-size:13.5px;color:var(--text-dim);font-weight:700;">
           کلید لایسنس اختصاصی شما:
         </label>
-        <div class="form-row">
+        <div class="input-group">
           <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
-          <button type="button" class="btn btn-neon" id="verifyBtn" style="white-space:nowrap;">
-            🔍 بررسی و دریافت لینک
+          <button type="button" class="btn btn-glass" id="pasteLicenseBtn" style="white-space:nowrap;">
+            چسباندن
+          </button>
+          <button type="button" class="btn btn-crimson" id="verifyBtn" style="white-space:nowrap;">
+            بررسی و دریافت لینک
           </button>
         </div>
 
-        <div class="verify-msg" id="licenseResult"></div>
+        <div class="status-banner" id="licenseResult"></div>
 
-        <div id="downloadActions" style="display:none;margin-top:14px;">
-          <a href="#" target="_blank" rel="noopener" class="btn btn-neon" id="apkDownloadBtn">
-            ⬇️ دانلود مستقیم فایل نصب (APK v2.1.1)
+        <div id="downloadActions" style="display:none;margin-top:16px;">
+          <a href="#" target="_blank" rel="noopener" class="btn btn-crimson" id="apkDownloadBtn">
+            دانلود مستقیم فایل نصب (APK v2.1.1)
           </a>
         </div>
       </div>
     </section>
 
-    <!-- امکانات کلیدی -->
-    <section id="features">
-      <div class="sec-header">
-        <div class="sec-kicker">CORE CAPABILITIES</div>
+    <!-- بخش امکانات با آیکون‌های برداری متحرک -->
+    <section id="features" class="reveal">
+      <div class="section-title">
+        <div class="kicker">CORE ARCHITECTURE</div>
         <h2>امکانات کلیدی V3X Selfbot</h2>
-        <p>مهندسی‌شده برای بالاترین سرعت پاسخ‌گویی و پایداری در سروش‌پلاس</p>
+        <p>طراحی‌شده برای بالاترین سرعت پاسخ‌گویی، زیبایی بصری و پایداری در سروش‌پلاس</p>
       </div>
 
-      <div class="grid-features">
-        <div class="feature-item">
-          <div class="f-badge">⏰</div>
+      <div class="features-grid">
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 14" />
+            </svg>
+          </div>
           <h3>ساعت زنده افق تهران کنار اسم</h3>
-          <p>به‌روزرسانی خودکار ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
+          <p>به‌روزرسانی خودکار و دقیق ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
         </div>
-        <div class="feature-item">
-          <div class="f-badge">🚀</div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </div>
           <h3>موتور ارسال توربو فوق‌سریع</h3>
-          <p>ارسال همزمان و بهینه پیام‌ها با مدیریت هوشمند محدودیت‌های سرور و اتصال مجدد خودکار در صورت قطع اینترنت.</p>
+          <p>ارسال همزمان و بهینه پیام‌ها با مدیریت هوشمند محدودیت‌های سرور و اتصال مجدد خودکار در صورت نوسان اینترنت.</p>
         </div>
-        <div class="feature-item">
-          <div class="f-badge">📨</div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="14" rx="3" />
+              <path d="M8 21h8M12 18v3" />
+            </svg>
+          </div>
           <h3>ارسال چندتایی با حافظه دائمی</h3>
           <p>لیست پیام‌های دلخواه خود را بسازید، در حافظه برنامه ذخیره کنید و همزمان به چند پی‌وی یا گروه ارسال نمایید.</p>
         </div>
-        <div class="feature-item">
-          <div class="f-badge">💬</div>
+
+        <div class="tilt-card feat-box">
+          <div class="svg-icon-wrap">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
+          </div>
           <h3>انتخاب چت و ریپلای سریع</h3>
           <p>مشاهده لیست کامل پی‌وی‌ها و گروه‌ها، خواندن پیام‌های اخیر هر چت و انتخاب دقیق پیام برای ریپلای خودکار.</p>
         </div>
@@ -923,16 +1056,16 @@
   <div class="modal-overlay" id="adminModal">
     <div class="modal-box">
       <div class="modal-top">
-        <h3 style="font-size:17px;">🛡️ پنل مدیریت سراسری V3X</h3>
-        <button type="button" class="btn btn-outline" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
+        <h3 style="font-size:17px;">پنل مدیریت سراسری V3X</h3>
+        <button type="button" class="btn btn-glass" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
       </div>
 
       <div id="adminLoginView">
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">
           برای دسترسی به تنظیمات سایت، ویدیو تست و ساخت لایسنس، رمز مدیریت را وارد کنید:
         </p>
         <input type="password" id="adminPassInput" placeholder="رمز مدیریت را وارد کنید..." dir="ltr" />
-        <button type="button" class="btn btn-neon" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
+        <button type="button" class="btn btn-crimson" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
           ورود به پنل مدیریت
         </button>
         <p id="adminLoginErr" style="color:#fda4af;font-size:13px;margin-top:8px;"></p>
@@ -940,34 +1073,34 @@
 
       <div id="adminPanelView" style="display:none;">
         <div class="admin-block">
-          <h4>📦 لینک دانلود مستقیم اپلیکیشن (APK)</h4>
+          <h4>لینک دانلود مستقیم اپلیکیشن (APK)</h4>
           <input type="url" id="adminApkUrl" placeholder="https://github.com/.../app-release.apk" dir="ltr" />
-          <button type="button" class="btn btn-neon" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
-            💾 ذخیره سراسری لینک دانلود
+          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
+            ذخیره سراسری لینک دانلود
           </button>
         </div>
 
         <div class="admin-block">
-          <h4>🎬 ویدیو تست عملکرد برنامه</h4>
+          <h4>ویدیو تست عملکرد برنامه</h4>
           <input type="url" id="adminVideoUrl" placeholder="لینک مستقیم MP4 یا لینک آپارات / گیت‌هاب..." dir="ltr" />
           <label class="upload-drop" for="localVideoPicker">
-            📁 انتخاب فایل ویدیو از سیستم (پیش‌نمایش آنی)
+            انتخاب فایل ویدیو از سیستم (پیش‌نمایش آنی)
           </label>
           <input type="file" id="localVideoPicker" accept="video/*" style="display:none;" />
-          <button type="button" class="btn btn-neon" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
-            💾 ذخیره سراسری ویدیو تست
+          <button type="button" class="btn btn-crimson" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
+            ذخیره سراسری ویدیو تست
           </button>
         </div>
 
         <div class="admin-block">
-          <h4>🔑 ساخت کلید لایسنس جدید</h4>
+          <h4>ساخت کلید لایسنس جدید</h4>
           <div style="display:flex;gap:8px;">
             <input type="number" id="genDaysInput" value="30" min="1" placeholder="تعداد روز" />
-            <button type="button" class="btn btn-neon" id="genKeyBtn" style="white-space:nowrap;">
-              ⚡ ساخت کد
+            <button type="button" class="btn btn-crimson" id="genKeyBtn" style="white-space:nowrap;">
+              ساخت کد
             </button>
           </div>
-          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#04040a;border:1px solid var(--emerald);color:#6ee7b7;font-weight:700;text-align:center;" dir="ltr"></div>
+          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#030207;border:1px solid var(--emerald);color:#6ee7b7;font-weight:800;text-align:center;" dir="ltr"></div>
         </div>
 
         <p id="adminFeedback" style="font-size:13px;color:#6ee7b7;text-align:center;margin-top:6px;"></p>
@@ -983,152 +1116,366 @@
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
     let isAdminLogged = false;
 
-    const canvas = document.getElementById("telemetryCanvas");
-    const ctx = canvas.getContext("2d");
-    let chartMode = "turbo";
-    let points = Array.from({ length: 46 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
-    let tick = 0;
+    // ========================================================
+    // ۱. کهکشان زنده و تعاملی مشکی و قرمز نئونی (Galaxy Canvas)
+    // ========================================================
+    const gCanvas = document.getElementById("galaxyCanvas");
+    const gCtx = gCanvas.getContext("2d");
+    let gw = 0, gh = 0;
+    const pointer = { x: -9999, y: -9999 };
 
-    const modeMeta = {
+    window.addEventListener("mousemove", (e) => {
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+    });
+    window.addEventListener("touchmove", (e) => {
+      if (e.touches && e.touches[0]) {
+        pointer.x = e.touches[0].clientX;
+        pointer.y = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    function resizeGalaxy() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      gw = window.innerWidth;
+      gh = window.innerHeight;
+      gCanvas.width = gw * dpr;
+      gCanvas.height = gh * dpr;
+      gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resizeGalaxy);
+    resizeGalaxy();
+
+    const starCount = Math.min(90, Math.floor((window.innerWidth * window.innerHeight) / 14000));
+    const stars = Array.from({ length: starCount }, () => ({
+      x: Math.random() * gw,
+      y: Math.random() * gh,
+      vx: (Math.random() - 0.5) * 0.45,
+      vy: (Math.random() - 0.5) * 0.45,
+      r: Math.random() * 2 + 0.8,
+      crimson: Math.random() > 0.35
+    }));
+
+    let shootingStar = null;
+
+    function animateGalaxy() {
+      gCtx.clearRect(0, 0, gw, gh);
+
+      // شهاب‌سنگ قرمز کهکشانی تصادفی
+      if (!shootingStar && Math.random() < 0.008) {
+        shootingStar = {
+          x: Math.random() * gw,
+          y: Math.random() * (gh * 0.4),
+          vx: (Math.random() > 0.5 ? 1 : -1) * (7 + Math.random() * 5),
+          vy: 4 + Math.random() * 3,
+          life: 1
+        };
+      }
+
+      if (shootingStar) {
+        gCtx.beginPath();
+        gCtx.moveTo(shootingStar.x, shootingStar.y);
+        gCtx.lineTo(shootingStar.x - shootingStar.vx * 5, shootingStar.y - shootingStar.vy * 5);
+        gCtx.strokeStyle = `rgba(255, 46, 85, ${shootingStar.life * 0.7})`;
+        gCtx.lineWidth = 2;
+        gCtx.stroke();
+
+        shootingStar.x += shootingStar.vx;
+        shootingStar.y += shootingStar.vy;
+        shootingStar.life -= 0.03;
+        if (shootingStar.life <= 0) shootingStar = null;
+      }
+
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        s.x += s.vx;
+        s.y += s.vy;
+
+        if (s.x < 0) s.x = gw;
+        if (s.x > gw) s.x = 0;
+        if (s.y < 0) s.y = gh;
+        if (s.y > gh) s.y = 0;
+
+        // واکنش به مکان‌نما
+        const dxp = s.x - pointer.x;
+        const dyp = s.y - pointer.y;
+        const distP = Math.hypot(dxp, dyp);
+        if (distP < 160) {
+          gCtx.beginPath();
+          gCtx.moveTo(s.x, s.y);
+          gCtx.lineTo(pointer.x, pointer.y);
+          gCtx.strokeStyle = `rgba(255, 10, 52, ${(1 - distP / 160) * 0.35})`;
+          gCtx.lineWidth = 1;
+          gCtx.stroke();
+        }
+
+        // خطوط صورت فلکی قرمز بین ذرات نزدیک
+        for (let j = i + 1; j < stars.length; j++) {
+          const s2 = stars[j];
+          const d = Math.hypot(s.x - s2.x, s.y - s2.y);
+          if (d < 115) {
+            gCtx.beginPath();
+            gCtx.moveTo(s.x, s.y);
+            gCtx.lineTo(s2.x, s2.y);
+            gCtx.strokeStyle = `rgba(255, 10, 52, ${(1 - d / 115) * 0.16})`;
+            gCtx.lineWidth = 0.8;
+            gCtx.stroke();
+          }
+        }
+
+        gCtx.beginPath();
+        gCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        gCtx.fillStyle = s.crimson ? "rgba(255, 30, 66, 0.85)" : "rgba(255, 255, 255, 0.55)";
+        gCtx.fill();
+      }
+
+      requestAnimationFrame(animateGalaxy);
+    }
+    animateGalaxy();
+
+    // ========================================================
+    // ۲. ساعت زنده افق تهران (تیک لحظه‌ای هر ثانیه)
+    // ========================================================
+    function toBoldDigits(str) {
+      const map = { "0":"𝟎","1":"𝟏","2":"𝟐","3":"𝟑","4":"𝟒","5":"𝟓","6":"𝟔","7":"𝟕","8":"𝟖","9":"𝟗" };
+      return str.replace(/[0-9]/g, (d) => map[d] || d);
+    }
+
+    function updateLiveTehranClocks() {
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      const tehran = new Date(utcMs + 3.5 * 3600000);
+      const hh = String(tehran.getHours()).padStart(2, "0");
+      const mm = String(tehran.getMinutes()).padStart(2, "0");
+      const ss = String(tehran.getSeconds()).padStart(2, "0");
+
+      const headerEl = document.getElementById("liveTehranHeaderClock");
+      const profileEl = document.getElementById("liveProfilePreview");
+      if (headerEl) headerEl.textContent = `${hh}:${mm}:${ss}`;
+      if (profileEl) profileEl.textContent = `V3X | ${toBoldDigits(`${hh}:${mm}`)}`;
+    }
+    updateLiveTehranClocks();
+    setInterval(updateLiveTehranClocks, 1000);
+
+    // نوسان زنده پینگ نمایشی
+    setInterval(() => {
+      const pingEl = document.getElementById("livePingCounter");
+      if (pingEl) {
+        const ms = 14 + Math.floor(Math.random() * 6);
+        pingEl.textContent = `${ms} ms`;
+      }
+    }, 2400);
+
+    // ========================================================
+    // ۳. نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم (Telemetry Scope)
+    // ========================================================
+    const tCanvas = document.getElementById("telemetryCanvas");
+    const tCtx = tCanvas.getContext("2d");
+    let scopeMode = "turbo";
+    let wavePoints = Array.from({ length: 50 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
+    let bars = Array.from({ length: 28 }, () => 30 + Math.random() * 40);
+    let phase = 0;
+
+    const scopeModes = {
       turbo: {
-        badge: "TURBO STREAM",
-        primary: "سرعت: 48 msg/s",
-        secondary: "پایداری: 99.9%",
-        desc: "پایش لحظه‌ای صف ارسال همزمان سروش‌پلاس",
-        base: 64,
+        badge: "TURBO PULSE",
+        s1: "سرعت: 52 msg/s",
+        s2: "پایداری: 99.9%",
+        base: 62,
         amp: 24,
-        color: "#ff1e42",
-        fillTop: "rgba(255, 30, 66, 0.36)"
+        stroke: "#ff0a34",
+        glow: "rgba(255, 10, 52, 0.42)",
+        events: [
+          "⚡ ارسال دسته‌ای ۵ پیام همزمان با تاخیر صفر تکمیل شد",
+          "🛡️ سیستم ضد‌محدودیت هوشمند در حالت آماده به کار است",
+          "🚀 هسته توربو روی بالاترین توان پردازش قرار دارد"
+        ]
       },
       clock: {
-        badge: "TEHRAN SYNC",
-        primary: "دقت: ±0.02s",
-        secondary: "منطقه: UTC+3:30",
-        desc: "همگام‌سازی خودکار ساعت افق تهران کنار پروفایل",
-        base: 52,
+        badge: "TEHRAN ATOMIC",
+        s1: "دقت: ±0.01s",
+        s2: "منطقه: UTC+3:30",
+        base: 50,
         amp: 14,
-        color: "#fb7185",
-        fillTop: "rgba(251, 113, 133, 0.32)"
+        stroke: "#ff4d6d",
+        glow: "rgba(255, 77, 109, 0.35)",
+        events: [
+          "⏰ نام پروفایل با ساعت افق تهران همگام‌سازی شد",
+          "✨ فونت ضخیم و فانتزی ساعت بدون خطا فعال است",
+          "🔄 پایش خودکار تغییر دقیقه در پس‌زمینه فعال است"
+        ]
       },
-      ping: {
-        badge: "DIRECT NODE",
-        primary: "پینگ: 18 ms",
-        secondary: "وضعیت: بدون فیلتر",
-        desc: "اتصال مستقیم و پرسرعت به هسته اختصاصی V3X",
-        base: 72,
-        amp: 10,
-        color: "#10b981",
-        fillTop: "rgba(16, 185, 129, 0.30)"
+      multi: {
+        badge: "MULTI STREAM",
+        s1: "کانال‌ها: همزمان",
+        s2: "حافظه: دائمی",
+        base: 68,
+        amp: 18,
+        stroke: "#10b981",
+        glow: "rgba(16, 185, 129, 0.35)",
+        events: [
+          "📨 لیست پیام‌های پیش‌فرض از حافظه داخلی بارگذاری شد",
+          "💬 قابلیت ریپلای سریع روی آخرین پیام چت آماده است",
+          "🟢 اتصال مستقیم و پایدار به شبکه سروش‌پلاس برقرار است"
+        ]
       }
     };
 
-    document.querySelectorAll(".mode-btn").forEach((btn) => {
+    document.querySelectorAll(".hud-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".hud-tab").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        chartMode = btn.getAttribute("data-mode") || "turbo";
-        const m = modeMeta[chartMode];
-        document.getElementById("chartBadge").textContent = m.badge;
-        document.getElementById("metricPrimary").textContent = m.primary;
-        document.getElementById("metricSecondary").textContent = m.secondary;
-        document.getElementById("chartStatusDesc").textContent = m.desc;
+        scopeMode = btn.getAttribute("data-mode") || "turbo";
+        const cfg = scopeModes[scopeMode];
+        document.getElementById("hudModeBadge").textContent = cfg.badge;
+        document.getElementById("scopeStat1").textContent = cfg.s1;
+        document.getElementById("scopeStat2").textContent = cfg.s2;
+        document.getElementById("liveEventTicker").textContent = cfg.events[0];
       });
     });
 
-    function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let eventIdx = 0;
+    setInterval(() => {
+      const cfg = scopeModes[scopeMode];
+      eventIdx = (eventIdx + 1) % cfg.events.length;
+      const ticker = document.getElementById("liveEventTicker");
+      if (ticker) {
+        ticker.style.opacity = "0.25";
+        setTimeout(() => {
+          ticker.textContent = cfg.events[eventIdx];
+          ticker.style.opacity = "1";
+        }, 200);
+      }
+    }, 3200);
+
+    function resizeScope() {
+      const rect = tCanvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      tCanvas.width = rect.width * dpr;
+      tCanvas.height = rect.height * dpr;
+      tCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+    window.addEventListener("resize", resizeScope);
+    resizeScope();
 
-    function drawChart() {
-      const w = canvas.parentElement.clientWidth;
-      const h = canvas.parentElement.clientHeight;
-      const m = modeMeta[chartMode];
+    function renderScope() {
+      const w = tCanvas.parentElement.clientWidth;
+      const h = tCanvas.parentElement.clientHeight;
+      const cfg = scopeModes[scopeMode];
 
-      tick += 0.08;
-      if (Math.round(tick * 10) % 3 === 0) {
-        const wave = Math.sin(tick * 1.4) * m.amp + Math.cos(tick * 2.7) * (m.amp * 0.45);
-        const jitter = (Math.random() - 0.5) * 6;
-        const nextVal = Math.max(18, Math.min(92, m.base + wave + jitter));
-        points.push(nextVal);
-        points.shift();
+      phase += 0.09;
+      if (Math.round(phase * 10) % 2 === 0) {
+        const val = cfg.base + Math.sin(phase * 1.5) * cfg.amp + Math.cos(phase * 2.9) * (cfg.amp * 0.45) + (Math.random() - 0.5) * 7;
+        wavePoints.push(Math.max(16, Math.min(92, val)));
+        wavePoints.shift();
+
+        for (let b = 0; b < bars.length; b++) {
+          const target = 15 + Math.abs(Math.sin(phase + b * 0.45)) * 45 + Math.random() * 14;
+          bars[b] += (target - bars[b]) * 0.25;
+        }
       }
 
-      ctx.clearRect(0, 0, w, h);
+      tCtx.clearRect(0, 0, w, h);
 
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
-      ctx.lineWidth = 1;
-      for (let y = 32; y < h; y += 36) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-      for (let x = 40; x < w; x += 52) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
+      // شبکه راداری پس‌زمینه
+      tCtx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+      tCtx.lineWidth = 1;
+      for (let y = 34; y < h; y += 36) {
+        tCtx.beginPath();
+        tCtx.moveTo(0, y);
+        tCtx.lineTo(w, y);
+        tCtx.stroke();
       }
 
-      const stepX = w / (points.length - 1);
-      const coords = points.map((val, idx) => ({
-        x: idx * stepX,
-        y: h - (val / 100) * (h - 46) - 14
+      // میله‌های طیف‌سنج پس‌زمینه
+      const barW = w / bars.length;
+      for (let b = 0; b < bars.length; b++) {
+        const bh = (bars[b] / 100) * (h * 0.55);
+        tCtx.fillStyle = "rgba(255, 10, 52, 0.11)";
+        tCtx.fillRect(b * barW + 3, h - bh, Math.max(2, barW - 6), bh);
+      }
+
+      // منحنی نوسان‌نگار اصلی
+      const stepX = w / (wavePoints.length - 1);
+      const pts = wavePoints.map((v, i) => ({
+        x: i * stepX,
+        y: h - (v / 100) * (h - 48) - 14
       }));
 
-      const grad = ctx.createLinearGradient(0, 20, 0, h);
-      grad.addColorStop(0, m.fillTop);
-      grad.addColorStop(1, "rgba(3, 3, 6, 0)");
+      const grad = tCtx.createLinearGradient(0, 20, 0, h);
+      grad.addColorStop(0, cfg.glow);
+      grad.addColorStop(1, "rgba(2, 2, 5, 0)");
 
-      ctx.beginPath();
-      ctx.moveTo(coords[0].x, h);
-      ctx.lineTo(coords[0].x, coords[0].y);
-      for (let i = 0; i < coords.length - 1; i++) {
-        const xc = (coords[i].x + coords[i + 1].x) / 2;
-        const yc = (coords[i].y + coords[i + 1].y) / 2;
-        ctx.quadraticCurveTo(coords[i].x, coords[i].y, xc, yc);
+      tCtx.beginPath();
+      tCtx.moveTo(pts[0].x, h);
+      tCtx.lineTo(pts[0].x, pts[0].y);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const xc = (pts[i].x + pts[i + 1].x) / 2;
+        const yc = (pts[i].y + pts[i + 1].y) / 2;
+        tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
       }
-      const last = coords[coords.length - 1];
-      ctx.lineTo(last.x, last.y);
-      ctx.lineTo(last.x, h);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
+      const last = pts[pts.length - 1];
+      tCtx.lineTo(last.x, last.y);
+      tCtx.lineTo(last.x, h);
+      tCtx.closePath();
+      tCtx.fillStyle = grad;
+      tCtx.fill();
 
-      ctx.beginPath();
-      ctx.moveTo(coords[0].x, coords[0].y);
-      for (let i = 0; i < coords.length - 1; i++) {
-        const xc = (coords[i].x + coords[i + 1].x) / 2;
-        const yc = (coords[i].y + coords[i + 1].y) / 2;
-        ctx.quadraticCurveTo(coords[i].x, coords[i].y, xc, yc);
+      tCtx.beginPath();
+      tCtx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const xc = (pts[i].x + pts[i + 1].x) / 2;
+        const yc = (pts[i].y + pts[i + 1].y) / 2;
+        tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
       }
-      ctx.lineTo(last.x, last.y);
-      ctx.strokeStyle = m.color;
-      ctx.lineWidth = 2.6;
-      ctx.shadowColor = m.color;
-      ctx.shadowBlur = 14;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+      tCtx.lineTo(last.x, last.y);
+      tCtx.strokeStyle = cfg.stroke;
+      tCtx.lineWidth = 2.8;
+      tCtx.shadowColor = cfg.stroke;
+      tCtx.shadowBlur = 16;
+      tCtx.stroke();
+      tCtx.shadowBlur = 0;
 
-      ctx.beginPath();
-      ctx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(last.x - 3, last.y, 9, 0, Math.PI * 2);
-      ctx.fillStyle = m.fillTop;
-      ctx.fill();
+      // نقطه لیزری انتهای موج
+      tCtx.beginPath();
+      tCtx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
+      tCtx.fillStyle = "#ffffff";
+      tCtx.fill();
 
-      requestAnimationFrame(drawChart);
+      requestAnimationFrame(renderScope);
     }
-    drawChart();
+    renderScope();
 
+    // ========================================================
+    // ۴. افکت نورپردازی و چرخش سه‌بعدی روی کارت‌ها
+    // ========================================================
+    document.querySelectorAll(".tilt-card").forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty("--mx", `${x}px`);
+        card.style.setProperty("--my", `${y}px`);
+        const rx = ((y - rect.height / 2) / rect.height) * -4;
+        const ry = ((x - rect.width / 2) / rect.width) * 4;
+        card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      });
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
+      });
+    });
+
+    // انیمیشن ظاهر شدن هنگام اسکرول
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add("visible");
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+
+    // ========================================================
+    // ۵. ویدیو تست، لایسنس و پنل مدیریت
+    // ========================================================
     const demoPlayer = document.getElementById("demoPlayer");
     const demoIframe = document.getElementById("demoIframe");
     const videoEmptyState = document.getElementById("videoEmptyState");
@@ -1187,6 +1534,13 @@
       } catch (e) {}
     }
 
+    document.getElementById("pasteLicenseBtn").addEventListener("click", async () => {
+      try {
+        const txt = await navigator.clipboard.readText();
+        if (txt) document.getElementById("licenseInput").value = txt.trim();
+      } catch (e) {}
+    });
+
     document.getElementById("verifyBtn").addEventListener("click", async () => {
       const key = document.getElementById("licenseInput").value.trim().toUpperCase();
       const resBox = document.getElementById("licenseResult");
@@ -1194,14 +1548,14 @@
       const dlBtn = document.getElementById("apkDownloadBtn");
 
       if (!key) {
-        resBox.className = "verify-msg err";
+        resBox.className = "status-banner err";
         resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
         dlBox.style.display = "none";
         return;
       }
 
-      resBox.className = "verify-msg ok";
-      resBox.textContent = "⏳ در حال بررسی اعتبار لایسنس در سرور...";
+      resBox.className = "status-banner ok";
+      resBox.textContent = "در حال بررسی اعتبار لایسنس...";
       dlBox.style.display = "none";
 
       try {
@@ -1212,21 +1566,21 @@
         });
         const d = await r.json();
         if (d.valid || d.ok) {
-          resBox.className = "verify-msg ok";
+          resBox.className = "status-banner ok";
           resBox.innerHTML = `✅ <strong>لایسنس معتبر است!</strong> (اعتبار: ${d.days_left || d.days} روز)`;
           if (globalDownloadUrl) {
             dlBtn.href = globalDownloadUrl;
             dlBox.style.display = "block";
           } else {
-            resBox.innerHTML += "<br><span style='color:#fde68a;'>⚠️ لینک دانلود هنوز فعال نشده است.</span>";
+            resBox.innerHTML += "<br><span style='color:#fde68a;'>لینک دانلود هنوز فعال نشده است.</span>";
           }
         } else {
-          resBox.className = "verify-msg err";
+          resBox.className = "status-banner err";
           resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است.");
         }
       } catch (err) {
-        resBox.className = "verify-msg err";
-        resBox.textContent = "❌ خطا در ارتباط با سرور لایسنس.";
+        resBox.className = "status-banner err";
+        resBox.textContent = "❌ خطا در ارتباط با سرور.";
       }
     });
 
@@ -1263,13 +1617,13 @@
       if (!file) return;
       renderShowcaseVideo(URL.createObjectURL(file));
       document.getElementById("adminFeedback").textContent =
-        `🎬 پیش‌نمایش فایل «${file.name}» بارگذاری شد.`;
+        `پیش‌نمایش فایل «${file.name}» بارگذاری شد.`;
     });
 
     document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
       const newUrl = document.getElementById("adminApkUrl").value.trim();
       const fb = document.getElementById("adminFeedback");
-      fb.textContent = "⏳ در حال ذخیره لینک دانلود...";
+      fb.textContent = "در حال ذخیره لینک دانلود...";
       try {
         const r = await fetch(`${API_BASE}/api/config`, {
           method: "POST",
@@ -1292,7 +1646,7 @@
     document.getElementById("saveVideoUrlBtn").addEventListener("click", async () => {
       const newVid = document.getElementById("adminVideoUrl").value.trim();
       const fb = document.getElementById("adminFeedback");
-      fb.textContent = "⏳ در حال ذخیره ویدیو تست...";
+      fb.textContent = "در حال ذخیره ویدیو تست...";
       try {
         const r = await fetch(`${API_BASE}/api/config`, {
           method: "POST",
@@ -1317,7 +1671,7 @@
       const days = parseInt(document.getElementById("genDaysInput").value || "30", 10);
       const box = document.getElementById("generatedKeyBox");
       box.style.display = "block";
-      box.textContent = "⏳ در حال ساخت...";
+      box.textContent = "در حال ساخت...";
       try {
         const r = await fetch(`${API_BASE}/api/admin-gen`, {
           method: "POST",
