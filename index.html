@@ -10,14 +10,14 @@
   <style>
     :root {
       --void: #020205;
-      --surface: rgba(10, 8, 16, 0.72);
-      --surface-strong: rgba(14, 10, 22, 0.94);
+      --surface: rgba(11, 9, 18, 0.88);
+      --surface-strong: rgba(14, 10, 22, 0.96);
       --crimson: #ff0a34;
       --crimson-hot: #ff2e55;
       --crimson-deep: #88081e;
       --crimson-glow: rgba(255, 10, 52, 0.42);
       --crimson-soft: rgba(255, 10, 52, 0.14);
-      --border-dim: rgba(255, 255, 255, 0.07);
+      --border-dim: rgba(255, 255, 255, 0.08);
       --border-red: rgba(255, 10, 52, 0.42);
       --text-white: #f8fafc;
       --text-dim: #94a3b8;
@@ -29,26 +29,37 @@
       margin: 0;
       padding: 0;
       font-family: "Vazirmatn", system-ui, -apple-system, sans-serif;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
-    html,
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    html {
+      width: 100%;
+      background-color: var(--void);
+      scroll-behavior: smooth;
+    }
+
     body {
       width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;
-      scroll-behavior: smooth;
+      overflow-x: clip;
       background-color: var(--void);
       color: var(--text-white);
       min-height: 100vh;
       line-height: 1.75;
+      -webkit-overflow-scrolling: touch;
     }
 
     main {
       width: 100%;
-      overflow-x: hidden;
     }
 
-    /* بوم کهکشان زنده تمام‌صفحه */
+    /* بوم کهکشان زنده تمام‌صفحه با شتاب‌دهنده سخت‌افزاری */
     #galaxyCanvas {
       position: fixed;
       inset: 0;
@@ -56,6 +67,7 @@
       height: 100%;
       z-index: 0;
       pointer-events: none;
+      transform: translateZ(0);
     }
 
     /* هاله‌های سحابی قرمز کهکشانی */
@@ -68,12 +80,7 @@
         radial-gradient(circle at 80% 12%, rgba(255, 10, 52, 0.2), transparent 38%),
         radial-gradient(circle at 15% 55%, rgba(136, 8, 30, 0.22), transparent 45%),
         radial-gradient(circle at 75% 88%, rgba(255, 46, 85, 0.14), transparent 40%);
-      animation: nebulaShift 14s ease-in-out infinite alternate;
-    }
-
-    @keyframes nebulaShift {
-      0% { opacity: 0.85; transform: scale(1); }
-      100% { opacity: 1; transform: scale(1.06); }
+      transform: translateZ(0);
     }
 
     .container {
@@ -85,7 +92,7 @@
       z-index: 2;
     }
 
-    /* هدر شناور شیشه‌ای */
+    /* هدر شناور */
     header {
       position: sticky;
       top: 12px;
@@ -98,9 +105,9 @@
 
     .nav-hud {
       width: 100%;
-      background: rgba(8, 6, 14, 0.82);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
+      background: rgba(8, 6, 14, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-red);
       border-radius: 20px;
       padding: 11px 20px;
@@ -108,7 +115,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.75);
     }
 
     .brand {
@@ -127,15 +134,14 @@
       background: radial-gradient(circle at 30% 30%, var(--crimson), #4c0519);
       display: grid;
       place-items: center;
-      box-shadow: 0 0 26px var(--crimson-glow);
-      position: relative;
+      box-shadow: 0 0 22px var(--crimson-glow);
       flex-shrink: 0;
     }
 
     .reactor-logo svg {
       width: 24px;
       height: 24px;
-      animation: spinSlow 10s linear infinite;
+      animation: spinSlow 12s linear infinite;
     }
 
     @keyframes spinSlow {
@@ -151,7 +157,6 @@
 
     .brand-title span {
       color: var(--crimson-hot);
-      text-shadow: 0 0 16px var(--crimson-glow);
     }
 
     /* ساعت زنده تهران در هدر */
@@ -160,14 +165,13 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      background: rgba(255, 10, 52, 0.1);
+      background: rgba(255, 10, 52, 0.12);
       border: 1px solid rgba(255, 10, 52, 0.35);
       padding: 6px 14px;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 800;
       color: #ffe4e6;
-      box-shadow: 0 0 20px rgba(255, 10, 52, 0.18);
       white-space: nowrap;
     }
 
@@ -176,14 +180,14 @@
       height: 8px;
       border-radius: 50%;
       background: var(--crimson-hot);
-      box-shadow: 0 0 12px var(--crimson-hot);
+      box-shadow: 0 0 10px var(--crimson-hot);
       animation: beacon 1.2s infinite;
       flex-shrink: 0;
     }
 
     @keyframes beacon {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.45); opacity: 0.45; }
+      50% { transform: scale(1.4); opacity: 0.45; }
     }
 
     .nav-links {
@@ -197,13 +201,12 @@
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
-      transition: all 0.2s;
+      transition: color 0.2s;
       white-space: nowrap;
     }
 
     .nav-links a:hover {
       color: #fff;
-      text-shadow: 0 0 12px var(--crimson-glow);
     }
 
     .nav-actions {
@@ -224,69 +227,47 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
       text-decoration: none;
-      position: relative;
-      overflow: hidden;
     }
 
     .btn-crimson {
       background: linear-gradient(135deg, var(--crimson), #b91c1c);
       color: #fff;
-      box-shadow: 0 8px 28px var(--crimson-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      box-shadow: 0 6px 22px var(--crimson-glow);
     }
 
     .btn-crimson:hover {
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 12px 38px rgba(255, 10, 52, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 10, 52, 0.55);
     }
 
     .btn-glass {
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.05);
       color: var(--text-white);
       border: 1px solid var(--border-dim);
     }
 
     .btn-glass:hover {
-      background: rgba(255, 10, 52, 0.12);
+      background: rgba(255, 10, 52, 0.14);
       border-color: var(--border-red);
     }
 
-    /* کارت‌های دارای افکت نوری تعاملی و سه‌بعدی */
+    /* کارت‌های سبک بدون لگ اسکرول */
     .tilt-card {
       position: relative;
       min-width: 0;
       max-width: 100%;
       background: var(--surface);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
       border: 1px solid var(--border-dim);
       border-radius: 22px;
-      transition: transform 0.18s ease-out, border-color 0.25s ease, box-shadow 0.25s ease;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
       overflow: hidden;
-    }
-
-    .tilt-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(
-        420px circle at var(--mx, 50%) var(--my, 50%),
-        rgba(255, 10, 52, 0.18),
-        transparent 65%
-      );
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
     }
 
     .tilt-card:hover {
       border-color: var(--border-red);
-      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.75), 0 0 32px rgba(255, 10, 52, 0.16);
-    }
-
-    .tilt-card:hover::before {
-      opacity: 1;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(255, 10, 52, 0.14);
     }
 
     /* بخش Hero */
@@ -322,7 +303,7 @@
       height: 8px;
       border-radius: 50%;
       background: var(--emerald);
-      box-shadow: 0 0 12px var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
       animation: beacon 1.5s infinite;
       flex-shrink: 0;
     }
@@ -332,7 +313,6 @@
       font-weight: 900;
       line-height: 1.28;
       margin-bottom: 16px;
-      word-wrap: break-word;
     }
 
     .hero h1 .neon-crimson {
@@ -341,7 +321,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: shineGradient 4s linear infinite;
-      filter: drop-shadow(0 0 18px rgba(255, 10, 52, 0.35));
     }
 
     @keyframes shineGradient {
@@ -387,12 +366,12 @@
       color: var(--text-dim);
     }
 
-    /* پنل مرکز فرماندهی زنده (Live Telemetry & Spectrum HUD) */
+    /* پنل مرکز فرماندهی زنده */
     .hud-panel {
       width: 100%;
       padding: 20px;
       border-color: var(--border-red);
-      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 10, 52, 0.16);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.8);
     }
 
     .hud-top {
@@ -410,11 +389,6 @@
       font-size: 14px;
       font-weight: 800;
       min-width: 0;
-    }
-
-    .hud-title span {
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .hud-badge {
@@ -458,7 +432,6 @@
       background: linear-gradient(135deg, rgba(255, 10, 52, 0.28), rgba(136, 8, 30, 0.35));
       border-color: var(--crimson);
       color: #fff;
-      box-shadow: 0 0 18px rgba(255, 10, 52, 0.25);
     }
 
     .scope-frame {
@@ -490,8 +463,7 @@
     }
 
     .scope-chip {
-      background: rgba(4, 3, 9, 0.85);
-      backdrop-filter: blur(8px);
+      background: rgba(4, 3, 9, 0.88);
       border: 1px solid rgba(255, 10, 52, 0.3);
       border-radius: 9px;
       padding: 4px 10px;
@@ -502,7 +474,7 @@
     /* نوار رویدادهای زنده پایین نمودار */
     .live-ticker-box {
       margin-top: 12px;
-      background: rgba(4, 3, 9, 0.85);
+      background: rgba(4, 3, 9, 0.88);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 12px;
       padding: 9px 12px;
@@ -596,7 +568,6 @@
       display: grid;
       place-items: center;
       margin: 0 auto 14px;
-      box-shadow: 0 0 32px var(--crimson-glow);
       animation: radarPulse 2.2s infinite;
     }
 
@@ -640,7 +611,6 @@
       background: var(--crimson);
       border-color: var(--crimson);
       color: #fff;
-      box-shadow: 0 0 14px var(--crimson-glow);
     }
 
     /* باکس استعلام لایسنس و دانلود */
@@ -665,19 +635,18 @@
     input[type="url"] {
       width: 100%;
       min-width: 0;
-      background: rgba(3, 2, 8, 0.92);
+      background: rgba(3, 2, 8, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 13px;
       padding: 13px 16px;
       color: #fff;
       font-size: 14px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: border-color 0.2s;
     }
 
     input:focus {
       border-color: var(--crimson);
-      box-shadow: 0 0 18px rgba(255, 10, 52, 0.22);
     }
 
     .status-banner {
@@ -702,7 +671,7 @@
       color: #fecdd3;
     }
 
-    /* کارت‌های امکانات با آیکون‌های برداری متحرک */
+    /* کارت‌های امکانات با آیکون‌های برداری */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -723,7 +692,6 @@
       display: grid;
       place-items: center;
       margin-bottom: 14px;
-      box-shadow: 0 0 22px rgba(255, 10, 52, 0.2);
     }
 
     .svg-icon-wrap svg {
@@ -747,18 +715,6 @@
       color: var(--text-dim);
     }
 
-    /* انیمیشن ورود نرم عناصر هنگام اسکرول */
-    .reveal {
-      opacity: 0;
-      transform: translateY(22px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-    }
-
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
     footer {
       border-top: 1px solid var(--border-dim);
       padding: 26px 0 38px;
@@ -778,8 +734,8 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(2, 1, 5, 0.88);
-      backdrop-filter: blur(14px);
+      background: rgba(2, 1, 5, 0.9);
+      backdrop-filter: blur(10px);
       z-index: 100;
       display: none;
       align-items: center;
@@ -800,7 +756,7 @@
       max-height: 90vh;
       overflow-y: auto;
       padding: 22px;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.92), 0 0 40px rgba(255, 10, 52, 0.2);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.92);
     }
 
     .modal-top {
@@ -1014,7 +970,7 @@
         </div>
       </div>
 
-      <!-- پنل نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم -->
+      <!-- پنل نوسان‌نگار و طیف‌سنج زنده -->
       <div class="tilt-card hud-panel">
         <div class="hud-top">
           <div class="hud-title">
@@ -1048,7 +1004,7 @@
     </section>
 
     <!-- بخش ویدیو تست -->
-    <section id="demo-video" class="reveal">
+    <section id="demo-video">
       <div class="section-title">
         <div class="kicker">LIVE SHOWCASE</div>
         <h2>ویدیو تست و عملکرد برنامه</h2>
@@ -1085,7 +1041,7 @@
     </section>
 
     <!-- بخش استعلام لایسنس و دانلود -->
-    <section id="download" class="reveal">
+    <section id="download">
       <div class="section-title">
         <div class="kicker">LICENSE & DOWNLOAD</div>
         <h2>استعلام لایسنس و دریافت نسخه 2.1.1</h2>
@@ -1116,8 +1072,8 @@
       </div>
     </section>
 
-    <!-- بخش امکانات با آیکون‌های برداری متحرک -->
-    <section id="features" class="reveal">
+    <!-- بخش امکانات -->
+    <section id="features">
       <div class="section-title">
         <div class="kicker">CORE ARCHITECTURE</div>
         <h2>امکانات کلیدی V3X Selfbot</h2>
@@ -1241,42 +1197,34 @@
     let isAdminLogged = false;
 
     // ========================================================
-    // ۱. کهکشان زنده و تعاملی مشکی و قرمز نئونی (Galaxy Canvas)
+    // ۱. کهکشان زنده سبک و روان بدون لگ اسکرول
     // ========================================================
     const gCanvas = document.getElementById("galaxyCanvas");
-    const gCtx = gCanvas.getContext("2d");
+    const gCtx = gCanvas.getContext("2d", { alpha: true });
     let gw = 0, gh = 0;
     const pointer = { x: -9999, y: -9999 };
 
     window.addEventListener("mousemove", (e) => {
       pointer.x = e.clientX;
       pointer.y = e.clientY;
-    });
-    window.addEventListener("touchmove", (e) => {
-      if (e.touches && e.touches[0]) {
-        pointer.x = e.touches[0].clientX;
-        pointer.y = e.touches[0].clientY;
-      }
     }, { passive: true });
 
     function resizeGalaxy() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       gw = window.innerWidth;
       gh = window.innerHeight;
-      gCanvas.width = gw * dpr;
-      gCanvas.height = gh * dpr;
-      gCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      gCanvas.width = gw;
+      gCanvas.height = gh;
     }
-    window.addEventListener("resize", resizeGalaxy);
+    window.addEventListener("resize", resizeGalaxy, { passive: true });
     resizeGalaxy();
 
-    const starCount = Math.min(90, Math.floor((window.innerWidth * window.innerHeight) / 14000));
+    const starCount = Math.min(48, Math.floor((window.innerWidth * window.innerHeight) / 26000));
     const stars = Array.from({ length: starCount }, () => ({
       x: Math.random() * gw,
       y: Math.random() * gh,
-      vx: (Math.random() - 0.5) * 0.45,
-      vy: (Math.random() - 0.5) * 0.45,
-      r: Math.random() * 2 + 0.8,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.8 + 0.8,
       crimson: Math.random() > 0.35
     }));
 
@@ -1285,12 +1233,12 @@
     function animateGalaxy() {
       gCtx.clearRect(0, 0, gw, gh);
 
-      if (!shootingStar && Math.random() < 0.008) {
+      if (!shootingStar && Math.random() < 0.006) {
         shootingStar = {
           x: Math.random() * gw,
-          y: Math.random() * (gh * 0.4),
-          vx: (Math.random() > 0.5 ? 1 : -1) * (7 + Math.random() * 5),
-          vy: 4 + Math.random() * 3,
+          y: Math.random() * (gh * 0.35),
+          vx: (Math.random() > 0.5 ? 1 : -1) * (7 + Math.random() * 4),
+          vy: 4 + Math.random() * 2.5,
           life: 1
         };
       }
@@ -1299,13 +1247,13 @@
         gCtx.beginPath();
         gCtx.moveTo(shootingStar.x, shootingStar.y);
         gCtx.lineTo(shootingStar.x - shootingStar.vx * 5, shootingStar.y - shootingStar.vy * 5);
-        gCtx.strokeStyle = `rgba(255, 46, 85, ${shootingStar.life * 0.7})`;
+        gCtx.strokeStyle = `rgba(255, 46, 85, ${shootingStar.life * 0.65})`;
         gCtx.lineWidth = 2;
         gCtx.stroke();
 
         shootingStar.x += shootingStar.vx;
         shootingStar.y += shootingStar.vy;
-        shootingStar.life -= 0.03;
+        shootingStar.life -= 0.032;
         if (shootingStar.life <= 0) shootingStar = null;
       }
 
@@ -1321,24 +1269,25 @@
 
         const dxp = s.x - pointer.x;
         const dyp = s.y - pointer.y;
-        const distP = Math.hypot(dxp, dyp);
-        if (distP < 160) {
+        const distP = dxp * dxp + dyp * dyp;
+        if (distP < 22500) {
           gCtx.beginPath();
           gCtx.moveTo(s.x, s.y);
           gCtx.lineTo(pointer.x, pointer.y);
-          gCtx.strokeStyle = `rgba(255, 10, 52, ${(1 - distP / 160) * 0.35})`;
+          gCtx.strokeStyle = "rgba(255, 10, 52, 0.25)";
           gCtx.lineWidth = 1;
           gCtx.stroke();
         }
 
         for (let j = i + 1; j < stars.length; j++) {
           const s2 = stars[j];
-          const d = Math.hypot(s.x - s2.x, s.y - s2.y);
-          if (d < 115) {
+          const dx = s.x - s2.x;
+          const dy = s.y - s2.y;
+          if (dx * dx + dy * dy < 12100) {
             gCtx.beginPath();
             gCtx.moveTo(s.x, s.y);
             gCtx.lineTo(s2.x, s2.y);
-            gCtx.strokeStyle = `rgba(255, 10, 52, ${(1 - d / 115) * 0.16})`;
+            gCtx.strokeStyle = "rgba(255, 10, 52, 0.12)";
             gCtx.lineWidth = 0.8;
             gCtx.stroke();
           }
@@ -1346,13 +1295,13 @@
 
         gCtx.beginPath();
         gCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        gCtx.fillStyle = s.crimson ? "rgba(255, 30, 66, 0.85)" : "rgba(255, 255, 255, 0.55)";
+        gCtx.fillStyle = s.crimson ? "rgba(255, 30, 66, 0.85)" : "rgba(255, 255, 255, 0.5)";
         gCtx.fill();
       }
 
       requestAnimationFrame(animateGalaxy);
     }
-    animateGalaxy();
+    requestAnimationFrame(animateGalaxy);
 
     // ========================================================
     // ۲. ساعت زنده افق تهران
@@ -1387,13 +1336,14 @@
     }, 2400);
 
     // ========================================================
-    // ۳. نوسان‌نگار و طیف‌سنج زنده ۶۰ فریم
+    // ۳. نوسان‌نگار زنده با رندر فوق‌سریع GPU
     // ========================================================
     const tCanvas = document.getElementById("telemetryCanvas");
     const tCtx = tCanvas.getContext("2d");
     let scopeMode = "turbo";
-    let wavePoints = Array.from({ length: 50 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
-    let bars = Array.from({ length: 28 }, () => 30 + Math.random() * 40);
+    let scopeVisible = true;
+    let wavePoints = Array.from({ length: 44 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
+    let bars = Array.from({ length: 24 }, () => 30 + Math.random() * 40);
     let phase = 0;
 
     const scopeModes = {
@@ -1404,7 +1354,8 @@
         base: 62,
         amp: 24,
         stroke: "#ff0a34",
-        glow: "rgba(255, 10, 52, 0.42)",
+        outerStroke: "rgba(255, 10, 52, 0.25)",
+        glow: "rgba(255, 10, 52, 0.34)",
         events: [
           "⚡ ارسال دسته‌ای ۵ پیام همزمان با تاخیر صفر تکمیل شد",
           "🛡️ سیستم ضد‌محدودیت هوشمند در حالت آماده به کار است",
@@ -1418,7 +1369,8 @@
         base: 50,
         amp: 14,
         stroke: "#ff4d6d",
-        glow: "rgba(255, 77, 109, 0.35)",
+        outerStroke: "rgba(255, 77, 109, 0.25)",
+        glow: "rgba(255, 77, 109, 0.3)",
         events: [
           "⏰ نام پروفایل با ساعت افق تهران همگام‌سازی شد",
           "✨ فونت ضخیم و فانتزی ساعت بدون خطا فعال است",
@@ -1432,7 +1384,8 @@
         base: 68,
         amp: 18,
         stroke: "#10b981",
-        glow: "rgba(16, 185, 129, 0.35)",
+        outerStroke: "rgba(16, 185, 129, 0.25)",
+        glow: "rgba(16, 185, 129, 0.3)",
         events: [
           "📨 لیست پیام‌های پیش‌فرض از حافظه داخلی بارگذاری شد",
           "💬 قابلیت ریپلای سریع روی آخرین پیام چت آماده است",
@@ -1456,6 +1409,7 @@
 
     let eventIdx = 0;
     setInterval(() => {
+      if (!scopeVisible) return;
       const cfg = scopeModes[scopeMode];
       eventIdx = (eventIdx + 1) % cfg.events.length;
       const ticker = document.getElementById("liveEventTicker");
@@ -1470,128 +1424,106 @@
 
     function resizeScope() {
       const rect = tCanvas.parentElement.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      tCanvas.width = rect.width * dpr;
-      tCanvas.height = rect.height * dpr;
-      tCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      tCanvas.width = rect.width;
+      tCanvas.height = rect.height;
     }
-    window.addEventListener("resize", resizeScope);
+    window.addEventListener("resize", resizeScope, { passive: true });
     resizeScope();
 
+    const scopeObserver = new IntersectionObserver((entries) => {
+      scopeVisible = entries[0].isIntersecting;
+    }, { threshold: 0.05 });
+    scopeObserver.observe(tCanvas);
+
     function renderScope() {
-      const w = tCanvas.parentElement.clientWidth;
-      const h = tCanvas.parentElement.clientHeight;
-      const cfg = scopeModes[scopeMode];
+      if (scopeVisible) {
+        const w = tCanvas.width;
+        const h = tCanvas.height;
+        const cfg = scopeModes[scopeMode];
 
-      phase += 0.09;
-      if (Math.round(phase * 10) % 2 === 0) {
-        const val = cfg.base + Math.sin(phase * 1.5) * cfg.amp + Math.cos(phase * 2.9) * (cfg.amp * 0.45) + (Math.random() - 0.5) * 7;
-        wavePoints.push(Math.max(16, Math.min(92, val)));
-        wavePoints.shift();
+        phase += 0.09;
+        if (Math.round(phase * 10) % 2 === 0) {
+          const val = cfg.base + Math.sin(phase * 1.5) * cfg.amp + Math.cos(phase * 2.9) * (cfg.amp * 0.45) + (Math.random() - 0.5) * 7;
+          wavePoints.push(Math.max(16, Math.min(92, val)));
+          wavePoints.shift();
 
-        for (let b = 0; b < bars.length; b++) {
-          const target = 15 + Math.abs(Math.sin(phase + b * 0.45)) * 45 + Math.random() * 14;
-          bars[b] += (target - bars[b]) * 0.25;
+          for (let b = 0; b < bars.length; b++) {
+            const target = 15 + Math.abs(Math.sin(phase + b * 0.45)) * 45 + Math.random() * 14;
+            bars[b] += (target - bars[b]) * 0.25;
+          }
         }
-      }
 
-      tCtx.clearRect(0, 0, w, h);
+        tCtx.clearRect(0, 0, w, h);
 
-      tCtx.strokeStyle = "rgba(255, 255, 255, 0.045)";
-      tCtx.lineWidth = 1;
-      for (let y = 34; y < h; y += 36) {
-        tCtx.beginPath();
-        tCtx.moveTo(0, y);
-        tCtx.lineTo(w, y);
-        tCtx.stroke();
-      }
+        tCtx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+        tCtx.lineWidth = 1;
+        for (let y = 34; y < h; y += 36) {
+          tCtx.beginPath();
+          tCtx.moveTo(0, y);
+          tCtx.lineTo(w, y);
+          tCtx.stroke();
+        }
 
-      const barW = w / bars.length;
-      for (let b = 0; b < bars.length; b++) {
-        const bh = (bars[b] / 100) * (h * 0.55);
+        const barW = w / bars.length;
         tCtx.fillStyle = "rgba(255, 10, 52, 0.11)";
-        tCtx.fillRect(b * barW + 3, h - bh, Math.max(2, barW - 6), bh);
+        for (let b = 0; b < bars.length; b++) {
+          const bh = (bars[b] / 100) * (h * 0.55);
+          tCtx.fillRect(b * barW + 3, h - bh, Math.max(2, barW - 6), bh);
+        }
+
+        const stepX = w / (wavePoints.length - 1);
+        const pts = wavePoints.map((v, i) => ({
+          x: i * stepX,
+          y: h - (v / 100) * (h - 48) - 14
+        }));
+
+        const grad = tCtx.createLinearGradient(0, 20, 0, h);
+        grad.addColorStop(0, cfg.glow);
+        grad.addColorStop(1, "rgba(2, 2, 5, 0)");
+
+        tCtx.beginPath();
+        tCtx.moveTo(pts[0].x, h);
+        tCtx.lineTo(pts[0].x, pts[0].y);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const xc = (pts[i].x + pts[i + 1].x) / 2;
+          const yc = (pts[i].y + pts[i + 1].y) / 2;
+          tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+        }
+        const last = pts[pts.length - 1];
+        tCtx.lineTo(last.x, last.y);
+        tCtx.lineTo(last.x, h);
+        tCtx.closePath();
+        tCtx.fillStyle = grad;
+        tCtx.fill();
+
+        // هاله نئونی سریع بدون افت فریم CPU
+        tCtx.beginPath();
+        tCtx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const xc = (pts[i].x + pts[i + 1].x) / 2;
+          const yc = (pts[i].y + pts[i + 1].y) / 2;
+          tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+        }
+        tCtx.lineTo(last.x, last.y);
+        tCtx.strokeStyle = cfg.outerStroke;
+        tCtx.lineWidth = 7;
+        tCtx.stroke();
+
+        tCtx.strokeStyle = cfg.stroke;
+        tCtx.lineWidth = 2.5;
+        tCtx.stroke();
+
+        tCtx.beginPath();
+        tCtx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
+        tCtx.fillStyle = "#ffffff";
+        tCtx.fill();
       }
-
-      const stepX = w / (wavePoints.length - 1);
-      const pts = wavePoints.map((v, i) => ({
-        x: i * stepX,
-        y: h - (v / 100) * (h - 48) - 14
-      }));
-
-      const grad = tCtx.createLinearGradient(0, 20, 0, h);
-      grad.addColorStop(0, cfg.glow);
-      grad.addColorStop(1, "rgba(2, 2, 5, 0)");
-
-      tCtx.beginPath();
-      tCtx.moveTo(pts[0].x, h);
-      tCtx.lineTo(pts[0].x, pts[0].y);
-      for (let i = 0; i < pts.length - 1; i++) {
-        const xc = (pts[i].x + pts[i + 1].x) / 2;
-        const yc = (pts[i].y + pts[i + 1].y) / 2;
-        tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
-      }
-      const last = pts[pts.length - 1];
-      tCtx.lineTo(last.x, last.y);
-      tCtx.lineTo(last.x, h);
-      tCtx.closePath();
-      tCtx.fillStyle = grad;
-      tCtx.fill();
-
-      tCtx.beginPath();
-      tCtx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 0; i < pts.length - 1; i++) {
-        const xc = (pts[i].x + pts[i + 1].x) / 2;
-        const yc = (pts[i].y + pts[i + 1].y) / 2;
-        tCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
-      }
-      tCtx.lineTo(last.x, last.y);
-      tCtx.strokeStyle = cfg.stroke;
-      tCtx.lineWidth = 2.8;
-      tCtx.shadowColor = cfg.stroke;
-      tCtx.shadowBlur = 16;
-      tCtx.stroke();
-      tCtx.shadowBlur = 0;
-
-      tCtx.beginPath();
-      tCtx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
-      tCtx.fillStyle = "#ffffff";
-      tCtx.fill();
-
       requestAnimationFrame(renderScope);
     }
-    renderScope();
+    requestAnimationFrame(renderScope);
 
     // ========================================================
-    // ۴. افکت نورپردازی و چرخش سه‌بعدی (فقط روی دسکتاپ)
-    // ========================================================
-    if (window.matchMedia("(hover: hover)").matches) {
-      document.querySelectorAll(".tilt-card").forEach((card) => {
-        card.addEventListener("mousemove", (e) => {
-          const rect = card.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          card.style.setProperty("--mx", `${x}px`);
-          card.style.setProperty("--my", `${y}px`);
-          const rx = ((y - rect.height / 2) / rect.height) * -4;
-          const ry = ((x - rect.width / 2) / rect.width) * 4;
-          card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-        });
-        card.addEventListener("mouseleave", () => {
-          card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
-        });
-      });
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add("visible");
-      });
-    }, { threshold: 0.1 });
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-
-    // ========================================================
-    // ۵. ویدیو تست، لایسنس و پنل مدیریت
+    // ۴. ویدیو تست، لایسنس و پنل مدیریت
     // ========================================================
     const demoPlayer = document.getElementById("demoPlayer");
     const demoIframe = document.getElementById("demoIframe");
