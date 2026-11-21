@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V3X Selfbot | دستیار هوشمند و پرسرعت سروش‌پلاس</title>
+  <title>V3X Selfbot | پورتال رسمی سلف‌بات سروش‌پلاس</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg-void: #040408;
-      --bg-surface: rgba(13, 13, 22, 0.78);
-      --bg-elevated: rgba(22, 22, 36, 0.9);
+      --bg-void: #030306;
+      --bg-card: rgba(11, 11, 19, 0.76);
+      --bg-card-solid: #0b0b13;
       --crimson: #ff1e42;
-      --crimson-deep: #b91c1c;
-      --crimson-glow: rgba(255, 30, 66, 0.28);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-crimson: rgba(255, 30, 66, 0.35);
-      --text-main: #f8fafc;
-      --text-dim: #94a3b8;
+      --crimson-soft: rgba(255, 30, 66, 0.16);
+      --crimson-glow: rgba(255, 30, 66, 0.32);
+      --border-dim: rgba(255, 255, 255, 0.07);
+      --border-neon: rgba(255, 30, 66, 0.38);
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
       --emerald: #10b981;
     }
 
@@ -35,58 +35,84 @@
 
     body {
       background-color: var(--bg-void);
-      color: var(--text-main);
+      color: var(--text-white);
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.7;
+      line-height: 1.75;
       background-image:
-        radial-gradient(circle at 85% 8%, rgba(255, 30, 66, 0.16), transparent 36%),
-        radial-gradient(circle at 12% 45%, rgba(185, 28, 28, 0.12), transparent 42%),
-        radial-gradient(circle at 75% 85%, rgba(255, 30, 66, 0.1), transparent 38%);
+        radial-gradient(circle at 82% 6%, rgba(255, 30, 66, 0.18), transparent 38%),
+        radial-gradient(circle at 14% 40%, rgba(153, 27, 27, 0.14), transparent 44%),
+        radial-gradient(circle at 78% 88%, rgba(255, 30, 66, 0.11), transparent 40%);
     }
 
-    /* شبکه نوری پس‌زمینه */
-    .bg-grid {
+    .cyber-grid {
       position: fixed;
       inset: 0;
-      background-size: 46px 46px;
+      background-size: 44px 44px;
       background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      mask-image: radial-gradient(ellipse at center, black 45%, transparent 90%);
+        linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+      mask-image: radial-gradient(ellipse at center, black 42%, transparent 92%);
       pointer-events: none;
       z-index: 0;
     }
 
     .container {
-      max-width: 1140px;
+      max-width: 1160px;
       margin: 0 auto;
       padding: 0 20px;
       position: relative;
       z-index: 1;
     }
 
-    /* نوار ناوبری شناور */
+    /* نوار باینری متحرک بالای صفحه */
+    .binary-ribbon {
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      font-family: monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: rgba(255, 30, 66, 0.35);
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 30, 66, 0.12);
+      background: rgba(5, 5, 10, 0.85);
+      user-select: none;
+      position: relative;
+      z-index: 60;
+    }
+
+    .binary-track {
+      display: inline-block;
+      animation: marqueeBinary 28s linear infinite;
+    }
+
+    @keyframes marqueeBinary {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(50%); }
+    }
+
+    /* هدر شیشه‌ای */
     header {
       position: sticky;
-      top: 14px;
+      top: 12px;
       z-index: 50;
-      margin: 14px auto 0;
-      max-width: 1100px;
+      margin: 12px auto 0;
+      max-width: 1140px;
       padding: 0 16px;
     }
 
-    .nav-bar {
-      background: rgba(10, 10, 18, 0.82);
-      backdrop-filter: blur(18px);
-      border: 1px solid var(--border-subtle);
+    .nav-shell {
+      background: rgba(9, 9, 16, 0.82);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-dim);
       border-radius: 18px;
       padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
     }
 
     .brand {
@@ -94,51 +120,50 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      color: var(--text-main);
+      color: var(--text-white);
     }
 
-    .brand-badge {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
       background: linear-gradient(135deg, var(--crimson), #7f1d1d);
       display: grid;
       place-items: center;
       font-weight: 900;
       font-size: 16px;
-      letter-spacing: -0.5px;
-      box-shadow: 0 0 22px var(--crimson-glow);
+      box-shadow: 0 0 24px var(--crimson-glow);
     }
 
-    .brand-title {
-      font-weight: 800;
+    .brand-name {
       font-size: 18px;
-      letter-spacing: 0.3px;
+      font-weight: 900;
+      letter-spacing: 0.4px;
     }
 
-    .brand-title span {
+    .brand-name span {
       color: var(--crimson);
     }
 
-    .nav-links {
+    .nav-menu {
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 24px;
     }
 
-    .nav-links a {
-      color: var(--text-dim);
+    .nav-menu a {
+      color: var(--text-muted);
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
       transition: color 0.2s;
     }
 
-    .nav-links a:hover {
-      color: var(--text-main);
+    .nav-menu a:hover {
+      color: var(--text-white);
     }
 
-    .nav-actions {
+    .nav-btns {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -159,41 +184,41 @@
       text-decoration: none;
     }
 
-    .btn-primary {
+    .btn-neon {
       background: linear-gradient(135deg, var(--crimson), #dc2626);
       color: #fff;
       box-shadow: 0 6px 24px var(--crimson-glow);
     }
 
-    .btn-primary:hover {
+    .btn-neon:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(255, 30, 66, 0.45);
+      box-shadow: 0 10px 32px rgba(255, 30, 66, 0.48);
     }
 
-    .btn-glass {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      border: 1px solid var(--border-subtle);
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-white);
+      border: 1px solid var(--border-dim);
     }
 
-    .btn-glass:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--border-crimson);
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-neon);
     }
 
-    /* بخش Hero دو ستونه */
+    /* بخش Hero */
     .hero {
-      padding: 64px 0 48px;
+      padding: 54px 0 42px;
       display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 36px;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 34px;
       align-items: center;
     }
 
-    .status-pill {
+    .live-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       padding: 6px 14px;
       border-radius: 999px;
       background: rgba(16, 185, 129, 0.1);
@@ -204,218 +229,237 @@
       margin-bottom: 18px;
     }
 
-    .pulse-dot {
+    .live-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--emerald);
-      box-shadow: 0 0 10px var(--emerald);
-      animation: pulse 1.8s infinite;
+      box-shadow: 0 0 12px var(--emerald);
+      animation: blinkDot 1.7s infinite;
     }
 
-    @keyframes pulse {
+    @keyframes blinkDot {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.3); }
+      50% { opacity: 0.4; transform: scale(1.35); }
     }
 
     .hero h1 {
-      font-size: clamp(30px, 4.4vw, 48px);
+      font-size: clamp(29px, 4.2vw, 46px);
       font-weight: 900;
-      line-height: 1.25;
+      line-height: 1.26;
       margin-bottom: 16px;
     }
 
-    .hero h1 .accent {
-      background: linear-gradient(90deg, #ff1e42, #ff6b81);
+    .hero h1 .glow-text {
+      background: linear-gradient(90deg, #ff1e42, #ff758f);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .hero p.lead {
-      color: var(--text-dim);
-      font-size: 16px;
-      margin-bottom: 28px;
-      max-width: 560px;
+    .hero p.desc {
+      color: var(--text-muted);
+      font-size: 15.5px;
+      margin-bottom: 26px;
+      max-width: 540px;
     }
 
-    .hero-cta-row {
+    .hero-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
-    .hero-metrics {
+    .stats-strip {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       max-width: 520px;
     }
 
-    .metric-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+    .stat-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
       border-radius: 14px;
       padding: 12px 14px;
     }
 
-    .metric-box strong {
+    .stat-pill strong {
       display: block;
       font-size: 16px;
-      color: var(--text-main);
+      color: var(--text-white);
     }
 
-    .metric-box span {
+    .stat-pill span {
       font-size: 12px;
-      color: var(--text-dim);
+      color: var(--text-muted);
     }
 
-    /* کارت تعاملی پیش‌نمایش زنده موتور V3X */
-    .engine-card {
-      background: linear-gradient(160deg, rgba(18, 18, 30, 0.92), rgba(8, 8, 14, 0.96));
-      border: 1px solid var(--border-crimson);
-      border-radius: 22px;
+    /* کارت نمودار زنده و خفن تله‌متری */
+    .telemetry-card {
+      background: linear-gradient(165deg, rgba(16, 16, 28, 0.94), rgba(6, 6, 12, 0.98));
+      border: 1px solid var(--border-neon);
+      border-radius: 24px;
       padding: 20px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 30, 66, 0.12);
+      box-shadow: 0 26px 65px rgba(0, 0, 0, 0.78), 0 0 45px rgba(255, 30, 66, 0.14);
       position: relative;
+      overflow: hidden;
     }
 
-    .engine-top {
+    .telemetry-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--border-subtle);
+      gap: 10px;
       margin-bottom: 14px;
     }
 
-    .dots {
+    .telemetry-title {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 800;
     }
 
-    .dots i {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: block;
+    .telemetry-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--crimson-soft);
+      border: 1px solid var(--border-neon);
+      color: #fda4af;
     }
 
-    .engine-tabs {
+    .chart-mode-tabs {
       display: flex;
       gap: 6px;
       margin-bottom: 14px;
     }
 
-    .engine-tab {
+    .mode-btn {
       flex: 1;
-      padding: 8px;
+      padding: 7px 10px;
       border-radius: 10px;
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-dim);
       background: rgba(255, 255, 255, 0.03);
-      color: var(--text-dim);
+      color: var(--text-muted);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .engine-tab.active {
-      background: rgba(255, 30, 66, 0.16);
+    .mode-btn.active {
+      background: rgba(255, 30, 66, 0.18);
       border-color: var(--crimson);
       color: #fff;
+      box-shadow: 0 0 16px rgba(255, 30, 66, 0.2);
     }
 
-    .console-screen {
-      background: #06060c;
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 195px;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 30, 66, 0.08), rgba(4, 4, 9, 0.95));
       border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 14px;
-      font-size: 13px;
-      min-height: 155px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      border-radius: 16px;
+      overflow: hidden;
     }
 
-    .console-line {
-      margin-bottom: 8px;
-      color: #cbd5e1;
+    canvas#telemetryCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .chart-overlay-readout {
+      position: absolute;
+      top: 10px;
+      right: 12px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      pointer-events: none;
     }
 
-    .console-line .tag {
-      color: var(--crimson);
-      font-weight: 800;
+    .readout-chip {
+      background: rgba(5, 5, 11, 0.78);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
     }
 
-    .console-footer {
+    .telemetry-footer {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
       padding-top: 10px;
       border-top: 1px dashed rgba(255, 255, 255, 0.08);
       font-size: 12px;
-      color: #34d399;
+      color: var(--text-muted);
     }
 
-    /* بخش عمومی تیترها */
+    /* بخش‌های صفحه */
     section {
-      padding: 44px 0;
+      padding: 42px 0;
     }
 
-    .section-head {
+    .sec-header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 28px;
     }
 
-    .section-head .kicker {
+    .sec-kicker {
       color: var(--crimson);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .sec-header h2 {
+      font-size: clamp(22px, 3vw, 31px);
+      font-weight: 900;
       margin-bottom: 6px;
     }
 
-    .section-head h2 {
-      font-size: clamp(22px, 3.2vw, 32px);
-      font-weight: 800;
-      margin-bottom: 8px;
+    .sec-header p {
+      color: var(--text-muted);
+      font-size: 14.5px;
     }
 
-    .section-head p {
-      color: var(--text-dim);
-      font-size: 15px;
-    }
-
-    /* بخش ویدیو تست (Showcase Video Player) */
-    .video-showcase {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-crimson);
+    /* بخش ویدیو تست */
+    .video-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-neon);
       border-radius: 24px;
-      padding: 22px;
-      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.6);
-      max-width: 900px;
+      padding: 20px;
+      max-width: 880px;
       margin: 0 auto;
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65);
     }
 
-    .video-frame {
+    .video-stage {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       background: #05050a;
       border-radius: 16px;
       overflow: hidden;
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-dim);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .video-frame video,
-    .video-frame iframe {
+    .video-stage video,
+    .video-stage iframe {
       width: 100%;
       height: 100%;
       object-fit: contain;
@@ -423,45 +467,46 @@
       display: none;
     }
 
-    .video-empty {
+    .video-placeholder {
       text-align: center;
-      padding: 28px;
+      padding: 24px;
     }
 
-    .video-empty .play-circle {
-      width: 68px;
-      height: 68px;
+    .video-placeholder .icon-ring {
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background: rgba(255, 30, 66, 0.15);
-      border: 1px solid var(--crimson);
+      background: var(--crimson-soft);
+      border: 1px solid var(--border-neon);
       display: grid;
       place-items: center;
       margin: 0 auto 14px;
-      font-size: 26px;
+      font-size: 24px;
       color: var(--crimson);
+      box-shadow: 0 0 25px var(--crimson-glow);
     }
 
-    .video-toolbar {
+    .video-controls-bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+      border-top: 1px solid var(--border-dim);
     }
 
-    .speed-group {
+    .speed-pills {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .speed-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-dim);
+    .spd-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-dim);
+      color: var(--text-muted);
       border-radius: 8px;
       padding: 4px 10px;
       font-size: 12px;
@@ -469,27 +514,27 @@
       cursor: pointer;
     }
 
-    .speed-btn.active {
+    .spd-btn.active {
       background: var(--crimson);
       border-color: var(--crimson);
       color: #fff;
     }
 
-    /* باکس لایسنس و دانلود مستقیم */
-    .portal-box {
-      background: linear-gradient(145deg, rgba(16, 16, 28, 0.92), rgba(10, 10, 18, 0.95));
-      border: 1px solid var(--border-crimson);
+    /* باکس لایسنس و دانلود */
+    .license-card {
+      background: linear-gradient(150deg, rgba(16, 16, 28, 0.94), rgba(9, 9, 16, 0.97));
+      border: 1px solid var(--border-neon);
       border-radius: 24px;
       padding: 28px;
       max-width: 760px;
       margin: 0 auto;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 22px 55px rgba(0, 0, 0, 0.68);
     }
 
-    .input-row {
+    .form-row {
       display: flex;
       gap: 10px;
-      margin-top: 16px;
+      margin-top: 14px;
     }
 
     input[type="text"],
@@ -497,8 +542,8 @@
     input[type="number"],
     input[type="url"] {
       width: 100%;
-      background: rgba(5, 5, 11, 0.9);
-      border: 1px solid var(--border-subtle);
+      background: rgba(4, 4, 10, 0.92);
+      border: 1px solid var(--border-dim);
       border-radius: 12px;
       padding: 13px 16px;
       color: #fff;
@@ -511,121 +556,76 @@
       border-color: var(--crimson);
     }
 
-    .license-result {
+    .verify-msg {
       margin-top: 16px;
-      padding: 16px;
+      padding: 15px;
       border-radius: 14px;
       display: none;
       font-size: 14px;
     }
 
-    .license-result.ok {
+    .verify-msg.ok {
       display: block;
-      background: rgba(16, 185, 129, 0.1);
+      background: rgba(16, 185, 129, 0.11);
       border: 1px solid rgba(16, 185, 129, 0.35);
       color: #a7f3d0;
     }
 
-    .license-result.err {
+    .verify-msg.err {
       display: block;
       background: rgba(255, 30, 66, 0.12);
       border: 1px solid rgba(255, 30, 66, 0.4);
       color: #fecdd3;
     }
 
-    .download-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    /* مراحل ۳ گانه */
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-    }
-
-    .step-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 18px;
-      padding: 22px;
-      position: relative;
-    }
-
-    .step-num {
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--crimson);
-      background: rgba(255, 30, 66, 0.12);
-      border: 1px solid rgba(255, 30, 66, 0.28);
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-
-    .step-card h3 {
-      font-size: 17px;
-      margin-bottom: 6px;
-    }
-
-    .step-card p {
-      font-size: 13.5px;
-      color: var(--text-dim);
-    }
-
     /* کارت‌های امکانات */
-    .features-grid {
+    .grid-features {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 18px;
     }
 
-    .feat-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+    .feature-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
       border-radius: 18px;
       padding: 22px;
-      transition: border-color 0.2s, transform 0.2s;
+      transition: border-color 0.22s, transform 0.22s;
     }
 
-    .feat-card:hover {
-      border-color: var(--border-crimson);
+    .feature-item:hover {
+      border-color: var(--border-neon);
       transform: translateY(-3px);
     }
 
-    .feat-icon {
+    .f-badge {
       width: 44px;
       height: 44px;
       border-radius: 12px;
-      background: rgba(255, 30, 66, 0.14);
-      border: 1px solid rgba(255, 30, 66, 0.3);
+      background: var(--crimson-soft);
+      border: 1px solid var(--border-neon);
       display: grid;
       place-items: center;
       font-size: 20px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
-    .feat-card h3 {
+    .feature-item h3 {
       font-size: 17px;
       margin-bottom: 6px;
     }
 
-    .feat-card p {
+    .feature-item p {
       font-size: 14px;
-      color: var(--text-dim);
+      color: var(--text-muted);
     }
 
-    /* فوتر */
     footer {
-      border-top: 1px solid var(--border-subtle);
-      padding: 26px 0 40px;
-      margin-top: 30px;
+      border-top: 1px solid var(--border-dim);
+      padding: 26px 0 38px;
+      margin-top: 26px;
       text-align: center;
-      color: var(--text-dim);
+      color: var(--text-muted);
       font-size: 13px;
     }
 
@@ -634,11 +634,11 @@
     }
 
     /* مودال پنل مدیریت */
-    .modal-backdrop {
+    .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(2, 2, 6, 0.84);
-      backdrop-filter: blur(10px);
+      background: rgba(2, 2, 6, 0.86);
+      backdrop-filter: blur(12px);
       z-index: 100;
       display: none;
       align-items: center;
@@ -646,46 +646,46 @@
       padding: 16px;
     }
 
-    .modal-backdrop.open {
+    .modal-overlay.open {
       display: flex;
     }
 
-    .modal-card {
-      background: #0c0c16;
-      border: 1px solid var(--border-crimson);
+    .modal-box {
+      background: var(--bg-card-solid);
+      border: 1px solid var(--border-neon);
       border-radius: 22px;
       width: 100%;
-      max-width: 560px;
+      max-width: 550px;
       max-height: 90vh;
       overflow-y: auto;
       padding: 24px;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+      box-shadow: 0 26px 75px rgba(0, 0, 0, 0.9);
     }
 
-    .modal-head {
+    .modal-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 18px;
       padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-dim);
     }
 
-    .admin-section {
+    .admin-block {
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-dim);
       border-radius: 14px;
       padding: 14px;
       margin-bottom: 14px;
     }
 
-    .admin-section h4 {
+    .admin-block h4 {
       font-size: 14px;
-      color: #fca5a5;
+      color: #fda4af;
       margin-bottom: 10px;
     }
 
-    .file-upload-label {
+    .upload-drop {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -701,238 +701,211 @@
       margin-top: 8px;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .hero {
         grid-template-columns: 1fr;
-        padding-top: 36px;
+        padding-top: 32px;
       }
-      .nav-links {
+      .nav-menu {
         display: none;
       }
-      .steps-grid,
-      .features-grid {
+      .grid-features {
         grid-template-columns: 1fr;
       }
-      .input-row {
+      .form-row {
         flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
+  <div class="cyber-grid"></div>
+
+  <!-- نوار جریان داده باینری -->
+  <div class="binary-ribbon">
+    <div class="binary-track">
+      V3XSYS CORE // 01101001 10010110 11001010 01011100 // API.V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101 // V3X SELFBOT v2.1.1 // 01101001 10010110 11001010 01011100 // API.V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101
+    </div>
+  </div>
 
   <header>
-    <div class="nav-bar">
+    <div class="nav-shell">
       <a href="#" class="brand">
-        <div class="brand-badge">V3X</div>
-        <div class="brand-title">V3X <span>SELFBOT</span></div>
+        <div class="brand-logo">V3X</div>
+        <div class="brand-name">V3X <span>SELFBOT</span></div>
       </a>
 
-      <nav class="nav-links">
+      <nav class="nav-menu">
+        <a href="#telemetry">نمودار عملکرد</a>
         <a href="#demo-video">ویدیو تست</a>
         <a href="#download">دریافت برنامه</a>
-        <a href="#how-it-works">مراحل نصب</a>
         <a href="#features">امکانات</a>
       </nav>
 
-      <div class="nav-actions">
-        <a href="#download" class="btn btn-primary">ورود لایسنس</a>
-        <button type="button" class="btn btn-glass" id="openAdminBtn">🛡️ مدیریت</button>
+      <div class="nav-btns">
+        <a href="#download" class="btn btn-neon">ورود لایسنس</a>
+        <button type="button" class="btn btn-outline" id="openAdminBtn">🛡️ مدیریت</button>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <!-- بخش Hero -->
-    <section class="hero">
+    <!-- بخش Hero و نمودار زنده تله‌متری -->
+    <section class="hero" id="telemetry">
       <div>
-        <div class="status-pill">
-          <span class="pulse-dot"></span>
-          <span id="serverStatusText">سرور اختصاصی فعال · نسخه 2.1.1</span>
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          <span>سرور اختصاصی متصل · نسخه 2.1.1</span>
         </div>
 
         <h1>
-          قدرتمندترین <span class="accent">سلف‌بات سروش‌پلاس</span> با سرعت توربو و امکانات هوشمند
+          نسل جدید <span class="glow-text">سلف‌بات سروش‌پلاس</span> با هسته توربو و پایداری لحظه‌ای
         </h1>
 
-        <p class="lead">
-          مدیریت کامل چت‌ها، ساعت زنده افق تهران کنار اسم پروفایل، ارسال چندتایی با حافظه دائمی و موتور توربو بدون تاخیر؛ همگی در یک اپلیکیشن سبک، امن و اختصاصی.
+        <p class="desc">
+          کنترل کامل چت‌ها، ساعت زنده افق تهران کنار اسم پروفایل، ارسال چندتایی با حافظه دائمی و موتور ارسال توربو بدون تاخیر؛ متصل به شبکه اختصاصی ایران بدون نیاز به فیلترشکن.
         </p>
 
-        <div class="hero-cta-row">
-          <a href="#download" class="btn btn-primary">⚡ فعال‌سازی و دانلود مستقیم</a>
-          <a href="#demo-video" class="btn btn-glass">🎬 تماشای ویدیو تست</a>
+        <div class="hero-actions">
+          <a href="#download" class="btn btn-neon">⚡ فعال‌سازی و دانلود مستقیم</a>
+          <a href="#demo-video" class="btn btn-outline">🎬 مشاهده ویدیو تست</a>
         </div>
 
-        <div class="hero-metrics">
-          <div class="metric-box">
+        <div class="stats-strip">
+          <div class="stat-pill">
             <strong>نسخه 2.1.1</strong>
-            <span>آخرین آپدیت پایدار</span>
+            <span>پایدار و ضدقطعی</span>
           </div>
-          <div class="metric-box">
-            <strong>بدون فیلترشکن</strong>
-            <span>متصل به api.v3xsys.ir</span>
+          <div class="stat-pill">
+            <strong>18ms پینگ</strong>
+            <span>سرور api.v3xsys.ir</span>
           </div>
-          <div class="metric-box">
-            <strong>قفل امنیتی</strong>
-            <span>لایسنس اختصاصی هر دستگاه</span>
+          <div class="stat-pill">
+            <strong>قفل سخت‌افزار</strong>
+            <span>لایسنس اختصاصی</span>
           </div>
         </div>
       </div>
 
-      <!-- پیش‌نمایش زنده موتور برنامه -->
-      <div class="engine-card">
-        <div class="engine-top">
-          <div class="dots">
-            <i style="background:#ef4444"></i>
-            <i style="background:#f59e0b"></i>
-            <i style="background:#10b981"></i>
+      <!-- نمودار زنده گرافیکی (Live Waveform Telemetry Chart) -->
+      <div class="telemetry-card">
+        <div class="telemetry-header">
+          <div class="telemetry-title">
+            <span style="color:var(--crimson);font-size:18px;">📈</span>
+            <span>نمودار زنده پردازش و سرعت هسته V3X</span>
           </div>
-          <span style="font-size:12px;color:var(--text-dim);font-weight:700;">V3X CORE ENGINE v2.1.1</span>
+          <span class="telemetry-tag" id="chartBadge">TURBO STREAM</span>
         </div>
 
-        <div class="engine-tabs">
-          <button type="button" class="engine-tab active" data-tab="clock">⏰ ساعت زنده</button>
-          <button type="button" class="engine-tab" data-tab="turbo">🚀 ارسال توربو</button>
-          <button type="button" class="engine-tab" data-tab="multi">📨 چندتایی</button>
+        <div class="chart-mode-tabs">
+          <button type="button" class="mode-btn active" data-mode="turbo">🚀 سرعت توربو</button>
+          <button type="button" class="mode-btn" data-mode="clock">⏰ همگام‌سازی ساعت</button>
+          <button type="button" class="mode-btn" data-mode="ping">📡 پایداری شبکه</button>
         </div>
 
-        <div class="console-screen" id="consoleScreen">
-          <div>
-            <div class="console-line"><span class="tag">&gt;</span> بررسی اعتبار لایسنس روی api.v3xsys.ir ... تایید شد</div>
-            <div class="console-line"><span class="tag">&gt;</span> همگام‌سازی ساعت افق تهران (UTC+3:30) فعال شد</div>
-            <div class="console-line"><span class="tag">&gt;</span> پیش‌نمایش پروفایل: <strong style="color:#fff;">Hadi | 𝟏𝟒:𝟑𝟎</strong></div>
+        <div class="canvas-wrapper">
+          <canvas id="telemetryCanvas"></canvas>
+          <div class="chart-overlay-readout">
+            <div class="readout-chip" style="color:#fda4af;" id="metricPrimary">سرعت: 48 msg/s</div>
+            <div class="readout-chip" style="color:#6ee7b7;" id="metricSecondary">پایداری: 99.9%</div>
           </div>
-          <div class="console-footer">
-            <span>● وضعیت: متصل و در حال اجرا</span>
-            <span>پینگ سرور: 24ms</span>
-          </div>
+        </div>
+
+        <div class="telemetry-footer">
+          <span id="chartStatusDesc">پایش لحظه‌ای صف ارسال همزمان سروش‌پلاس</span>
+          <span style="color:#10b981;font-weight:700;">● LIVE 60FPS</span>
         </div>
       </div>
     </section>
 
-    <!-- بخش ویدیو تست عملکرد برنامه -->
+    <!-- بخش ویدیو تست -->
     <section id="demo-video">
-      <div class="section-head">
-        <div class="kicker">LIVE SHOWCASE</div>
-        <h2>ویدیو تست و عملکرد واقعی برنامه</h2>
-        <p>پیش از نصب، محیط برنامه و سرعت اجرای دستورات سلف‌بات V3X را در عمل ببینید</p>
+      <div class="sec-header">
+        <div class="sec-kicker">VIDEO SHOWCASE</div>
+        <h2>ویدیو تست و عملکرد برنامه</h2>
+        <p>نمایش محیط کاربری و سرعت اجرای دستورات سلف‌بات V3X</p>
       </div>
 
-      <div class="video-showcase">
-        <div class="video-frame" id="videoFrame">
+      <div class="video-box">
+        <div class="video-stage">
           <video id="demoPlayer" controls playsinline preload="metadata"></video>
           <iframe id="demoIframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>
 
-          <div class="video-empty" id="videoEmptyState">
-            <div class="play-circle">▶</div>
-            <h3 style="font-size:17px;margin-bottom:6px;">ویدیو تست در حال آماده‌سازی است</h3>
-            <p style="font-size:13px;color:var(--text-dim);">
-              مدیریت می‌تواند از طریق پنل <strong>مدیریت</strong> لینک ویدیو تست را بارگذاری کند تا برای همه کاربران نمایش داده شود.
-            </p>
+          <div class="video-placeholder" id="videoEmptyState">
+            <div class="icon-ring">▶</div>
+            <h3 style="font-size:17px;color:var(--text-white);">لینک ویدیویی وجود ندارد، لطفاً صبور باشید</h3>
           </div>
         </div>
 
-        <div class="video-toolbar">
-          <div style="font-size:13px;color:var(--text-dim);">
-            🎥 نمایشگر اختصاصی V3X · کیفیت اصلی
-          </div>
-
-          <div class="speed-group" id="speedControls">
-            <span style="font-size:12px;color:var(--text-dim);margin-left:4px;">سرعت پخش:</span>
-            <button type="button" class="speed-btn" data-speed="0.75">0.75x</button>
-            <button type="button" class="speed-btn active" data-speed="1">1x</button>
-            <button type="button" class="speed-btn" data-speed="1.25">1.25x</button>
-            <button type="button" class="speed-btn" data-speed="1.5">1.5x</button>
-            <button type="button" class="speed-btn" data-speed="2">2x</button>
+        <div class="video-controls-bar">
+          <span style="font-size:13px;color:var(--text-muted);">🎥 پخش‌کننده اختصاصی V3X</span>
+          <div class="speed-pills">
+            <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">سرعت پخش:</span>
+            <button type="button" class="spd-btn" data-speed="0.75">0.75x</button>
+            <button type="button" class="spd-btn active" data-speed="1">1x</button>
+            <button type="button" class="spd-btn" data-speed="1.25">1.25x</button>
+            <button type="button" class="spd-btn" data-speed="1.5">1.5x</button>
+            <button type="button" class="spd-btn" data-speed="2">2x</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- بخش بررسی لایسنس و دانلود مستقیم -->
+    <!-- بخش استعلام لایسنس و دانلود مستقیم -->
     <section id="download">
-      <div class="section-head">
-        <div class="kicker">LICENSE & DOWNLOAD</div>
-        <h2>استعلام لایسنس و دانلود نسخه 2.1.1</h2>
-        <p>کد اشتراک خود را وارد کنید تا لینک دانلود مستقیم فایل نصب (APK) فعال شود</p>
+      <div class="sec-header">
+        <div class="sec-kicker">LICENSE & DOWNLOAD</div>
+        <h2>استعلام لایسنس و دریافت نسخه 2.1.1</h2>
+        <p>کلید اشتراک خود را وارد کنید تا لینک دانلود مستقیم فایل نصب (APK) فعال شود</p>
       </div>
 
-      <div class="portal-box">
-        <label for="licenseInput" style="font-size:13px;color:var(--text-dim);font-weight:600;">
-          کد لایسنس اختصاصی شما:
+      <div class="license-card">
+        <label for="licenseInput" style="font-size:13px;color:var(--text-muted);font-weight:600;">
+          کلید لایسنس اختصاصی شما:
         </label>
-        <div class="input-row">
+        <div class="form-row">
           <input type="text" id="licenseInput" placeholder="مثلاً: V3X-A1B2-C3D4" dir="ltr" />
-          <button type="button" class="btn btn-primary" id="verifyBtn" style="white-space:nowrap;">
+          <button type="button" class="btn btn-neon" id="verifyBtn" style="white-space:nowrap;">
             🔍 بررسی و دریافت لینک
           </button>
         </div>
 
-        <div class="license-result" id="licenseResult"></div>
+        <div class="verify-msg" id="licenseResult"></div>
 
-        <div class="download-actions" id="downloadActions" style="display:none;">
-          <a href="#" target="_blank" rel="noopener" class="btn btn-primary" id="apkDownloadBtn">
+        <div id="downloadActions" style="display:none;margin-top:14px;">
+          <a href="#" target="_blank" rel="noopener" class="btn btn-neon" id="apkDownloadBtn">
             ⬇️ دانلود مستقیم فایل نصب (APK v2.1.1)
           </a>
         </div>
       </div>
     </section>
 
-    <!-- مراحل شروع کار -->
-    <section id="how-it-works">
-      <div class="section-head">
-        <div class="kicker">QUICK START</div>
-        <h2>شروع کار در ۳ مرحله ساده</h2>
-        <p>کمتر از ۲ دقیقه سلف‌بات خود را روی سروش‌پلاس فعال کنید</p>
-      </div>
-
-      <div class="steps-grid">
-        <div class="step-card">
-          <span class="step-num">مرحله ۰۱</span>
-          <h3>دریافت کلید لایسنس</h3>
-          <p>کد اشتراک اختصاصی خود را از پشتیبانی دریافت کنید؛ هر لایسنس به صورت امن روی سخت‌افزار گوشی شما قفل می‌شود.</p>
-        </div>
-        <div class="step-card">
-          <span class="step-num">مرحله ۰۲</span>
-          <h3>استعلام و دانلود APK</h3>
-          <p>کد لایسنس را در کادر بالا وارد کنید تا اعتبار شما تایید شده و آخرین نسخه اپلیکیشن مستقیم دانلود شود.</p>
-        </div>
-        <div class="step-card">
-          <span class="step-num">مرحله ۰۳</span>
-          <h3>اتصال و اجرای ابزارها</h3>
-          <p>شماره سروش‌پلاس خود را وارد کنید و از ساعت زنده پروفایل، ارسال توربو و ریپلای سریع لذت ببرید.</p>
-        </div>
-      </div>
-    </section>
-
     <!-- امکانات کلیدی -->
     <section id="features">
-      <div class="section-head">
-        <div class="kicker">FEATURES</div>
+      <div class="sec-header">
+        <div class="sec-kicker">CORE CAPABILITIES</div>
         <h2>امکانات کلیدی V3X Selfbot</h2>
-        <p>طراحی‌شده برای سرعت بالا، پایداری مداوم و رابط کاربری روان</p>
+        <p>مهندسی‌شده برای بالاترین سرعت پاسخ‌گویی و پایداری در سروش‌پلاس</p>
       </div>
 
-      <div class="features-grid">
-        <div class="feat-card">
-          <div class="feat-icon">⏰</div>
+      <div class="grid-features">
+        <div class="feature-item">
+          <div class="f-badge">⏰</div>
           <h3>ساعت زنده افق تهران کنار اسم</h3>
-          <p>به‌روزرسانی خودکار و دقیق ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
+          <p>به‌روزرسانی خودکار ساعت پروفایل هر دقیقه با ۳ فونت متنوع (ساده، ضخیم و فانتزی) بدون نیاز به دخالت دستی.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">🚀</div>
+        <div class="feature-item">
+          <div class="f-badge">🚀</div>
           <h3>موتور ارسال توربو فوق‌سریع</h3>
           <p>ارسال همزمان و بهینه پیام‌ها با مدیریت هوشمند محدودیت‌های سرور و اتصال مجدد خودکار در صورت قطع اینترنت.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">📨</div>
+        <div class="feature-item">
+          <div class="f-badge">📨</div>
           <h3>ارسال چندتایی با حافظه دائمی</h3>
           <p>لیست پیام‌های دلخواه خود را بسازید، در حافظه برنامه ذخیره کنید و همزمان به چند پی‌وی یا گروه ارسال نمایید.</p>
         </div>
-        <div class="feat-card">
-          <div class="feat-icon">💬</div>
+        <div class="feature-item">
+          <div class="f-badge">💬</div>
           <h3>انتخاب چت و ریپلای سریع</h3>
           <p>مشاهده لیست کامل پی‌وی‌ها و گروه‌ها، خواندن پیام‌های اخیر هر چت و انتخاب دقیق پیام برای ریپلای خودکار.</p>
         </div>
@@ -942,67 +915,59 @@
 
   <footer>
     <div class="container">
-      <p>تمامی حقوق برای <strong>V3XSYS (@V3XSYS)</strong> محفوظ است · دامنه رسمی: <strong>v3xsys.ir</strong></p>
+      <p>طراحی و توسعه توسط <strong>V3XSYS (@V3XSYS)</strong> · دامنه رسمی: <strong>v3xsys.ir</strong></p>
     </div>
   </footer>
 
   <!-- مودال پنل مدیریت -->
-  <div class="modal-backdrop" id="adminModal">
-    <div class="modal-card">
-      <div class="modal-head">
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-box">
+      <div class="modal-top">
         <h3 style="font-size:17px;">🛡️ پنل مدیریت سراسری V3X</h3>
-        <button type="button" class="btn btn-glass" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
+        <button type="button" class="btn btn-outline" id="closeAdminBtn" style="padding:6px 12px;">✖</button>
       </div>
 
-      <!-- فرم ورود ادمین -->
       <div id="adminLoginView">
-        <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">
           برای دسترسی به تنظیمات سایت، ویدیو تست و ساخت لایسنس، رمز مدیریت را وارد کنید:
         </p>
         <input type="password" id="adminPassInput" placeholder="رمز مدیریت را وارد کنید..." dir="ltr" />
-        <button type="button" class="btn btn-primary" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
+        <button type="button" class="btn btn-neon" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
           ورود به پنل مدیریت
         </button>
         <p id="adminLoginErr" style="color:#fda4af;font-size:13px;margin-top:8px;"></p>
       </div>
 
-      <!-- داشبورد داخلی ادمین -->
       <div id="adminPanelView" style="display:none;">
-        <!-- بخش ۱: لینک دانلود APK -->
-        <div class="admin-section">
+        <div class="admin-block">
           <h4>📦 لینک دانلود مستقیم اپلیکیشن (APK)</h4>
           <input type="url" id="adminApkUrl" placeholder="https://github.com/.../app-release.apk" dir="ltr" />
-          <button type="button" class="btn btn-primary" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
+          <button type="button" class="btn btn-neon" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
             💾 ذخیره سراسری لینک دانلود
           </button>
         </div>
 
-        <!-- بخش ۲: آپلود / لینک ویدیو تست -->
-        <div class="admin-section">
-          <h4>🎬 ویدیو تست عملکرد برنامه (نمایش در صفحه اصلی)</h4>
+        <div class="admin-block">
+          <h4>🎬 ویدیو تست عملکرد برنامه</h4>
           <input type="url" id="adminVideoUrl" placeholder="لینک مستقیم MP4 یا لینک آپارات / گیت‌هاب..." dir="ltr" />
-          <label class="file-upload-label" for="localVideoPicker">
+          <label class="upload-drop" for="localVideoPicker">
             📁 انتخاب فایل ویدیو از سیستم (پیش‌نمایش آنی)
           </label>
           <input type="file" id="localVideoPicker" accept="video/*" style="display:none;" />
-          <p style="font-size:11.5px;color:var(--text-dim);margin-top:8px;line-height:1.6;">
-            نکته: برای اینکه همه کاربران در گوشی و کامپیوتر ویدیو را ببینند، فایل MP4 را در بخش <strong>Releases</strong> مخزن گیت‌هاب آپلود کنید و لینک مستقیم آن را در کادر بالا قرار دهید.
-          </p>
-          <button type="button" class="btn btn-primary" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
+          <button type="button" class="btn btn-neon" id="saveVideoUrlBtn" style="width:100%;margin-top:10px;">
             💾 ذخیره سراسری ویدیو تست
           </button>
         </div>
 
-        <!-- بخش ۳: ساخت لایسنس -->
-        <div class="admin-section">
+        <div class="admin-block">
           <h4>🔑 ساخت کلید لایسنس جدید</h4>
           <div style="display:flex;gap:8px;">
             <input type="number" id="genDaysInput" value="30" min="1" placeholder="تعداد روز" />
-            <button type="button" class="btn btn-primary" id="genKeyBtn" style="white-space:nowrap;">
+            <button type="button" class="btn btn-neon" id="genKeyBtn" style="white-space:nowrap;">
               ⚡ ساخت کد
             </button>
           </div>
-          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#05050b;border:1px solid var(--emerald);color:#6ee7b7;font-weight:700;text-align:center;" dir="ltr"></div>
+          <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:10px;border-radius:10px;background:#04040a;border:1px solid var(--emerald);color:#6ee7b7;font-weight:700;text-align:center;" dir="ltr"></div>
         </div>
 
         <p id="adminFeedback" style="font-size:13px;color:#6ee7b7;text-align:center;margin-top:6px;"></p>
@@ -1018,39 +983,162 @@
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
     let isAdminLogged = false;
 
-    // تعویض تب‌های پیش‌نمایش زنده در Hero
-    const tabContents = {
-      clock: [
-        "بررسی اعتبار لایسنس روی api.v3xsys.ir ... تایید شد",
-        "همگام‌سازی ساعت افق تهران (UTC+3:30) فعال شد",
-        "پیش‌نمایش پروفایل: <strong style='color:#fff;'>Hadi | 𝟏𝟒:𝟑𝟎</strong>"
-      ],
-      turbo: [
-        "اتصال مستقیم به سرور سروش‌پلاس ... پایدار",
-        "ارسال دسته‌ای ۵ پیام همزمان با تاخیر صفر",
-        "وضعیت صف: <strong style='color:#fff;'>100/100 پیام با موفقیت ارسال شد ✅</strong>"
-      ],
-      multi: [
-        "بارگذاری لیست پیام‌های ذخیره‌شده از حافظه",
-        "انتخاب همزمان ۳ گروه و ۲ پی‌وی هدف",
-        "وضعیت عملیات: <strong style='color:#fff;'>ارسال گروهی فعال و بدون خطا</strong>"
-      ]
+    // ========================================================
+    // نمودار زنده تله‌متری (60FPS Neon Waveform Canvas)
+    // ========================================================
+    const canvas = document.getElementById("telemetryCanvas");
+    const ctx = canvas.getContext("2d");
+    let chartMode = "turbo";
+    let points = Array.from({ length: 46 }, (_, i) => 55 + Math.sin(i * 0.35) * 22);
+    let tick = 0;
+
+    const modeMeta = {
+      turbo: {
+        badge: "TURBO STREAM",
+        primary: "سرعت: 48 msg/s",
+        secondary: "پایداری: 99.9%",
+        desc: "پایش لحظه‌ای صف ارسال همزمان سروش‌پلاس",
+        base: 64,
+        amp: 24,
+        color: "#ff1e42",
+        fillTop: "rgba(255, 30, 66, 0.36)"
+      },
+      clock: {
+        badge: "TEHRAN SYNC",
+        primary: "دقت: ±0.02s",
+        secondary: "منطقه: UTC+3:30",
+        desc: "همگام‌سازی خودکار ساعت افق تهران کنار پروفایل",
+        base: 52,
+        amp: 14,
+        color: "#fb7185",
+        fillTop: "rgba(251, 113, 133, 0.32)"
+      },
+      ping: {
+        badge: "DIRECT NODE",
+        primary: "پینگ: 18 ms",
+        secondary: "وضعیت: بدون فیلتر",
+        desc: "اتصال مستقیم به سرور اختصاصی api.v3xsys.ir",
+        base: 72,
+        amp: 10,
+        color: "#10b981",
+        fillTop: "rgba(16, 185, 129, 0.30)"
+      }
     };
 
-    document.querySelectorAll(".engine-tab").forEach((btn) => {
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".engine-tab").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        const key = btn.getAttribute("data-tab");
-        const lines = tabContents[key] || tabContents.clock;
-        const screen = document.getElementById("consoleScreen");
-        screen.querySelector("div").innerHTML = lines
-          .map((l) => `<div class="console-line"><span class="tag">&gt;</span> ${l}</div>`)
-          .join("");
+        chartMode = btn.getAttribute("data-mode") || "turbo";
+        const m = modeMeta[chartMode];
+        document.getElementById("chartBadge").textContent = m.badge;
+        document.getElementById("metricPrimary").textContent = m.primary;
+        document.getElementById("metricSecondary").textContent = m.secondary;
+        document.getElementById("chartStatusDesc").textContent = m.desc;
       });
     });
 
-    // تنظیم و نمایش ویدیو تست
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function drawChart() {
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      const m = modeMeta[chartMode];
+
+      tick += 0.08;
+      if (Math.round(tick * 10) % 3 === 0) {
+        const wave = Math.sin(tick * 1.4) * m.amp + Math.cos(tick * 2.7) * (m.amp * 0.45);
+        const jitter = (Math.random() - 0.5) * 6;
+        const nextVal = Math.max(18, Math.min(92, m.base + wave + jitter));
+        points.push(nextVal);
+        points.shift();
+      }
+
+      ctx.clearRect(0, 0, w, h);
+
+      // خطوط شبکه افقی و عمودی نمودار
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+      ctx.lineWidth = 1;
+      for (let y = 32; y < h; y += 36) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      for (let x = 40; x < w; x += 52) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      const stepX = w / (points.length - 1);
+      const coords = points.map((val, idx) => ({
+        x: idx * stepX,
+        y: h - (val / 100) * (h - 46) - 14
+      }));
+
+      // گرادیان زیر منحنی
+      const grad = ctx.createLinearGradient(0, 20, 0, h);
+      grad.addColorStop(0, m.fillTop);
+      grad.addColorStop(1, "rgba(3, 3, 6, 0)");
+
+      ctx.beginPath();
+      ctx.moveTo(coords[0].x, h);
+      ctx.lineTo(coords[0].x, coords[0].y);
+      for (let i = 0; i < coords.length - 1; i++) {
+        const xc = (coords[i].x + coords[i + 1].x) / 2;
+        const yc = (coords[i].y + coords[i + 1].y) / 2;
+        ctx.quadraticCurveTo(coords[i].x, coords[i].y, xc, yc);
+      }
+      const last = coords[coords.length - 1];
+      ctx.lineTo(last.x, last.y);
+      ctx.lineTo(last.x, h);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // خط نئونی اصلی نمودار
+      ctx.beginPath();
+      ctx.moveTo(coords[0].x, coords[0].y);
+      for (let i = 0; i < coords.length - 1; i++) {
+        const xc = (coords[i].x + coords[i + 1].x) / 2;
+        const yc = (coords[i].y + coords[i + 1].y) / 2;
+        ctx.quadraticCurveTo(coords[i].x, coords[i].y, xc, yc);
+      }
+      ctx.lineTo(last.x, last.y);
+      ctx.strokeStyle = m.color;
+      ctx.lineWidth = 2.6;
+      ctx.shadowColor = m.color;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // نقطه درخشان انتهای نمودار
+      ctx.beginPath();
+      ctx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(last.x - 3, last.y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = m.fillTop;
+      ctx.fill();
+
+      requestAnimationFrame(drawChart);
+    }
+    drawChart();
+
+    // ========================================================
+    // ویدیو تست و کنترل سرعت پخش
+    // ========================================================
     const demoPlayer = document.getElementById("demoPlayer");
     const demoIframe = document.getElementById("demoIframe");
     const videoEmptyState = document.getElementById("videoEmptyState");
@@ -1067,8 +1155,6 @@
       }
 
       videoEmptyState.style.display = "none";
-
-      // پشتیبانی هوشمند از لینک آپارات یا یوتیوب در کنار فایل مستقیم MP4
       const aparatMatch = clean.match(/aparat\.com\/v\/([A-Za-z0-9]+)/i);
       const ytMatch = clean.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/i);
 
@@ -1084,17 +1170,14 @@
       }
     }
 
-    // کنترل سرعت پخش ویدیو
-    document.querySelectorAll(".speed-btn").forEach((btn) => {
+    document.querySelectorAll(".spd-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".speed-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".spd-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        const spd = parseFloat(btn.getAttribute("data-speed") || "1");
-        demoPlayer.playbackRate = spd;
+        demoPlayer.playbackRate = parseFloat(btn.getAttribute("data-speed") || "1");
       });
     });
 
-    // دریافت تنظیمات سراسری از سرور کلودفلر
     async function loadGlobalConfig() {
       renderShowcaseVideo(globalVideoUrl);
       try {
@@ -1111,9 +1194,7 @@
             renderShowcaseVideo(globalVideoUrl);
           }
         }
-      } catch (e) {
-        console.warn("Config fetch warning:", e);
-      }
+      } catch (e) {}
     }
 
     // استعلام لایسنس کاربر
@@ -1124,13 +1205,13 @@
       const dlBtn = document.getElementById("apkDownloadBtn");
 
       if (!key) {
-        resBox.className = "license-result err";
+        resBox.className = "verify-msg err";
         resBox.textContent = "لطفاً کد لایسنس خود را وارد کنید.";
         dlBox.style.display = "none";
         return;
       }
 
-      resBox.className = "license-result ok";
+      resBox.className = "verify-msg ok";
       resBox.textContent = "⏳ در حال بررسی اعتبار لایسنس در سرور...";
       dlBox.style.display = "none";
 
@@ -1142,21 +1223,21 @@
         });
         const d = await r.json();
         if (d.valid || d.ok) {
-          resBox.className = "license-result ok";
+          resBox.className = "verify-msg ok";
           resBox.innerHTML = `✅ <strong>لایسنس معتبر است!</strong> (اعتبار: ${d.days_left || d.days} روز)`;
           if (globalDownloadUrl) {
             dlBtn.href = globalDownloadUrl;
-            dlBox.style.display = "flex";
+            dlBox.style.display = "block";
           } else {
-            resBox.innerHTML += "<br><span style='color:#fde68a;'>⚠️ لینک دانلود هنوز توسط مدیریت تنظیم نشده است.</span>";
+            resBox.innerHTML += "<br><span style='color:#fde68a;'>⚠️ لینک دانلود هنوز فعال نشده است.</span>";
           }
         } else {
-          resBox.className = "license-result err";
+          resBox.className = "verify-msg err";
           resBox.textContent = "❌ " + (d.msg || d.message || "کد لایسنس نامعتبر است.");
         }
       } catch (err) {
-        resBox.className = "license-result err";
-        resBox.textContent = "❌ خطا در ارتباط با سرور لایسنس. اتصال اینترنت خود را بررسی کنید.";
+        resBox.className = "verify-msg err";
+        resBox.textContent = "❌ خطا در ارتباط با سرور لایسنس.";
       }
     });
 
@@ -1189,17 +1270,14 @@
       }
     });
 
-    // پیش‌نمایش فایل ویدیو محلی انتخاب‌شده
     document.getElementById("localVideoPicker").addEventListener("change", (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      const localBlobUrl = URL.createObjectURL(file);
-      renderShowcaseVideo(localBlobUrl);
+      renderShowcaseVideo(URL.createObjectURL(file));
       document.getElementById("adminFeedback").textContent =
-        `🎬 پیش‌نمایش فایل «${file.name}» در سایت نمایش داده شد. برای ثبت دائمی، لینک مستقیم آن را ذخیره کنید.`;
+        `🎬 پیش‌نمایش فایل «${file.name}» بارگذاری شد.`;
     });
 
-    // ذخیره سراسری لینک دانلود APK
     document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
       const newUrl = document.getElementById("adminApkUrl").value.trim();
       const fb = document.getElementById("adminFeedback");
@@ -1214,7 +1292,7 @@
         if (d.ok) {
           globalDownloadUrl = d.download_url;
           localStorage.setItem("v3x_dl_url", globalDownloadUrl);
-          fb.textContent = "✅ لینک دانلود برای تمام گوشی‌ها و کامپیوترها ذخیره شد!";
+          fb.textContent = "✅ لینک دانلود برای تمام دستگاه‌ها ذخیره شد!";
         } else {
           fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
         }
@@ -1223,7 +1301,6 @@
       }
     });
 
-    // ذخیره سراسری لینک ویدیو تست
     document.getElementById("saveVideoUrlBtn").addEventListener("click", async () => {
       const newVid = document.getElementById("adminVideoUrl").value.trim();
       const fb = document.getElementById("adminFeedback");
@@ -1239,7 +1316,7 @@
           globalVideoUrl = d.video_url;
           localStorage.setItem("v3x_vid_url", globalVideoUrl);
           renderShowcaseVideo(globalVideoUrl);
-          fb.textContent = "✅ ویدیو تست با موفقیت ثبت شد و برای همه کاربران نمایش داده می‌شود!";
+          fb.textContent = "✅ ویدیو تست با موفقیت ثبت شد!";
         } else {
           fb.textContent = "❌ " + (d.error || "خطا در ذخیره ویدیو");
         }
@@ -1248,7 +1325,6 @@
       }
     });
 
-    // ساخت کد لایسنس جدید
     document.getElementById("genKeyBtn").addEventListener("click", async () => {
       const days = parseInt(document.getElementById("genDaysInput").value || "30", 10);
       const box = document.getElementById("generatedKeyBox");
@@ -1264,7 +1340,7 @@
         if (d.ok && d.key) {
           box.textContent = d.key;
           navigator.clipboard?.writeText(d.key);
-          document.getElementById("adminFeedback").textContent = "✅ کد لایسنس ساخته و در کلیپ‌بورد کپی شد!";
+          document.getElementById("adminFeedback").textContent = "✅ کد لایسنس ساخته و کپی شد!";
         } else {
           box.textContent = "❌ خطا در ساخت کد";
         }
