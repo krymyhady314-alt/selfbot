@@ -295,7 +295,7 @@
       color: var(--text-muted);
     }
 
-    /* کارت نمودار زنده و خفن تله‌متری */
+    /* کارت نمودار زنده تله‌متری */
     .telemetry-card {
       background: linear-gradient(165deg, rgba(16, 16, 28, 0.94), rgba(6, 6, 12, 0.98));
       border: 1px solid var(--border-neon);
@@ -724,7 +724,7 @@
   <!-- نوار جریان داده باینری -->
   <div class="binary-ribbon">
     <div class="binary-track">
-      V3XSYS CORE // 01101001 10010110 11001010 01011100 // API.V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101 // V3X SELFBOT v2.1.1 // 01101001 10010110 11001010 01011100 // API.V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101
+      V3XSYS CORE // 01101001 10010110 11001010 01011100 // V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101 // V3X SELFBOT v2.1.1 // 01101001 10010110 11001010 01011100 // V3XSYS.IR ONLINE // 10110010 01110101 11100011 00101101
     </div>
   </div>
 
@@ -778,7 +778,7 @@
           </div>
           <div class="stat-pill">
             <strong>18ms پینگ</strong>
-            <span>سرور api.v3xsys.ir</span>
+            <span>اتصال مستقیم بدون فیلتر</span>
           </div>
           <div class="stat-pill">
             <strong>قفل سخت‌افزار</strong>
@@ -787,7 +787,7 @@
         </div>
       </div>
 
-      <!-- نمودار زنده گرافیکی (Live Waveform Telemetry Chart) -->
+      <!-- نمودار زنده گرافیکی -->
       <div class="telemetry-card">
         <div class="telemetry-header">
           <div class="telemetry-title">
@@ -983,9 +983,6 @@
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
     let isAdminLogged = false;
 
-    // ========================================================
-    // نمودار زنده تله‌متری (60FPS Neon Waveform Canvas)
-    // ========================================================
     const canvas = document.getElementById("telemetryCanvas");
     const ctx = canvas.getContext("2d");
     let chartMode = "turbo";
@@ -1017,7 +1014,7 @@
         badge: "DIRECT NODE",
         primary: "پینگ: 18 ms",
         secondary: "وضعیت: بدون فیلتر",
-        desc: "اتصال مستقیم به سرور اختصاصی api.v3xsys.ir",
+        desc: "اتصال مستقیم و پرسرعت به هسته اختصاصی V3X",
         base: 72,
         amp: 10,
         color: "#10b981",
@@ -1064,7 +1061,6 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // خطوط شبکه افقی و عمودی نمودار
       ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
       ctx.lineWidth = 1;
       for (let y = 32; y < h; y += 36) {
@@ -1086,7 +1082,6 @@
         y: h - (val / 100) * (h - 46) - 14
       }));
 
-      // گرادیان زیر منحنی
       const grad = ctx.createLinearGradient(0, 20, 0, h);
       grad.addColorStop(0, m.fillTop);
       grad.addColorStop(1, "rgba(3, 3, 6, 0)");
@@ -1106,7 +1101,6 @@
       ctx.fillStyle = grad;
       ctx.fill();
 
-      // خط نئونی اصلی نمودار
       ctx.beginPath();
       ctx.moveTo(coords[0].x, coords[0].y);
       for (let i = 0; i < coords.length - 1; i++) {
@@ -1122,7 +1116,6 @@
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // نقطه درخشان انتهای نمودار
       ctx.beginPath();
       ctx.arc(last.x - 3, last.y, 4.5, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
@@ -1136,9 +1129,6 @@
     }
     drawChart();
 
-    // ========================================================
-    // ویدیو تست و کنترل سرعت پخش
-    // ========================================================
     const demoPlayer = document.getElementById("demoPlayer");
     const demoIframe = document.getElementById("demoIframe");
     const videoEmptyState = document.getElementById("videoEmptyState");
@@ -1197,7 +1187,6 @@
       } catch (e) {}
     }
 
-    // استعلام لایسنس کاربر
     document.getElementById("verifyBtn").addEventListener("click", async () => {
       const key = document.getElementById("licenseInput").value.trim().toUpperCase();
       const resBox = document.getElementById("licenseResult");
@@ -1241,7 +1230,6 @@
       }
     });
 
-    // مدیریت مودال ادمین
     const adminModal = document.getElementById("adminModal");
     document.getElementById("openAdminBtn").addEventListener("click", () => {
       adminModal.classList.add("open");
