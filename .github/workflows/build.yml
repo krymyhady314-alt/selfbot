@@ -54,8 +54,7 @@ jobs:
             "build-tools;34.0.0" \
             "build-tools;35.0.0" \
             "ndk;26.1.10909125" || true
-          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
-          yes | "$SDKMANAGER" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
+          yes | "$SYS_SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
 
           rm -rf "$HOME/Android/Sdk"
           mkdir -p "$HOME/Android"
@@ -71,31 +70,32 @@ jobs:
           yes | flutter doctor --android-licenses > /dev/null 2>&1 || true
           flutter doctor -v
 
-      - name: Install Flet & Prepare Requirements
+      - name: Install Flet & Clean Android Requirements
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "flet[all]" requests
+          python -m pip install "flet[all]" requests httpx
           FLET_VER=$(python -c "import importlib.metadata; print(importlib.metadata.version('flet'))")
 
           if [ -f requirements.txt ]; then
-            grep -viE "^(flet|requests|pyinstaller|pip|setuptools|wheel)" requirements.txt > extra_reqs.txt || true
+            grep -viE "^(flet|requests|httpx|fastapi|uvicorn|psycopg2|gunicorn|pyinstaller|pip|setuptools|wheel)" requirements.txt > extra_reqs.txt || true
           else
             touch extra_reqs.txt
           fi
-          printf "flet==%s\nrequests\n" "$FLET_VER" > requirements.txt
+          printf "flet==%s\nrequests\nhttpx\n" "$FLET_VER" > requirements.txt
           cat extra_reqs.txt >> requirements.txt
           rm -f extra_reqs.txt
           cat requirements.txt
 
-          # نمایش مستقیم خروجی flutter doctor در لاگ بیلد
           python - << 'EOF'
-          import pathlib, flet_cli
-          base = pathlib.Path(flet_cli.__file__).parent
-          for p in base.rglob("*.py"):
-              txt = p.read_text(encoding="utf-8", errors="ignore")
-              if "Running Flutter doctor" in txt and "capture_output=True" in txt:
-                  p.write_text(txt.replace("capture_output=True", "capture_output=False"), encoding="utf-8")
-                  print("Patched doctor output in:", p)
+          import importlib.util, pathlib
+          spec = importlib.util.find_spec("flet_cli")
+          if spec and spec.submodule_search_locations:
+              for loc in spec.submodule_search_locations:
+                  for p in pathlib.Path(loc).rglob("*.py"):
+                      txt = p.read_text(encoding="utf-8", errors="ignore")
+                      if "capture_output=True" in txt:
+                          p.write_text(txt.replace("capture_output=True", "capture_output=False"), encoding="utf-8")
+                          print("Updated:", p)
           EOF
 
       - name: Build Universal APK (arm64-v8a & armeabi-v7a)
