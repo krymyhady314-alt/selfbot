@@ -33,12 +33,12 @@ jobs:
           flutter-version: "3.47.9"
           channel: "stable"
 
-      - name: Install Linux Dependencies
+      - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa xz-utils unzip zip curl
 
-      - name: Configure Android SDK, NDK & Flutter Wrapper
+      - name: Configure Android SDK & Smart Flutter Doctor Interceptor
         run: |
           git config --global --add safe.directory '*'
           SYS_SDK="/usr/local/lib/android/sdk"
@@ -51,17 +51,10 @@ jobs:
             "platform-tools" \
             "platforms;android-34" \
             "platforms;android-35" \
-            "platforms;android-36" \
             "build-tools;34.0.0" \
             "build-tools;35.0.0" \
-            "cmake;3.22.1" \
-            "ndk;26.1.10909125" \
-            "ndk;27.0.12077973" || true
+            "ndk;26.1.10909125" || true
           yes | "$SYS_SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
-
-          rm -rf "$HOME/Android/Sdk"
-          mkdir -p "$HOME/Android"
-          ln -sfn "$SYS_SDK" "$HOME/Android/Sdk"
 
           echo "ANDROID_HOME=$SYS_SDK" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$SYS_SDK" >> $GITHUB_ENV
@@ -72,31 +65,47 @@ jobs:
           flutter precache --android
           yes | flutter doctor --android-licenses > /dev/null 2>&1 || true
 
+          # رهگیری و تکمیل خودکار SDK اختصاصی Flet در لحظه اجرای Running Flutter doctor
           FLUTTER_BIN=$(readlink -f "$(which flutter)")
           if [ ! -f "${FLUTTER_BIN}.real" ]; then
             mv "$FLUTTER_BIN" "${FLUTTER_BIN}.real"
             cat << 'EOF' > "$FLUTTER_BIN"
           #!/usr/bin/env bash
           REAL_BIN="$(dirname "$0")/flutter.real"
-          echo "CALL: $*" >> /tmp/flutter_calls.log
+          SYS_SDK="/usr/local/lib/android/sdk"
+
           if [[ " $* " == *" doctor "* ]]; then
+            TARGET_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+            echo "=== FLET DOCTOR SDK: $TARGET_SDK | JAVA: $JAVA_HOME ===" >&2
+            if [ -n "$TARGET_SDK" ] && [ "$TARGET_SDK" != "$SYS_SDK" ]; then
+              mkdir -p "$TARGET_SDK/licenses"
+              cp -rn "$SYS_SDK/licenses/"* "$TARGET_SDK/licenses/" 2>/dev/null || true
+              for sub in platforms build-tools platform-tools ndk; do
+                if [ ! -e "$TARGET_SDK/$sub" ] && [ -e "$SYS_SDK/$sub" ]; then
+                  ln -sfn "$SYS_SDK/$sub" "$TARGET_SDK/$sub"
+                fi
+              done
+              if [ ! -x "$TARGET_SDK/cmdline-tools/latest/bin/sdkmanager" ] && [ -d "$SYS_SDK/cmdline-tools" ]; then
+                mkdir -p "$TARGET_SDK/cmdline-tools"
+                rm -rf "$TARGET_SDK/cmdline-tools/latest"
+                LATEST_TOOLS=$(find "$SYS_SDK/cmdline-tools" -maxdepth 1 -mindepth 1 -type d | head -n 1)
+                ln -sfn "$LATEST_TOOLS" "$TARGET_SDK/cmdline-tools/latest"
+              fi
+            fi
             yes | "$REAL_BIN" doctor --android-licenses >/dev/null 2>&1 || true
-            OUT=$("$REAL_BIN" "$@" 2>&1)
-            RC=$?
-            {
-              echo "=== FLUTTER DOCTOR (RC=$RC) ==="
-              echo "ANDROID_HOME=$ANDROID_HOME | ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT | JAVA_HOME=$JAVA_HOME"
-              echo "$OUT"
-            } >> /tmp/flutter_doctor.log
-            echo "$OUT"
+            "$REAL_BIN" "$@" 2>&1 | tee /tmp/flutter_doctor_last.txt
+            RC=${PIPESTATUS[0]}
+            if [ $RC -ne 0 ]; then
+              echo "=== FLUTTER DOCTOR DETAILS (EXIT $RC) ===" >&2
+              cat /tmp/flutter_doctor_last.txt >&2
+            fi
             exit $RC
           fi
+
           exec "$REAL_BIN" "$@"
           EOF
             chmod +x "$FLUTTER_BIN"
           fi
-
-          flutter doctor -v
 
       - name: Install Flet & Clean Android Requirements
         run: |
@@ -125,12 +134,6 @@ jobs:
             --build-version "2.1.1" \
             --yes \
             -vv
-
-      - name: Show Doctor Log on Failure
-        if: failure()
-        run: |
-          cat /tmp/flutter_calls.log || true
-          cat /tmp/flutter_doctor.log || true
 
       - name: Prepare APK for Release
         run: |
