@@ -38,7 +38,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa xz-utils unzip zip curl
 
-      - name: Configure Android SDK, NDK & Licenses
+      - name: Configure Android SDK, NDK & Doctor Wrapper
         run: |
           git config --global --add safe.directory '*'
           SYS_SDK="/usr/local/lib/android/sdk"
@@ -68,6 +68,30 @@ jobs:
           flutter config --jdk-dir "$JAVA_HOME"
           flutter precache --android
           yes | flutter doctor --android-licenses > /dev/null 2>&1 || true
+
+          # تایید خودکار لایسنس‌ها در لحظه اجرای flutter doctor توسط Flet
+          FLUTTER_BIN=$(readlink -f "$(which flutter)")
+          if [ ! -f "${FLUTTER_BIN}.real" ]; then
+            mv "$FLUTTER_BIN" "${FLUTTER_BIN}.real"
+            cat << 'EOF' > "$FLUTTER_BIN"
+          #!/usr/bin/env bash
+          REAL_BIN="$(dirname "$0")/flutter.real"
+          if [ "$1" = "doctor" ]; then
+            yes | "$REAL_BIN" doctor --android-licenses >/dev/null 2>&1 || true
+            OUT=$("$REAL_BIN" "$@" 2>&1)
+            RC=$?
+            echo "$OUT"
+            if [ $RC -ne 0 ]; then
+              echo "=== FLUTTER DOCTOR OUTPUT ===" >&2
+              echo "$OUT" >&2
+            fi
+            exit $RC
+          fi
+          exec "$REAL_BIN" "$@"
+          EOF
+            chmod +x "$FLUTTER_BIN"
+          fi
+
           flutter doctor -v
 
       - name: Install Flet & Clean Android Requirements
@@ -77,7 +101,7 @@ jobs:
           FLET_VER=$(python -c "import importlib.metadata; print(importlib.metadata.version('flet'))")
 
           if [ -f requirements.txt ]; then
-            grep -viE "^(flet|requests|httpx|fastapi|uvicorn|psycopg2|gunicorn|pyinstaller|pip|setuptools|wheel)" requirements.txt > extra_reqs.txt || true
+            grep -viE "^(flet|requests|httpx|fastapi|uvicorn|psycopg2|uvloop|httptools|watchfiles|gunicorn|pyinstaller|pip|setuptools|wheel)" requirements.txt > extra_reqs.txt || true
           else
             touch extra_reqs.txt
           fi
@@ -85,18 +109,6 @@ jobs:
           cat extra_reqs.txt >> requirements.txt
           rm -f extra_reqs.txt
           cat requirements.txt
-
-          python - << 'EOF'
-          import importlib.util, pathlib
-          spec = importlib.util.find_spec("flet_cli")
-          if spec and spec.submodule_search_locations:
-              for loc in spec.submodule_search_locations:
-                  for p in pathlib.Path(loc).rglob("*.py"):
-                      txt = p.read_text(encoding="utf-8", errors="ignore")
-                      if "capture_output=True" in txt:
-                          p.write_text(txt.replace("capture_output=True", "capture_output=False"), encoding="utf-8")
-                          print("Updated:", p)
-          EOF
 
       - name: Build Universal APK (arm64-v8a & armeabi-v7a)
         run: |
