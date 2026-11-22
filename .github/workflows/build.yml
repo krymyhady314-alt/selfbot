@@ -38,36 +38,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa xz-utils unzip zip curl
 
-      - name: Prepare Android SDK & Licenses
+      - name: Configure Single Unified Android SDK & Licenses
         run: |
           SYS_SDK="/usr/local/lib/android/sdk"
-          USER_SDK="$HOME/Android/Sdk"
           sudo chown -R $(whoami):$(whoami) "$SYS_SDK"
+          rm -rf "$HOME/Android"
+
+          echo "ANDROID_HOME=$SYS_SDK" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SYS_SDK" >> $GITHUB_ENV
+          echo "GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> $GITHUB_ENV
 
           SDKMANAGER=$(find "$SYS_SDK/cmdline-tools" -name "sdkmanager" | head -n 1)
-          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          yes | "$SDKMANAGER" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
           "$SDKMANAGER" --sdk_root="$SYS_SDK" \
             "cmdline-tools;latest" \
             "platform-tools" \
             "platforms;android-34" \
             "platforms;android-35" \
             "build-tools;34.0.0" \
-            "build-tools;35.0.0"
-          yes | "$SYS_SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+            "build-tools;35.0.0" || true
+          yes | "$SYS_SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
 
-          rm -rf "$USER_SDK"
-          mkdir -p "$USER_SDK/licenses"
-          cp -r "$SYS_SDK/licenses/"* "$USER_SDK/licenses/"
-          ln -sfn "$SYS_SDK/cmdline-tools" "$USER_SDK/cmdline-tools"
-          ln -sfn "$SYS_SDK/platform-tools" "$USER_SDK/platform-tools"
-          ln -sfn "$SYS_SDK/platforms" "$USER_SDK/platforms"
-          ln -sfn "$SYS_SDK/build-tools" "$USER_SDK/build-tools"
-
-          echo "ANDROID_HOME=$USER_SDK" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$USER_SDK" >> $GITHUB_ENV
-          echo "GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> $GITHUB_ENV
-
-          flutter config --android-sdk "$USER_SDK"
+          flutter config --android-sdk "$SYS_SDK"
+          flutter config --jdk-dir "$JAVA_HOME"
           yes | flutter doctor --android-licenses > /dev/null 2>&1 || true
           flutter doctor -v
 
@@ -86,6 +79,7 @@ jobs:
           cat extra_reqs.txt >> requirements.txt
           rm -f extra_reqs.txt
           cat requirements.txt
+          flet doctor || true
 
       - name: Build Universal APK (arm64-v8a & armeabi-v7a)
         run: |
@@ -97,7 +91,13 @@ jobs:
             --org "ir.v3xsys" \
             --build-version "2.1.1" \
             --yes \
-            -v
+            -vv
+
+      - name: Diagnostic Info on Failure
+        if: failure()
+        run: |
+          flutter doctor -v || true
+          ls -la /usr/local/lib/android/sdk/licenses || true
 
       - name: Prepare APK for Release
         run: |
