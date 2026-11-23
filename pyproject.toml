@@ -4,7 +4,7 @@ version = "2.1.1"
 description = "V3X Selfbot for SoroushPlus"
 requires-python = ">=3.9"
 dependencies = [
-    "flet",
+    "flet==0.25.2",
     "splusthon",
     "requests",
     "aiohttp",
