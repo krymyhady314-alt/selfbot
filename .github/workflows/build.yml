@@ -38,10 +38,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon into _vendor cleanly
+      - name: Bundle splusthon & dependencies for Android
         run: |
           python - << 'EOF'
-          import importlib.metadata
           import pathlib
           import py_compile
           import shutil
@@ -53,27 +52,18 @@ jobs:
               raise FileNotFoundError("main.py not found!")
           py_compile.compile(str(main_py), doraise=True)
 
-          # Identify all modules already provided by flet==0.25.2
-          flet_env_tops = set(sys.stdlib_module_names)
-          flet_env_dists = set()
-          for dist in importlib.metadata.distributions():
-              name = (dist.metadata.get("Name") or "").lower().replace("_", "-")
-              if name:
-                  flet_env_dists.add(name)
-              top_txt = dist.read_text("top_level.txt")
-              if top_txt:
-                  for line in top_txt.splitlines():
-                      if line.strip():
-                          flet_env_tops.add(line.strip())
-              elif dist.files:
-                  for f in dist.files:
-                      p0 = f.parts[0]
-                      if p0.endswith(".py"):
-                          flet_env_tops.add(p0[:-3])
-                      elif not p0.endswith((".dist-info", ".egg-info", ".data")):
-                          flet_env_tops.add(p0)
+          # Only packages actually bundled inside Android Flet client runtime
+          android_flet_dists = {
+              "flet", "flet-core", "httpx", "httpcore", "anyio",
+              "certifi", "h11", "idna", "sniffio", "repath", "typing-extensions",
+              "pip", "setuptools", "wheel", "distribute", "pkg-resources"
+          }
+          android_flet_mods = set(sys.stdlib_module_names) | {
+              "flet", "flet_core", "httpx", "httpcore", "anyio",
+              "certifi", "h11", "idna", "sniffio", "repath", "typing_extensions"
+          }
 
-          pkg_dir = pathlib.Path("/tmp/splusthon_vendor")
+          pkg_dir = pathlib.Path("/tmp/splusthon_raw")
           if pkg_dir.exists():
               shutil.rmtree(pkg_dir)
           pkg_dir.mkdir(parents=True)
@@ -85,8 +75,7 @@ jobs:
               "splusthon",
           ])
 
-          skip_dists = flet_env_dists | {"pip", "setuptools", "wheel", "distribute", "pkg-resources"}
-          compiled_android_reqs = set()
+          android_wheel_pkgs = set()
           skip_top_items = set()
 
           for di in pkg_dir.glob("*.dist-info"):
@@ -121,14 +110,30 @@ jobs:
                       if rel.endswith((".so", ".pyd", ".dll", ".dylib")):
                           has_native = True
 
-              if norm_name in skip_dists:
+              if norm_name in android_flet_dists:
                   skip_top_items.update(rec_tops)
                   continue
 
               if has_native:
-                  compiled_android_reqs.add(dist_name)
-                  skip_top_items.update(rec_tops)
-                  continue
+                  probe = subprocess.run(
+                      [
+                          sys.executable, "-m", "pip", "install",
+                          "--dry-run", "--ignore-installed", "--no-deps",
+                          "--platform", "android_21_arm64_v8a",
+                          "--python-version", "3.12",
+                          "--only-binary=:all:",
+                          "--extra-index-url", "https://pypi.flet.dev",
+                          dist_name,
+                      ],
+                      capture_output=True,
+                      text=True,
+                  )
+                  if probe.returncode == 0:
+                      print(f"Android wheel verified: {dist_name}")
+                      android_wheel_pkgs.add(dist_name)
+                      skip_top_items.update(rec_tops)
+                  else:
+                      print(f"No Android wheel for {dist_name}, keeping pure-Python fallback if available")
 
           vendor_dir = pathlib.Path("_vendor")
           if vendor_dir.exists():
@@ -142,7 +147,7 @@ jobs:
               if name in ("bin", "__pycache__") or name in skip_top_items:
                   continue
               base_mod = name[:-3] if name.endswith(".py") else name
-              if base_mod in flet_env_tops and base_mod != "splusthon":
+              if base_mod in android_flet_mods:
                   continue
 
               dest = vendor_dir / name
@@ -152,38 +157,84 @@ jobs:
                       dest,
                       ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.so", "*.pyd", "*.dll", "*.dylib"),
                   )
+                  print(f"Vendored dir: _vendor/{name}")
               elif item.is_file() and item.suffix == ".py":
                   shutil.copy2(item, dest)
+                  print(f"Vendored file: _vendor/{name}")
 
           for bad in list(vendor_dir.rglob("*")):
               if bad.is_file() and bad.suffix in (".so", ".pyd", ".dll", ".dylib"):
                   bad.unlink()
 
           if not ((vendor_dir / "splusthon").is_dir() or (vendor_dir / "splusthon.py").is_file()):
-              raise RuntimeError("splusthon was not found in _vendor!")
+              raise RuntimeError("splusthon missing from _vendor!")
 
-          # Prepend 4-line _vendor path hook at the top of main.py without altering app structure
-          orig_code = main_py.read_text(encoding="utf-8")
-          hook = (
-              "import os as _v3x_os, sys as _v3x_sys\n"
-              "_v3x_vendor = _v3x_os.path.join(_v3x_os.path.dirname(_v3x_os.path.abspath(__file__)), '_vendor')\n"
+          # Keep main.py in place, preserve __future__ imports, prevent white screen & catch errors
+          raw_lines = main_py.read_text(encoding="utf-8").splitlines()
+          future_lines = []
+          body_lines = []
+          for line in raw_lines:
+              if not body_lines and line.startswith("from __future__ import "):
+                  future_lines.append(line)
+              else:
+                  body_lines.append(line)
+
+          indented_body = "\n".join(("    " + l if l.strip() else "") for l in body_lines)
+
+          wrapped_main = "\n".join(future_lines) + ("\n" if future_lines else "") + (
+              "import os as _v3x_os, sys as _v3x_sys, traceback as _v3x_tb, inspect as _v3x_inspect\n"
+              "_v3x_root = _v3x_os.path.dirname(_v3x_os.path.abspath(__file__))\n"
+              "_v3x_vendor = _v3x_os.path.join(_v3x_root, '_vendor')\n"
               "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
               "    _v3x_sys.path.append(_v3x_vendor)\n\n"
+              "import flet as _v3x_ft\n"
+              "_v3x_orig_app = _v3x_ft.app\n\n"
+              "def _v3x_show_err(page: _v3x_ft.Page, title: str, err: str):\n"
+              "    try:\n"
+              "        page.clean()\n"
+              "        page.bgcolor = '#0D0D0D'\n"
+              "        page.scroll = _v3x_ft.ScrollMode.AUTO\n"
+              "        page.padding = 16\n"
+              "        page.add(\n"
+              "            _v3x_ft.Text(title, color='#FF3B30', size=18, weight=_v3x_ft.FontWeight.BOLD),\n"
+              "            _v3x_ft.Text(err, color='#FFFFFF', size=12, selectable=True),\n"
+              "        )\n"
+              "        page.update()\n"
+              "    except Exception:\n"
+              "        pass\n\n"
+              "def _v3x_safe_app(target, *args, **kwargs):\n"
+              "    if _v3x_inspect.iscoroutinefunction(target):\n"
+              "        async def _w_async(page: _v3x_ft.Page):\n"
+              "            page.bgcolor = '#0D0D0D'\n"
+              "            page.update()\n"
+              "            try:\n"
+              "                return await target(page)\n"
+              "            except Exception:\n"
+              "                _v3x_show_err(page, 'V3X Runtime Error', _v3x_tb.format_exc())\n"
+              "        return _v3x_orig_app(_w_async, *args, **kwargs)\n"
+              "    else:\n"
+              "        def _w_sync(page: _v3x_ft.Page):\n"
+              "            page.bgcolor = '#0D0D0D'\n"
+              "            page.update()\n"
+              "            try:\n"
+              "                return target(page)\n"
+              "            except Exception:\n"
+              "                _v3x_show_err(page, 'V3X Runtime Error', _v3x_tb.format_exc())\n"
+              "        return _v3x_orig_app(_w_sync, *args, **kwargs)\n\n"
+              "_v3x_ft.app = _v3x_safe_app\n\n"
+              "try:\n"
+              f"{indented_body}\n"
+              "except SystemExit:\n"
+              "    raise\n"
+              "except Exception:\n"
+              "    _v3x_err = _v3x_tb.format_exc()\n"
+              "    _v3x_orig_app(lambda p: _v3x_show_err(p, 'V3X Startup Error', _v3x_err))\n"
           )
-          main_py.write_text(hook + orig_code, encoding="utf-8")
+
+          main_py.write_text(wrapped_main, encoding="utf-8")
           py_compile.compile(str(main_py), doraise=True)
 
-          # Verify both flet and splusthon import cleanly
-          sys.path.append(str(vendor_dir.resolve()))
-          import flet
-          import splusthon
-          print("Verified imports OK -> flet:", flet.__file__, "| splusthon:", splusthon.__file__)
-
-          reqs = ["flet==0.25.2", "requests"]
-          for pkg in sorted(compiled_android_reqs):
-              if pkg.lower().replace("_", "-") not in {"flet", "requests", "httpx", "httpcore", "anyio"}:
-                  reqs.append(pkg)
-
+          reqs = ["flet==0.25.2", "requests"] + sorted(android_wheel_pkgs)
           pathlib.Path("requirements.txt").write_text("\n".join(reqs) + "\n")
           deps_toml = ", ".join(f'"{r}"' for r in reqs)
           pyproject = (
@@ -199,7 +250,7 @@ jobs:
               'company = "V3X"\n'
           )
           pathlib.Path("pyproject.toml").write_text(pyproject)
-          print("Final requirements:", reqs)
+          print("Final Android requirements:", reqs)
           EOF
 
       - name: Build 64-bit APK (arm64-v8a)
