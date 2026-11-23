@@ -246,6 +246,26 @@
       border-color: var(--border-red);
     }
 
+    .dl-arch-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dl-arch-btn {
+      width: 100%;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+
+    .dl-arch-btn .dl-sub {
+      font-size: 11.5px;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
     .tilt-card {
       position: relative;
       min-width: 0;
@@ -1112,7 +1132,7 @@
         <div>
           <div class="hero-tag">
             <i></i>
-            <span>هسته اختصاصی فعال · نسخه 2.1.1</span>
+            <span>هسته اختصاصی فعال · نسخه 2.2.0</span>
           </div>
 
           <h1>
@@ -1148,7 +1168,7 @@
               <span>تاخیر هسته مرکزی</span>
             </div>
             <div class="tilt-card kpi-box">
-              <strong>نسخه 2.1.1</strong>
+              <strong>نسخه 2.2.0</strong>
               <span>ضدقطعی و رمزنگاری‌شده</span>
             </div>
           </div>
@@ -1351,7 +1371,7 @@
               </span>
             </div>
             <p style="font-size:13.5px;color:var(--text-dim);">
-              وضعیت اشتراک، شمارشگر زنده اعتبار و لینک دانلود مستقیم نسخه 2.1.1 در اختیار شماست.
+              وضعیت اشتراک، شمارشگر زنده اعتبار و لینک‌های دانلود مستقیم نسخه 2.2.0 در اختیار شماست.
             </p>
           </div>
         </div>
@@ -1434,16 +1454,26 @@
           <div class="dash-download-hero">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
               <strong style="font-size:15px;">نسخه نهایی V3X Selfbot</strong>
-              <span style="background:var(--crimson);color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:8px;">v2.1.1</span>
+              <span style="background:var(--crimson);color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:8px;">v2.2.0</span>
             </div>
             <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
-              شامل ساعت زنده افق تهران، ارسال توربو، ارسال چندتایی با حافظه دائمی و اتصال مستقیم بدون فیلترشکن.
+              شامل ساعت زنده افق تهران، ارسال توربو، بهینه‌سازی گوشی‌های ضعیف و اتصال مستقیم بدون فیلترشکن.
             </p>
-            <a href="#" target="_blank" rel="noopener" class="btn btn-crimson" id="apkDownloadBtn" style="width:100%;">
-              ⬇️ دانلود مستقیم فایل نصب (APK)
-            </a>
+
+            <div class="dl-arch-stack">
+              <a href="#" target="_blank" rel="noopener" class="btn btn-crimson dl-arch-btn" id="apkDownloadBtn64">
+                <span>⬇️ دانلود نسخه ۶۴ بیتی (ARM64)</span>
+                <span class="dl-sub">پیشنهادی · مخصوص گوشی‌های جدید (اندروید ۸ به بالا)</span>
+              </a>
+
+              <a href="#" target="_blank" rel="noopener" class="btn btn-glass dl-arch-btn" id="apkDownloadBtn32" style="border-color: rgba(255, 10, 52, 0.35);">
+                <span>⬇️ دانلود نسخه ۳۲ بیتی (ARMv7)</span>
+                <span class="dl-sub">مخصوص گوشی‌های قدیمی، ضعیف و اندروید پایین</span>
+              </a>
+            </div>
+
             <p id="noApkHint" style="display:none;margin-top:10px;font-size:12.5px;color:#fcd34d;text-align:center;">
-              ⚠️ لینک فایل نصب هنوز توسط مدیریت قرار داده نشده است.
+              ⚠️ لینک فایل‌های نصب هنوز توسط مدیریت قرار داده نشده است.
             </p>
           </div>
 
@@ -1501,10 +1531,19 @@
         </div>
 
         <div class="admin-block">
-          <h4>📦 لینک دانلود مستقیم اپلیکیشن (APK)</h4>
-          <input type="url" id="adminApkUrl" placeholder="https://github.com/.../app-release.apk" dir="ltr" />
-          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:10px;">
-            ذخیره سراسری لینک دانلود
+          <h4>📦 لینک‌های دانلود مستقیم اپلیکیشن (APK)</h4>
+          <label for="adminApkUrl64" style="display:block;font-size:12px;color:#fda4af;margin-bottom:5px;font-weight:700;">
+            لینک نسخه ۶۴ بیتی (ARM64 - گوشی‌های جدید):
+          </label>
+          <input type="url" id="adminApkUrl64" placeholder="https://www.mediafire.com/.../V3X-Selfbot-64bit.apk" dir="ltr" style="margin-bottom:10px;" />
+
+          <label for="adminApkUrl32" style="display:block;font-size:12px;color:#94a3b8;margin-bottom:5px;font-weight:700;">
+            لینک نسخه ۳۲ بیتی (ARMv7 - گوشی‌های ضعیف و اندروید پایین):
+          </label>
+          <input type="url" id="adminApkUrl32" placeholder="https://www.mediafire.com/.../V3X-Selfbot-32bit.apk" dir="ltr" />
+
+          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:12px;">
+            ذخیره سراسری هر دو لینک دانلود
           </button>
         </div>
 
@@ -1529,12 +1568,34 @@
     const API_BASE = "https://api.v3xsys.ir";
     const ADMIN_CODE = "krymyhady314";
 
-    let globalDownloadUrl = localStorage.getItem("v3x_dl_url") || "";
+    let globalDownloadUrl64 = "";
+    let globalDownloadUrl32 = "";
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
     let savedUserKey = localStorage.getItem("v3x_user_license") || "";
     let activeLicenseData = null;
     let countdownTimerId = null;
     let isAdminLogged = false;
+
+    function applyPackedDownloadUrls(rawMain, raw32 = "") {
+      const str = String(rawMain || "").trim();
+      if (str.includes("|||")) {
+        const parts = str.split("|||");
+        globalDownloadUrl64 = (parts[0] || "").trim();
+        globalDownloadUrl32 = (parts[1] || raw32 || "").trim();
+      } else {
+        globalDownloadUrl64 = str;
+        if (raw32 !== undefined && raw32 !== null) {
+          globalDownloadUrl32 = String(raw32).trim();
+        }
+      }
+      localStorage.setItem("v3x_dl_url_64", globalDownloadUrl64);
+      localStorage.setItem("v3x_dl_url_32", globalDownloadUrl32);
+    }
+
+    applyPackedDownloadUrls(
+      localStorage.getItem("v3x_dl_url_64") || localStorage.getItem("v3x_dl_url") || "",
+      localStorage.getItem("v3x_dl_url_32") || ""
+    );
 
     // ========================================================
     // ۱. کهکشان زنده سبک و روان بدون لگ اسکرول
@@ -1868,16 +1929,25 @@
     }
 
     function updateDownloadButtonState() {
-      const dlBtn = document.getElementById("apkDownloadBtn");
+      const dlBtn64 = document.getElementById("apkDownloadBtn64");
+      const dlBtn32 = document.getElementById("apkDownloadBtn32");
       const noApkHint = document.getElementById("noApkHint");
-      if (globalDownloadUrl) {
-        dlBtn.href = globalDownloadUrl;
-        dlBtn.style.display = "inline-flex";
-        noApkHint.style.display = "none";
+
+      if (globalDownloadUrl64) {
+        dlBtn64.href = globalDownloadUrl64;
+        dlBtn64.style.display = "flex";
       } else {
-        dlBtn.style.display = "none";
-        noApkHint.style.display = "block";
+        dlBtn64.style.display = "none";
       }
+
+      if (globalDownloadUrl32) {
+        dlBtn32.href = globalDownloadUrl32;
+        dlBtn32.style.display = "flex";
+      } else {
+        dlBtn32.style.display = "none";
+      }
+
+      noApkHint.style.display = (!globalDownloadUrl64 && !globalDownloadUrl32) ? "block" : "none";
     }
 
     function enterDedicatedUserPanel(key, data) {
@@ -2102,9 +2172,8 @@
         const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`);
         const data = await res.json();
         if (data && data.ok) {
-          if (data.download_url !== undefined) {
-            globalDownloadUrl = data.download_url;
-            localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          if (data.download_url !== undefined || data.download_url_32 !== undefined) {
+            applyPackedDownloadUrls(data.download_url, data.download_url_32);
             if (activeLicenseData) updateDownloadButtonState();
           }
           if (data.video_url !== undefined) {
@@ -2121,7 +2190,8 @@
       btn.addEventListener("click", () => {
         adminModal.classList.add("open");
         if (isAdminLogged) {
-          document.getElementById("adminApkUrl").value = globalDownloadUrl;
+          document.getElementById("adminApkUrl64").value = globalDownloadUrl64;
+          document.getElementById("adminApkUrl32").value = globalDownloadUrl32;
           document.getElementById("adminVideoUrl").value = globalVideoUrl;
         }
       });
@@ -2139,7 +2209,8 @@
         errEl.textContent = "";
         document.getElementById("adminLoginView").style.display = "none";
         document.getElementById("adminPanelView").style.display = "block";
-        document.getElementById("adminApkUrl").value = globalDownloadUrl;
+        document.getElementById("adminApkUrl64").value = globalDownloadUrl64;
+        document.getElementById("adminApkUrl32").value = globalDownloadUrl32;
         document.getElementById("adminVideoUrl").value = globalVideoUrl;
       } else {
         errEl.textContent = "❌ رمز مدیریت اشتباه است.";
@@ -2155,21 +2226,29 @@
     });
 
     document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
-      const newUrl = document.getElementById("adminApkUrl").value.trim();
+      const url64 = document.getElementById("adminApkUrl64").value.trim();
+      const url32 = document.getElementById("adminApkUrl32").value.trim();
+      const packedUrl = url32 ? `${url64}|||${url32}` : url64;
       const fb = document.getElementById("adminFeedback");
-      fb.textContent = "در حال ذخیره لینک دانلود...";
+      fb.textContent = "در حال ذخیره لینک‌های دانلود...";
       try {
         const r = await fetch(`${API_BASE}/api/config`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ secret: ADMIN_CODE, download_url: newUrl })
+          body: JSON.stringify({
+            secret: ADMIN_CODE,
+            download_url: packedUrl,
+            download_url_32: url32
+          })
         });
         const d = await r.json();
         if (d.ok) {
-          globalDownloadUrl = d.download_url;
-          localStorage.setItem("v3x_dl_url", globalDownloadUrl);
+          applyPackedDownloadUrls(
+            d.download_url !== undefined ? d.download_url : packedUrl,
+            d.download_url_32 !== undefined ? d.download_url_32 : url32
+          );
           if (activeLicenseData) updateDownloadButtonState();
-          fb.textContent = "✅ لینک دانلود برای تمام دستگاه‌ها ذخیره شد!";
+          fb.textContent = "✅ هر دو لینک دانلود (۶۴ بیت و ۳۲ بیت) برای تمام دستگاه‌ها ذخیره شد!";
         } else {
           fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
         }
