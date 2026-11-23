@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -38,7 +41,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon & Direct Flet 0.25.2 Shim
+      - name: Bundle splusthon & Low-End Android Optimizer
         run: |
           python - << 'EOF'
           import pathlib
@@ -175,7 +178,9 @@ jobs:
           indented_body = "\n".join(("    " + l if l.strip() else "") for l in body_lines)
 
           shim_code = (
-              "import os as _v3x_os, sys as _v3x_sys, traceback as _v3x_tb, inspect as _v3x_inspect\n"
+              "import gc as _v3x_gc, os as _v3x_os, sys as _v3x_sys, time as _v3x_time, threading as _v3x_threading, traceback as _v3x_tb, inspect as _v3x_inspect\n"
+              "# Aggressive GC threshold to prevent RAM spikes on low-end Android phones\n"
+              "_v3x_gc.set_threshold(400, 5, 5)\n\n"
               "_v3x_root = _v3x_os.path.dirname(_v3x_os.path.abspath(__file__))\n"
               "_v3x_vendor = _v3x_os.path.join(_v3x_root, '_vendor')\n"
               "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
@@ -228,15 +233,57 @@ jobs:
               "        page.update()\n"
               "    except Exception:\n"
               "        pass\n\n"
-              "def _v3x_patch_page(page: _v3x_ft.Page):\n"
+              "def _v3x_optimize_page(page: _v3x_ft.Page):\n"
               "    if not hasattr(page, 'show_dialog') and hasattr(page, 'open'):\n"
               "        page.show_dialog = page.open\n"
               "    if not hasattr(page, 'pop_dialog') and hasattr(page, 'close'):\n"
-              "        page.pop_dialog = page.close\n\n"
+              "        page.pop_dialog = page.close\n"
+              "    # Disable heavy page transition animations on low-end Android devices\n"
+              "    try:\n"
+              "        if page.theme is None:\n"
+              "            page.theme = _v3x_ft.Theme()\n"
+              "        page.theme.page_transitions = _v3x_ft.PageTransitionsTheme(\n"
+              "            android=_v3x_ft.PageTransitionTheme.NONE,\n"
+              "            ios=_v3x_ft.PageTransitionTheme.NONE,\n"
+              "        )\n"
+              "    except Exception:\n"
+              "        pass\n"
+              "    # Coalesce rapid burst updates so weak CPUs do not freeze\n"
+              "    _orig_upd = page.update\n"
+              "    _lock = _v3x_threading.Lock()\n"
+              "    _last = [0.0]\n"
+              "    _pending = [False]\n"
+              "    def _flush():\n"
+              "        with _lock:\n"
+              "            _pending[0] = False\n"
+              "            _last[0] = _v3x_time.monotonic()\n"
+              "        try:\n"
+              "            _orig_upd()\n"
+              "        except Exception:\n"
+              "            pass\n"
+              "    def _smart_upd(*u_args, **u_kwargs):\n"
+              "        if u_args or u_kwargs:\n"
+              "            return _orig_upd(*u_args, **u_kwargs)\n"
+              "        now = _v3x_time.monotonic()\n"
+              "        with _lock:\n"
+              "            if now - _last[0] >= 0.065:\n"
+              "                _last[0] = now\n"
+              "                _pending[0] = False\n"
+              "                do_now = True\n"
+              "            else:\n"
+              "                do_now = False\n"
+              "                if not _pending[0]:\n"
+              "                    _pending[0] = True\n"
+              "                    _t = _v3x_threading.Timer(0.065, _flush)\n"
+              "                    _t.daemon = True\n"
+              "                    _t.start()\n"
+              "        if do_now:\n"
+              "            return _orig_upd()\n"
+              "    page.update = _smart_upd\n\n"
               "def _v3x_safe_app(target, *args, **kwargs):\n"
               "    if _v3x_inspect.iscoroutinefunction(target):\n"
               "        async def _w_async(page: _v3x_ft.Page):\n"
-              "            _v3x_patch_page(page)\n"
+              "            _v3x_optimize_page(page)\n"
               "            page.bgcolor = '#0D0D0D'\n"
               "            page.update()\n"
               "            try:\n"
@@ -246,7 +293,7 @@ jobs:
               "        return _v3x_orig_app(_w_async, *args, **kwargs)\n"
               "    else:\n"
               "        def _w_sync(page: _v3x_ft.Page):\n"
-              "            _v3x_patch_page(page)\n"
+              "            _v3x_optimize_page(page)\n"
               "            page.bgcolor = '#0D0D0D'\n"
               "            page.update()\n"
               "            try:\n"
@@ -267,26 +314,23 @@ jobs:
           main_py.write_text(wrapped_main, encoding="utf-8")
           py_compile.compile(str(main_py), doraise=True)
 
-          # Verify shim directly in runner
-          import flet as _test_ft
-          _test_ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: _test_ft.Padding(left=left, top=top, right=right, bottom=bottom))
-          assert _test_ft.Padding.only(top=36, left=14, right=14, bottom=14).top == 36
-          print("Verified Padding.only shim OK!")
-
           reqs = ["flet==0.25.2", "requests"] + sorted(android_wheel_pkgs)
           pathlib.Path("requirements.txt").write_text("\n".join(reqs) + "\n")
           deps_toml = ", ".join(f'"{r}"' for r in reqs)
           pyproject = (
               '[project]\n'
               'name = "v3x-selfbot"\n'
-              'version = "2.1.2"\n'
+              'version = "2.2.0"\n'
               'description = "V3X Selfbot for SoroushPlus"\n'
               'requires-python = ">=3.9"\n'
               f'dependencies = [{deps_toml}]\n\n'
               '[tool.flet]\n'
               'org = "ir.v3xsys"\n'
               'product = "V3X Selfbot"\n'
-              'company = "V3X"\n'
+              'company = "V3X"\n\n'
+              '[tool.flet.android]\n'
+              'min_sdk_version = 21\n'
+              'target_sdk_version = 34\n'
           )
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
@@ -298,7 +342,7 @@ jobs:
           mkdir -p release-apks
           APK_64=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_64"
-          cp "$APK_64" release-apks/V3X-Selfbot-v2.1.2-64bit.apk
+          cp "$APK_64" release-apks/V3X-Selfbot-64bit.apk
 
       - name: Build 32-bit APK (armeabi-v7a)
         run: |
@@ -306,10 +350,22 @@ jobs:
           flet build apk --arch armeabi-v7a --verbose
           APK_32=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_32"
-          cp "$APK_32" release-apks/V3X-Selfbot-v2.1.2-32bit.apk
+          cp "$APK_32" release-apks/V3X-Selfbot-32bit.apk
 
       - name: Upload Both Android APKs
         uses: actions/upload-artifact@v4
         with:
-          name: V3X-Selfbot-v2.1.2-APKs
+          name: V3X-Selfbot-Android-APKs
           path: release-apks/*.apk
+
+      - name: Publish Direct Download Links to Latest Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes || true
+          git push origin :refs/tags/latest || true
+          gh release create latest \
+            release-apks/V3X-Selfbot-64bit.apk \
+            release-apks/V3X-Selfbot-32bit.apk \
+            --title "V3X Selfbot Android (Latest)" \
+            --notes "نسخه رسمی اندروید سلف‌بات V3X — شامل نسخه ۶۴ بیتی و ۳۲ بیتی بهینه‌سازی‌شده"
