@@ -1,205 +1,52 @@
-name: Build V3X Selfbot APK (Android 7+ Universal)
+name: Build V3X Android APK
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Set up Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
-          java-version: "17"
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Set up Flutter 3.47.9
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.47.9"
-          channel: "stable"
+          flutter-version: '3.24.5'
+          channel: 'stable'
 
-      - name: Install Linux Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libglu1-mesa xz-utils unzip zip curl
-
-      - name: Configure Android SDK, NDK & Doctor Guard
-        run: |
-          git config --global --add safe.directory '*'
-          SYS_SDK="/usr/local/lib/android/sdk"
-          sudo chown -R $(whoami):$(whoami) "$SYS_SDK"
-
-          SDKMANAGER=$(find "$SYS_SDK/cmdline-tools" -name "sdkmanager" | head -n 1)
-          yes | "$SDKMANAGER" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
-          "$SDKMANAGER" --sdk_root="$SYS_SDK" \
-            "cmdline-tools;latest" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "platforms;android-35" \
-            "build-tools;34.0.0" \
-            "build-tools;35.0.0" \
-            "ndk;26.1.10909125" || true
-          yes | "$SYS_SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SYS_SDK" --licenses > /dev/null 2>&1 || true
-
-          echo "ANDROID_HOME=$SYS_SDK" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$SYS_SDK" >> $GITHUB_ENV
-          echo "GRADLE_OPTS=-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> $GITHUB_ENV
-
-          flutter config --no-analytics
-          flutter config --jdk-dir "$JAVA_HOME"
-          flutter precache --android
-          yes | flutter doctor --android-licenses > /dev/null 2>&1 || true
-
-          FLUTTER_BIN=$(readlink -f "$(which flutter)")
-          if [ ! -f "${FLUTTER_BIN}.real" ]; then
-            mv "$FLUTTER_BIN" "${FLUTTER_BIN}.real"
-            cat << 'EOF' > "$FLUTTER_BIN"
-          #!/usr/bin/env bash
-          REAL_BIN="$(dirname "$0")/flutter.real"
-          SYS_SDK="/usr/local/lib/android/sdk"
-
-          if [[ " $* " == *" doctor "* ]]; then
-            TARGET_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$SYS_SDK}}"
-            if [ -n "$TARGET_SDK" ] && [ "$TARGET_SDK" != "$SYS_SDK" ]; then
-              mkdir -p "$TARGET_SDK/licenses"
-              cp -rn "$SYS_SDK/licenses/"* "$TARGET_SDK/licenses/" 2>/dev/null || true
-              for sub in platforms build-tools platform-tools ndk; do
-                if [ ! -e "$TARGET_SDK/$sub" ] && [ -e "$SYS_SDK/$sub" ]; then
-                  ln -sfn "$SYS_SDK/$sub" "$TARGET_SDK/$sub"
-                fi
-              done
-              if [ ! -x "$TARGET_SDK/cmdline-tools/latest/bin/sdkmanager" ] && [ -d "$SYS_SDK/cmdline-tools" ]; then
-                mkdir -p "$TARGET_SDK/cmdline-tools"
-                rm -rf "$TARGET_SDK/cmdline-tools/latest"
-                LATEST_TOOLS=$(find "$SYS_SDK/cmdline-tools" -maxdepth 1 -mindepth 1 -type d | head -n 1)
-                ln -sfn "$LATEST_TOOLS" "$TARGET_SDK/cmdline-tools/latest"
-              fi
-            fi
-
-            yes | "$REAL_BIN" doctor --android-licenses >/dev/null 2>&1 || true
-            "$REAL_BIN" "$@" 2>&1 | tee /tmp/flutter_doctor_last.txt
-            if grep -qE "\[✗\] (Flutter|Android toolchain)" /tmp/flutter_doctor_last.txt; then
-              cat /tmp/flutter_doctor_last.txt >&2
-              exit 1
-            fi
-            exit 0
-          fi
-
-          exec "$REAL_BIN" "$@"
-          EOF
-            chmod +x "$FLUTTER_BIN"
-          fi
-
-      - name: Prepare Android 7+ Config & Clean Dependencies
+      - name: Install Flet CLI
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "flet[all]" requests httpx
-          FLET_VER=$(python -c "import importlib.metadata; print(importlib.metadata.version('flet'))")
+          pip install "flet>=0.24.1"
 
-          if [ -f requirements.txt ]; then
-            grep -viE "^(flet|requests|httpx|fastapi|uvicorn|psycopg2|uvloop|httptools|watchfiles|gunicorn|pyinstaller|pip|setuptools|wheel)" requirements.txt > extra_reqs.txt || true
-          else
-            touch extra_reqs.txt
-          fi
-          printf "flet==%s\nrequests\nhttpx\n" "$FLET_VER" > requirements.txt
-          cat extra_reqs.txt >> requirements.txt
-          rm -f extra_reqs.txt
-
-          # تنظیم رسمی حداقل نسخه اندروید 7.0 (API 24) و نسخه هدف 34
-          cat << EOF > pyproject.toml
-          [project]
-          name = "v3x_selfbot"
-          version = "2.1.1"
-          description = "V3X Selfbot for SoroushPlus"
-          requires-python = ">=3.9"
-          dependencies = [
-            "flet==$FLET_VER",
-            "requests",
-            "httpx",
-          ]
-
-          [tool.flet]
-          org = "ir.v3xsys"
-          product = "V3X Selfbot"
-          company = "V3XSYS"
-
-          [tool.flet.android]
-          min_sdk_version = 24
-          target_sdk_version = 34
-          split_per_abi = false
-          EOF
-
-          cat pyproject.toml
-
-      - name: Build Universal APK (Android 7+ | 32-bit & 64-bit)
+      - name: Ensure splusthon is bundled
         run: |
-          rm -rf build
-          python - << 'EOF'
-          import sys, traceback
-          import flet_cli.cli
-
-          orig_exit = sys.exit
-          def traced_exit(code=0):
-              if code not in (0, None):
-                  print(f"\n=== FLET CLI EXITED WITH CODE {code} ===", file=sys.stderr)
-                  traceback.print_stack(file=sys.stderr)
-              orig_exit(code)
-
-          sys.exit = traced_exit
-          sys.argv = [
-              "flet", "build", "apk",
-              "--arch", "arm64-v8a", "armeabi-v7a",
-              "--project", "v3x_selfbot",
-              "--product", "V3X Selfbot",
-              "--org", "ir.v3xsys",
-              "--build-version", "2.1.1",
-              "--yes",
-              "-vv"
-          ]
-          try:
-              flet_cli.cli.main()
-          except SystemExit:
-              raise
-          except Exception:
-              traceback.print_exc()
-              orig_exit(1)
-          EOF
-
-      - name: Prepare APK for Release
-        run: |
-          mkdir -p release_apk
-          APK_FILE=$(find build -type f -name "*release*.apk" | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find build -type f -name "*.apk" | head -n 1)
+          if [ ! -d "splusthon" ] && [ ! -f "splusthon.py" ]; then
+            grep -qxF "splusthon" requirements.txt || echo "splusthon" >> requirements.txt
           fi
-          echo "Built APK: $APK_FILE"
-          test -s "$APK_FILE"
-          cp "$APK_FILE" release_apk/V3X-Selfbot-v2.1.1.apk
+
+      - name: Build Universal APK (32-bit & 64-bit)
+        run: |
+          flet build apk --arch arm64-v8a --arch armeabi-v7a --verbose
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: V3X-Selfbot-v2.1.1-APK
-          path: release_apk/V3X-Selfbot-v2.1.1.apk
-
-      - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v2.1.1
-          name: V3X Selfbot v2.1.1 (Android 7+ | 32 & 64 Bit)
-          files: release_apk/V3X-Selfbot-v2.1.1.apk
+          name: V3X-Selfbot-Universal-APK
+          path: build/apk/*.apk
