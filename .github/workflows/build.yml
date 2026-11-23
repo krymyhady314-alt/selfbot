@@ -38,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon & dependencies for Android
+      - name: Bundle splusthon & Flet compatibility layer
         run: |
           python - << 'EOF'
           import pathlib
@@ -52,7 +52,6 @@ jobs:
               raise FileNotFoundError("main.py not found!")
           py_compile.compile(str(main_py), doraise=True)
 
-          # Only packages actually bundled inside Android Flet client runtime
           android_flet_dists = {
               "flet", "flet-core", "httpx", "httpcore", "anyio",
               "certifi", "h11", "idna", "sniffio", "repath", "typing-extensions",
@@ -129,11 +128,8 @@ jobs:
                       text=True,
                   )
                   if probe.returncode == 0:
-                      print(f"Android wheel verified: {dist_name}")
                       android_wheel_pkgs.add(dist_name)
                       skip_top_items.update(rec_tops)
-                  else:
-                      print(f"No Android wheel for {dist_name}, keeping pure-Python fallback if available")
 
           vendor_dir = pathlib.Path("_vendor")
           if vendor_dir.exists():
@@ -157,10 +153,8 @@ jobs:
                       dest,
                       ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.so", "*.pyd", "*.dll", "*.dylib"),
                   )
-                  print(f"Vendored dir: _vendor/{name}")
               elif item.is_file() and item.suffix == ".py":
                   shutil.copy2(item, dest)
-                  print(f"Vendored file: _vendor/{name}")
 
           for bad in list(vendor_dir.rglob("*")):
               if bad.is_file() and bad.suffix in (".so", ".pyd", ".dll", ".dylib"):
@@ -169,7 +163,6 @@ jobs:
           if not ((vendor_dir / "splusthon").is_dir() or (vendor_dir / "splusthon.py").is_file()):
               raise RuntimeError("splusthon missing from _vendor!")
 
-          # Keep main.py in place, preserve __future__ imports, prevent white screen & catch errors
           raw_lines = main_py.read_text(encoding="utf-8").splitlines()
           future_lines = []
           body_lines = []
@@ -187,7 +180,34 @@ jobs:
               "_v3x_vendor = _v3x_os.path.join(_v3x_root, '_vendor')\n"
               "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
               "    _v3x_sys.path.append(_v3x_vendor)\n\n"
-              "import flet as _v3x_ft\n"
+              "import flet as _v3x_ft\n\n"
+              "# Bridge Flet 1.x capitalized helpers to Flet 0.25.2\n"
+              "if hasattr(_v3x_ft, 'padding') and hasattr(_v3x_ft, 'Padding'):\n"
+              "    for _m in ('only', 'all', 'symmetric'):\n"
+              "        if not hasattr(_v3x_ft.Padding, _m) and hasattr(_v3x_ft.padding, _m):\n"
+              "            setattr(_v3x_ft.Padding, _m, staticmethod(getattr(_v3x_ft.padding, _m)))\n"
+              "if hasattr(_v3x_ft, 'margin') and hasattr(_v3x_ft, 'Margin'):\n"
+              "    for _m in ('only', 'all', 'symmetric'):\n"
+              "        if not hasattr(_v3x_ft.Margin, _m) and hasattr(_v3x_ft.margin, _m):\n"
+              "            setattr(_v3x_ft.Margin, _m, staticmethod(getattr(_v3x_ft.margin, _m)))\n"
+              "if hasattr(_v3x_ft, 'border') and hasattr(_v3x_ft, 'Border'):\n"
+              "    for _m in ('only', 'all', 'symmetric'):\n"
+              "        if not hasattr(_v3x_ft.Border, _m) and hasattr(_v3x_ft.border, _m):\n"
+              "            setattr(_v3x_ft.Border, _m, staticmethod(getattr(_v3x_ft.border, _m)))\n"
+              "if hasattr(_v3x_ft, 'border_radius') and hasattr(_v3x_ft, 'BorderRadius'):\n"
+              "    for _m in ('only', 'all', 'horizontal', 'vertical'):\n"
+              "        if not hasattr(_v3x_ft.BorderRadius, _m) and hasattr(_v3x_ft.border_radius, _m):\n"
+              "            setattr(_v3x_ft.BorderRadius, _m, staticmethod(getattr(_v3x_ft.border_radius, _m)))\n"
+              "if hasattr(_v3x_ft, 'alignment') and hasattr(_v3x_ft, 'Alignment'):\n"
+              "    for _attr in dir(_v3x_ft.alignment):\n"
+              "        if not _attr.startswith('_'):\n"
+              "            _val = getattr(_v3x_ft.alignment, _attr)\n"
+              "            if not hasattr(_v3x_ft.Alignment, _attr):\n"
+              "                setattr(_v3x_ft.Alignment, _attr, _val)\n"
+              "            if not hasattr(_v3x_ft.Alignment, _attr.upper()):\n"
+              "                setattr(_v3x_ft.Alignment, _attr.upper(), _val)\n"
+              "if not hasattr(_v3x_ft, 'Button') and hasattr(_v3x_ft, 'ElevatedButton'):\n"
+              "    _v3x_ft.Button = _v3x_ft.ElevatedButton\n\n"
               "_v3x_orig_app = _v3x_ft.app\n\n"
               "def _v3x_show_err(page: _v3x_ft.Page, title: str, err: str):\n"
               "    try:\n"
@@ -202,9 +222,15 @@ jobs:
               "        page.update()\n"
               "    except Exception:\n"
               "        pass\n\n"
+              "def _v3x_patch_page(page: _v3x_ft.Page):\n"
+              "    if not hasattr(page, 'show_dialog') and hasattr(page, 'open'):\n"
+              "        page.show_dialog = page.open\n"
+              "    if not hasattr(page, 'pop_dialog') and hasattr(page, 'close'):\n"
+              "        page.pop_dialog = page.close\n\n"
               "def _v3x_safe_app(target, *args, **kwargs):\n"
               "    if _v3x_inspect.iscoroutinefunction(target):\n"
               "        async def _w_async(page: _v3x_ft.Page):\n"
+              "            _v3x_patch_page(page)\n"
               "            page.bgcolor = '#0D0D0D'\n"
               "            page.update()\n"
               "            try:\n"
@@ -214,6 +240,7 @@ jobs:
               "        return _v3x_orig_app(_w_async, *args, **kwargs)\n"
               "    else:\n"
               "        def _w_sync(page: _v3x_ft.Page):\n"
+              "            _v3x_patch_page(page)\n"
               "            page.bgcolor = '#0D0D0D'\n"
               "            page.update()\n"
               "            try:\n"
@@ -250,7 +277,6 @@ jobs:
               'company = "V3X"\n'
           )
           pathlib.Path("pyproject.toml").write_text(pyproject)
-          print("Final Android requirements:", reqs)
           EOF
 
       - name: Build 64-bit APK (arm64-v8a)
