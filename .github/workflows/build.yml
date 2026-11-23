@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -37,6 +37,93 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
+
+      - name: Vendor splusthon for Android
+        run: |
+          python - << 'EOF'
+          import pathlib, shutil, subprocess, sys
+
+          pkg_dir = pathlib.Path("/tmp/splusthon_vendor")
+          pkg_dir.mkdir(parents=True, exist_ok=True)
+
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--no-cache-dir",
+              "--ignore-requires-python",
+              "--target", str(pkg_dir),
+              "splusthon"
+          ])
+
+          skip_prefixes = ("flet", "pip", "setuptools", "wheel", "pkg_resources", "_distutils_hack", "bin")
+          compiled_pkgs = set()
+
+          for dist_info in pkg_dir.glob("*.dist-info"):
+              dist_name = dist_info.name.split("-")[0].replace("_", "-")
+              if dist_name.lower().startswith(skip_prefixes):
+                  continue
+              meta_file = dist_info / "METADATA"
+              if meta_file.exists():
+                  for line in meta_file.read_text(errors="ignore").splitlines():
+                      if line.startswith("Name: "):
+                          dist_name = line.split(":", 1)[1].strip()
+                          break
+              top_file = dist_info / "top_level.txt"
+              top_names = [t.strip() for t in top_file.read_text(errors="ignore").splitlines() if t.strip()] if top_file.exists() else [dist_name.replace("-", "_")]
+
+              has_so = False
+              for tn in top_names:
+                  t = pkg_dir / tn
+                  if (t.is_dir() and any(t.rglob("*.so"))) or any(pkg_dir.glob(f"{tn}*.so")):
+                      has_so = True
+
+              if has_so:
+                  compiled_pkgs.add(dist_name)
+                  for tn in top_names:
+                      t = pkg_dir / tn
+                      if t.is_dir():
+                          shutil.rmtree(t, ignore_errors=True)
+                      for so_f in pkg_dir.glob(f"{tn}*.so"):
+                          so_f.unlink(missing_ok=True)
+
+          root = pathlib.Path(".")
+          for item in pkg_dir.iterdir():
+              if item.name.endswith((".dist-info", ".egg-info")) or item.name in ("bin", "__pycache__"):
+                  continue
+              if item.name.lower().startswith(skip_prefixes):
+                  continue
+              dest = root / item.name
+              if item.is_dir():
+                  if dest.exists():
+                      shutil.rmtree(dest)
+                  shutil.copytree(item, dest)
+                  print(f"Bundled directory: {item.name}")
+              elif item.is_file() and item.suffix == ".py":
+                  shutil.copy2(item, dest)
+                  print(f"Bundled module: {item.name}")
+
+          reqs = ["flet==0.25.2"] + sorted(compiled_pkgs)
+          pathlib.Path("requirements.txt").write_text("\n".join(reqs) + "\n")
+
+          deps_toml = ", ".join(f'"{r}"' for r in reqs)
+          pyproject = f'''[project]
+          name = "v3x-selfbot"
+          version = "2.1.1"
+          description = "V3X Selfbot for SoroushPlus"
+          requires-python = ">=3.9"
+          dependencies = [{deps_toml}]
+
+          [tool.flet]
+          org = "ir.v3xsys"
+          product = "V3X Selfbot"
+          company = "V3X"
+
+          [tool.flet.android]
+          min_sdk_version = 24
+          target_sdk_version = 34
+          '''
+          pathlib.Path("pyproject.toml").write_text("\n".join(line.lstrip() for line in pyproject.splitlines()) + "\n")
+          print("Final Android dependencies:", reqs)
+          EOF
 
       - name: Build Universal APK (32-bit & 64-bit)
         run: |
