@@ -38,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon & Flet compatibility layer
+      - name: Bundle splusthon & Direct Flet 0.25.2 Shim
         run: |
           python - << 'EOF'
           import pathlib
@@ -174,40 +174,46 @@ jobs:
 
           indented_body = "\n".join(("    " + l if l.strip() else "") for l in body_lines)
 
-          wrapped_main = "\n".join(future_lines) + ("\n" if future_lines else "") + (
+          shim_code = (
               "import os as _v3x_os, sys as _v3x_sys, traceback as _v3x_tb, inspect as _v3x_inspect\n"
               "_v3x_root = _v3x_os.path.dirname(_v3x_os.path.abspath(__file__))\n"
               "_v3x_vendor = _v3x_os.path.join(_v3x_root, '_vendor')\n"
               "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
               "    _v3x_sys.path.append(_v3x_vendor)\n\n"
               "import flet as _v3x_ft\n\n"
-              "# Bridge Flet 1.x capitalized helpers to Flet 0.25.2\n"
-              "if hasattr(_v3x_ft, 'padding') and hasattr(_v3x_ft, 'Padding'):\n"
-              "    for _m in ('only', 'all', 'symmetric'):\n"
-              "        if not hasattr(_v3x_ft.Padding, _m) and hasattr(_v3x_ft.padding, _m):\n"
-              "            setattr(_v3x_ft.Padding, _m, staticmethod(getattr(_v3x_ft.padding, _m)))\n"
-              "if hasattr(_v3x_ft, 'margin') and hasattr(_v3x_ft, 'Margin'):\n"
-              "    for _m in ('only', 'all', 'symmetric'):\n"
-              "        if not hasattr(_v3x_ft.Margin, _m) and hasattr(_v3x_ft.margin, _m):\n"
-              "            setattr(_v3x_ft.Margin, _m, staticmethod(getattr(_v3x_ft.margin, _m)))\n"
-              "if hasattr(_v3x_ft, 'border') and hasattr(_v3x_ft, 'Border'):\n"
-              "    for _m in ('only', 'all', 'symmetric'):\n"
-              "        if not hasattr(_v3x_ft.Border, _m) and hasattr(_v3x_ft.border, _m):\n"
-              "            setattr(_v3x_ft.Border, _m, staticmethod(getattr(_v3x_ft.border, _m)))\n"
-              "if hasattr(_v3x_ft, 'border_radius') and hasattr(_v3x_ft, 'BorderRadius'):\n"
-              "    for _m in ('only', 'all', 'horizontal', 'vertical'):\n"
-              "        if not hasattr(_v3x_ft.BorderRadius, _m) and hasattr(_v3x_ft.border_radius, _m):\n"
-              "            setattr(_v3x_ft.BorderRadius, _m, staticmethod(getattr(_v3x_ft.border_radius, _m)))\n"
-              "if hasattr(_v3x_ft, 'alignment') and hasattr(_v3x_ft, 'Alignment'):\n"
-              "    for _attr in dir(_v3x_ft.alignment):\n"
-              "        if not _attr.startswith('_'):\n"
-              "            _val = getattr(_v3x_ft.alignment, _attr)\n"
-              "            if not hasattr(_v3x_ft.Alignment, _attr):\n"
-              "                setattr(_v3x_ft.Alignment, _attr, _val)\n"
-              "            if not hasattr(_v3x_ft.Alignment, _attr.upper()):\n"
-              "                setattr(_v3x_ft.Alignment, _attr.upper(), _val)\n"
-              "if not hasattr(_v3x_ft, 'Button') and hasattr(_v3x_ft, 'ElevatedButton'):\n"
-              "    _v3x_ft.Button = _v3x_ft.ElevatedButton\n\n"
+              "# Direct constructors for Flet 1.x helper methods on Flet 0.25.2 classes\n"
+              "_v3x_ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: _v3x_ft.Padding(left=left, top=top, right=right, bottom=bottom))\n"
+              "_v3x_ft.Padding.all = staticmethod(lambda value: _v3x_ft.Padding(left=value, top=value, right=value, bottom=value))\n"
+              "_v3x_ft.Padding.symmetric = staticmethod(lambda vertical=0, horizontal=0: _v3x_ft.Padding(left=horizontal, top=vertical, right=horizontal, bottom=vertical))\n"
+              "_v3x_ft.Padding.zero = staticmethod(lambda: _v3x_ft.Padding(0, 0, 0, 0))\n\n"
+              "_v3x_ft.Margin.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: _v3x_ft.Margin(left=left, top=top, right=right, bottom=bottom))\n"
+              "_v3x_ft.Margin.all = staticmethod(lambda value: _v3x_ft.Margin(left=value, top=value, right=value, bottom=value))\n"
+              "_v3x_ft.Margin.symmetric = staticmethod(lambda vertical=0, horizontal=0: _v3x_ft.Margin(left=horizontal, top=vertical, right=horizontal, bottom=vertical))\n"
+              "_v3x_ft.Margin.zero = staticmethod(lambda: _v3x_ft.Margin(0, 0, 0, 0))\n\n"
+              "_v3x_ft.Border.all = staticmethod(lambda width=1, color=None: _v3x_ft.Border(top=_v3x_ft.BorderSide(width, color), right=_v3x_ft.BorderSide(width, color), bottom=_v3x_ft.BorderSide(width, color), left=_v3x_ft.BorderSide(width, color)))\n"
+              "_v3x_ft.Border.only = staticmethod(lambda left=None, top=None, right=None, bottom=None: _v3x_ft.Border(left=left, top=top, right=right, bottom=bottom))\n"
+              "_v3x_ft.Border.symmetric = staticmethod(lambda vertical=None, horizontal=None: _v3x_ft.Border(top=vertical, bottom=vertical, left=horizontal, right=horizontal))\n\n"
+              "_v3x_ft.BorderRadius.all = staticmethod(lambda value: _v3x_ft.BorderRadius(top_left=value, top_right=value, bottom_left=value, bottom_right=value))\n"
+              "_v3x_ft.BorderRadius.only = staticmethod(lambda top_left=0, top_right=0, bottom_left=0, bottom_right=0: _v3x_ft.BorderRadius(top_left=top_left, top_right=top_right, bottom_left=bottom_left, bottom_right=bottom_right))\n"
+              "_v3x_ft.BorderRadius.horizontal = staticmethod(lambda left=0, right=0: _v3x_ft.BorderRadius(top_left=left, bottom_left=left, top_right=right, bottom_right=right))\n"
+              "_v3x_ft.BorderRadius.vertical = staticmethod(lambda top=0, bottom=0: _v3x_ft.BorderRadius(top_left=top, top_right=top, bottom_left=bottom, bottom_right=bottom))\n\n"
+              "_v3x_aligns = {\n"
+              "    'CENTER': (0, 0), 'TOP_LEFT': (-1, -1), 'TOP_CENTER': (0, -1), 'TOP_RIGHT': (1, -1),\n"
+              "    'CENTER_LEFT': (-1, 0), 'CENTER_RIGHT': (1, 0), 'BOTTOM_LEFT': (-1, 1), 'BOTTOM_CENTER': (0, 1), 'BOTTOM_RIGHT': (1, 1)\n"
+              "}\n"
+              "for _k, (_ax, _ay) in _v3x_aligns.items():\n"
+              "    setattr(_v3x_ft.Alignment, _k, _v3x_ft.Alignment(_ax, _ay))\n"
+              "    setattr(_v3x_ft.Alignment, _k.lower(), _v3x_ft.Alignment(_ax, _ay))\n\n"
+              "if not hasattr(_v3x_ft, 'Button'):\n"
+              "    def _v3x_btn(*args, **kwargs):\n"
+              "        if args and not isinstance(args[0], str) and 'content' not in kwargs:\n"
+              "            kwargs['content'] = args[0]\n"
+              "            args = args[1:]\n"
+              "        return _v3x_ft.ElevatedButton(*args, **kwargs)\n"
+              "    _v3x_ft.Button = _v3x_btn\n\n"
+          )
+
+          wrapped_main = "\n".join(future_lines) + ("\n" if future_lines else "") + shim_code + (
               "_v3x_orig_app = _v3x_ft.app\n\n"
               "def _v3x_show_err(page: _v3x_ft.Page, title: str, err: str):\n"
               "    try:\n"
@@ -261,13 +267,19 @@ jobs:
           main_py.write_text(wrapped_main, encoding="utf-8")
           py_compile.compile(str(main_py), doraise=True)
 
+          # Verify shim directly in runner
+          import flet as _test_ft
+          _test_ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: _test_ft.Padding(left=left, top=top, right=right, bottom=bottom))
+          assert _test_ft.Padding.only(top=36, left=14, right=14, bottom=14).top == 36
+          print("Verified Padding.only shim OK!")
+
           reqs = ["flet==0.25.2", "requests"] + sorted(android_wheel_pkgs)
           pathlib.Path("requirements.txt").write_text("\n".join(reqs) + "\n")
           deps_toml = ", ".join(f'"{r}"' for r in reqs)
           pyproject = (
               '[project]\n'
               'name = "v3x-selfbot"\n'
-              'version = "2.1.1"\n'
+              'version = "2.1.2"\n'
               'description = "V3X Selfbot for SoroushPlus"\n'
               'requires-python = ">=3.9"\n'
               f'dependencies = [{deps_toml}]\n\n'
@@ -286,7 +298,7 @@ jobs:
           mkdir -p release-apks
           APK_64=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_64"
-          cp "$APK_64" release-apks/V3X-Selfbot-64bit-arm64.apk
+          cp "$APK_64" release-apks/V3X-Selfbot-v2.1.2-64bit.apk
 
       - name: Build 32-bit APK (armeabi-v7a)
         run: |
@@ -294,10 +306,10 @@ jobs:
           flet build apk --arch armeabi-v7a --verbose
           APK_32=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_32"
-          cp "$APK_32" release-apks/V3X-Selfbot-32bit-armeabi-v7a.apk
+          cp "$APK_32" release-apks/V3X-Selfbot-v2.1.2-32bit.apk
 
       - name: Upload Both Android APKs
         uses: actions/upload-artifact@v4
         with:
-          name: V3X-Selfbot-Android-APKs
+          name: V3X-Selfbot-v2.1.2-APKs
           path: release-apks/*.apk
