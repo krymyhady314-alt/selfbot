@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.12 (matches Android runtime)
+      - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -38,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Package splusthon safely into _vendor & add Crash Guard
+      - name: Bundle splusthon into _vendor cleanly
         run: |
           python - << 'EOF'
           import importlib.metadata
@@ -47,15 +47,13 @@ jobs:
           import shutil
           import subprocess
           import sys
-          import textwrap
 
-          # 1. Verify main.py exists and has valid Python syntax
           main_py = pathlib.Path("main.py")
           if not main_py.exists():
-              raise FileNotFoundError("main.py not found in repository root!")
+              raise FileNotFoundError("main.py not found!")
           py_compile.compile(str(main_py), doraise=True)
 
-          # 2. Record all packages & modules already installed with flet==0.25.2
+          # Identify all modules already provided by flet==0.25.2
           flet_env_tops = set(sys.stdlib_module_names)
           flet_env_dists = set()
           for dist in importlib.metadata.distributions():
@@ -75,7 +73,6 @@ jobs:
                       elif not p0.endswith((".dist-info", ".egg-info", ".data")):
                           flet_env_tops.add(p0)
 
-          # 3. Install splusthon into an isolated temp directory
           pkg_dir = pathlib.Path("/tmp/splusthon_vendor")
           if pkg_dir.exists():
               shutil.rmtree(pkg_dir)
@@ -88,15 +85,6 @@ jobs:
               "splusthon",
           ])
 
-          for di in pkg_dir.glob("splusthon*.dist-info"):
-              meta = di / "METADATA"
-              if meta.exists():
-                  print("=== splusthon METADATA ===")
-                  for line in meta.read_text(errors="ignore").splitlines():
-                      if line.startswith(("Name:", "Version:", "Requires-Python:", "Requires-Dist:")):
-                          print(" ", line)
-
-          # 4. Separate Flet-provided dists, native-binary dists, and pure-Python dists
           skip_dists = flet_env_dists | {"pip", "setuptools", "wheel", "distribute", "pkg-resources"}
           compiled_android_reqs = set()
           skip_top_items = set()
@@ -134,17 +122,14 @@ jobs:
                           has_native = True
 
               if norm_name in skip_dists:
-                  print(f"Skipping Flet-provided dist: {dist_name}")
                   skip_top_items.update(rec_tops)
                   continue
 
               if has_native:
-                  print(f"Native dist -> Android wheel requirement: {dist_name}")
                   compiled_android_reqs.add(dist_name)
                   skip_top_items.update(rec_tops)
                   continue
 
-          # 5. Copy ONLY pure-Python, non-conflicting packages into _vendor/
           vendor_dir = pathlib.Path("_vendor")
           if vendor_dir.exists():
               shutil.rmtree(vendor_dir)
@@ -158,7 +143,6 @@ jobs:
                   continue
               base_mod = name[:-3] if name.endswith(".py") else name
               if base_mod in flet_env_tops and base_mod != "splusthon":
-                  print(f"Skipping protected module: {name}")
                   continue
 
               dest = vendor_dir / name
@@ -168,26 +152,33 @@ jobs:
                       dest,
                       ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", "*.so", "*.pyd", "*.dll", "*.dylib"),
                   )
-                  print(f"Vendored dir: _vendor/{name}")
               elif item.is_file() and item.suffix == ".py":
                   shutil.copy2(item, dest)
-                  print(f"Vendored file: _vendor/{name}")
 
-          # Final safety sweep: guarantee ZERO compiled x86_64 binaries inside _vendor/
           for bad in list(vendor_dir.rglob("*")):
               if bad.is_file() and bad.suffix in (".so", ".pyd", ".dll", ".dylib"):
                   bad.unlink()
-                  print(f"Removed stray binary: {bad}")
 
           if not ((vendor_dir / "splusthon").is_dir() or (vendor_dir / "splusthon.py").is_file()):
               raise RuntimeError("splusthon was not found in _vendor!")
 
-          # Smoke test: verify flet still imports cleanly with _vendor on sys.path
+          # Prepend 4-line _vendor path hook at the top of main.py without altering app structure
+          orig_code = main_py.read_text(encoding="utf-8")
+          hook = (
+              "import os as _v3x_os, sys as _v3x_sys\n"
+              "_v3x_vendor = _v3x_os.path.join(_v3x_os.path.dirname(_v3x_os.path.abspath(__file__)), '_vendor')\n"
+              "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
+              "    _v3x_sys.path.append(_v3x_vendor)\n\n"
+          )
+          main_py.write_text(hook + orig_code, encoding="utf-8")
+          py_compile.compile(str(main_py), doraise=True)
+
+          # Verify both flet and splusthon import cleanly
           sys.path.append(str(vendor_dir.resolve()))
           import flet
-          print("Smoke test OK -> flet:", flet.__file__)
+          import splusthon
+          print("Verified imports OK -> flet:", flet.__file__, "| splusthon:", splusthon.__file__)
 
-          # 6. Write clean requirements.txt and pyproject.toml
           reqs = ["flet==0.25.2", "requests"]
           for pkg in sorted(compiled_android_reqs):
               if pkg.lower().replace("_", "-") not in {"flet", "requests", "httpx", "httpcore", "anyio"}:
@@ -208,75 +199,28 @@ jobs:
               'company = "V3X"\n'
           )
           pathlib.Path("pyproject.toml").write_text(pyproject)
-          print("Final Android requirements:", reqs)
-
-          # 7. Wrap main.py so _vendor is loaded safely & any Python error shows on screen
-          shutil.move("main.py", "_v3x_app.py")
-          launcher = textwrap.dedent("""\
-              import inspect
-              import os
-              import runpy
-              import sys
-              import traceback
-
-              _ROOT = os.path.dirname(os.path.abspath(__file__))
-              _VENDOR = os.path.join(_ROOT, "_vendor")
-              if os.path.isdir(_VENDOR) and _VENDOR not in sys.path:
-                  sys.path.append(_VENDOR)
-
-              import flet as ft
-
-              _orig_app = ft.app
-
-              def _render_error(page: ft.Page, title: str, err: str):
-                  page.clean()
-                  page.title = title
-                  page.bgcolor = "#0D0D0D"
-                  page.scroll = ft.ScrollMode.AUTO
-                  page.padding = 16
-                  page.add(
-                      ft.Text(title, color="#FF3B30", size=18, weight=ft.FontWeight.BOLD),
-                      ft.Text(err, color="#FFFFFF", size=12, selectable=True),
-                  )
-                  page.update()
-
-              def _safe_app(target, *args, **kwargs):
-                  if inspect.iscoroutinefunction(target):
-                      async def _wrapped_async(page: ft.Page):
-                          try:
-                              return await target(page)
-                          except Exception:
-                              _render_error(page, "V3X Runtime Error", traceback.format_exc())
-                      return _orig_app(_wrapped_async, *args, **kwargs)
-                  else:
-                      def _wrapped_sync(page: ft.Page):
-                          try:
-                              return target(page)
-                          except Exception:
-                              _render_error(page, "V3X Runtime Error", traceback.format_exc())
-                      return _orig_app(_wrapped_sync, *args, **kwargs)
-
-              ft.app = _safe_app
-
-              try:
-                  runpy.run_path(os.path.join(_ROOT, "_v3x_app.py"), run_name="__main__")
-              except SystemExit:
-                  raise
-              except Exception:
-                  _err = traceback.format_exc()
-                  _orig_app(lambda page: _render_error(page, "V3X Startup Error", _err))
-          """)
-          pathlib.Path("main.py").write_text(launcher)
-          py_compile.compile("main.py", doraise=True)
-          print("Crash Guard launcher generated & verified OK")
+          print("Final requirements:", reqs)
           EOF
 
-      - name: Build Universal APK (32-bit & 64-bit)
+      - name: Build 64-bit APK (arm64-v8a)
         run: |
-          flet build apk --arch arm64-v8a --arch armeabi-v7a --verbose
+          rm -rf build
+          flet build apk --arch arm64-v8a --verbose
+          mkdir -p release-apks
+          APK_64=$(find build/apk -name "*.apk" | head -n 1)
+          test -n "$APK_64"
+          cp "$APK_64" release-apks/V3X-Selfbot-64bit-arm64.apk
 
-      - name: Upload APK Artifact
+      - name: Build 32-bit APK (armeabi-v7a)
+        run: |
+          rm -rf build
+          flet build apk --arch armeabi-v7a --verbose
+          APK_32=$(find build/apk -name "*.apk" | head -n 1)
+          test -n "$APK_32"
+          cp "$APK_32" release-apks/V3X-Selfbot-32bit-armeabi-v7a.apk
+
+      - name: Upload Both Android APKs
         uses: actions/upload-artifact@v4
         with:
-          name: V3X-Selfbot-Universal-APK
-          path: build/apk/*.apk
+          name: V3X-Selfbot-Android-APKs
+          path: release-apks/*.apk
