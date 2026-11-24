@@ -246,6 +246,7 @@ jobs:
               "        async def _w_async(page: _v3x_ft.Page):\n"
               "            _v3x_patch_page(page)\n"
               "            page.bgcolor = '#030306'\n"
+              "            page.update()\n"
               "            try:\n"
               "                return await target(page)\n"
               "            except Exception:\n"
@@ -255,6 +256,7 @@ jobs:
               "        def _w_sync(page: _v3x_ft.Page):\n"
               "            _v3x_patch_page(page)\n"
               "            page.bgcolor = '#030306'\n"
+              "            page.update()\n"
               "            try:\n"
               "                return target(page)\n"
               "            except Exception:\n"
@@ -279,7 +281,7 @@ jobs:
           pyproject = (
               '[project]\n'
               'name = "v3x-selfbot"\n'
-              'version = "2.2.3"\n'
+              'version = "2.2.5"\n'
               'description = "V3X Selfbot for SoroushPlus"\n'
               'requires-python = ">=3.9"\n'
               f'dependencies = [{deps_toml}]\n\n'
@@ -289,12 +291,12 @@ jobs:
               'company = "V3X"\n\n'
               '[tool.flet.android]\n'
               'min_sdk_version = 21\n'
-              'target_sdk_version = 34\n'
+              'target_sdk_version = 33\n'
           )
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
 
-      - name: Prepare Safe Native Android Service Injector
+      - name: Prepare Crash-Proof Android Background Service Injector
         run: |
           cat << 'EOF' > /tmp/inject_v3x_service.py
           import pathlib
@@ -407,10 +409,10 @@ jobs:
                   }} catch (_: Throwable) {{}}
 
                   try {{
-                      if (Build.VERSION.SDK_INT >= 33) {{
-                          if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {{
-                              requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 101)
-                          }}
+                      if (intent?.getBooleanExtra("v3x_bg_boot", false) == true) {{
+                          Handler(Looper.getMainLooper()).postDelayed({{
+                              try {{ moveTaskToBack(true) }} catch (_: Throwable) {{}}
+                          }}, 1500L)
                       }}
                   }} catch (_: Throwable) {{}}
               }}
@@ -418,13 +420,10 @@ jobs:
               override fun onResume() {{
                   super.onResume()
                   try {{
-                      val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
-                      val keepAlive = prefs.getBoolean("bg_keep_alive", true)
-                      if (keepAlive) {{
-                          acquireSafeWakeLock()
-                          Handler(Looper.getMainLooper()).postDelayed({{
-                              startKeepAliveService(applicationContext)
-                          }}, 900L)
+                      if (Build.VERSION.SDK_INT >= 33) {{
+                          if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {{
+                              requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 101)
+                          }}
                       }}
                   }} catch (_: Throwable) {{}}
               }}
@@ -519,6 +518,11 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.pm.ServiceInfo
+          import android.graphics.Bitmap
+          import android.graphics.Canvas
+          import android.graphics.Color
+          import android.graphics.Paint
+          import android.graphics.drawable.Icon
           import android.os.Build
           import android.os.IBinder
           import android.os.PowerManager
@@ -532,7 +536,7 @@ jobs:
                   try {{
                       createNotificationChannel()
                       val notif = buildNotification()
-                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {{
+                      if (Build.VERSION.SDK_INT >= 34) {{
                           try {{
                               startForeground(1001, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
                           }} catch (_: Throwable) {{
@@ -558,19 +562,18 @@ jobs:
                   try {{
                       val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
                       if (prefs.getBoolean("bg_keep_alive", true)) {{
-                          val restartSvc = Intent(applicationContext, V3XKeepAliveService::class.java)
+                          val wakeIntent = Intent(applicationContext, MainActivity::class.java).apply {{
+                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                              putExtra("v3x_bg_boot", true)
+                          }}
                           val piFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
                               PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                           }} else {{
                               PendingIntent.FLAG_UPDATE_CURRENT
                           }}
-                          val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
-                              PendingIntent.getForegroundService(applicationContext, 1002, restartSvc, piFlags)
-                          }} else {{
-                              PendingIntent.getService(applicationContext, 1002, restartSvc, piFlags)
-                          }}
+                          val pi = PendingIntent.getActivity(applicationContext, 1002, wakeIntent, piFlags)
                           val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                          am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 1200L, pi)
+                          am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 1500L, pi)
                       }}
                   }} catch (_: Throwable) {{}}
                   super.onTaskRemoved(rootIntent)
@@ -631,10 +634,22 @@ jobs:
                       Notification.Builder(this)
                   }}
 
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
+                      val bmp = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888)
+                      val canvas = Canvas(bmp)
+                      val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {{
+                          color = Color.WHITE
+                          style = Paint.Style.FILL
+                      }}
+                      canvas.drawCircle(24f, 24f, 18f, paint)
+                      builder.setSmallIcon(Icon.createWithBitmap(bmp))
+                  }} else {{
+                      builder.setSmallIcon(android.R.drawable.ic_dialog_info)
+                  }}
+
                   return builder
                       .setContentTitle("⚡ V3X Selfbot فعال در پس‌زمینه")
                       .setContentText("ساعت افق تهران و پاسخگوی خودکار پی‌وی در حال اجرا هستند")
-                      .setSmallIcon(android.R.drawable.ic_popup_sync)
                       .setContentIntent(pi)
                       .setOngoing(true)
                       .build()
@@ -647,19 +662,17 @@ jobs:
           import android.content.BroadcastReceiver
           import android.content.Context
           import android.content.Intent
-          import android.os.Build
 
           class V3XBootReceiver : BroadcastReceiver() {{
               override fun onReceive(context: Context, intent: Intent) {{
                   try {{
                       val prefs = context.getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
                       if (prefs.getBoolean("bg_keep_alive", true)) {{
-                          val svcIntent = Intent(context, V3XKeepAliveService::class.java)
-                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
-                              context.startForegroundService(svcIntent)
-                          }} else {{
-                              context.startService(svcIntent)
+                          val launch = Intent(context, MainActivity::class.java).apply {{
+                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                              putExtra("v3x_bg_boot", true)
                           }}
+                          context.startActivity(launch)
                       }}
                   }} catch (_: Throwable) {{}}
               }}
@@ -669,7 +682,7 @@ jobs:
           main_act.write_text(textwrap.dedent(main_activity_kt), encoding="utf-8")
           (pkg_dir / "V3XKeepAliveService.kt").write_text(textwrap.dedent(service_kt), encoding="utf-8")
           (pkg_dir / "V3XBootReceiver.kt").write_text(textwrap.dedent(boot_receiver_kt), encoding="utf-8")
-          print("Injected Safe Native Android Foreground Service into:", pkg_dir)
+          print("Injected Crash-Proof Native Android Foreground Service into:", pkg_dir)
           EOF
 
       - name: Build 64-bit APK with Native Foreground Service
