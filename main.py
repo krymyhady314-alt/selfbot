@@ -34,6 +34,13 @@ AUTOREPLY_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_autoreply_cfg.json")
 FORWARD_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_forward_cfg.json")
 
 
+def bind_async(fn, *args):
+    """اتصال امن رویدادهای Flet به توابع async بدون استفاده از lambda."""
+    async def _handler(e):
+        await fn(e, *args)
+    return _handler
+
+
 def load_json(path: str, default):
     try:
         if os.path.exists(path):
@@ -191,7 +198,6 @@ async def apply_profile_name(c, first_name: str, last_name: str):
 
 
 async def resolve_async_items(res, timeout: float = 12.0) -> list:
-    """تبدیل خروجی کلاینت (Coroutine، AsyncGenerator یا لیست) به لیست استاندارد."""
     if res is None:
         return []
     if hasattr(res, "__aiter__"):
@@ -226,13 +232,19 @@ async def resolve_async_items(res, timeout: float = 12.0) -> list:
 
 
 def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 40, kind: str = "filled", expand: bool = False):
-    lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12)
+    lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12, no_wrap=True)
+    compact_style = ft.ButtonStyle(
+        padding=ft.Padding.symmetric(horizontal=6, vertical=0),
+        shape=ft.RoundedRectangleBorder(radius=10),
+    )
     if kind == "outlined":
-        return getattr(ft, "OutlinedButton", ft.Button)(content=lbl, on_click=on_click, height=height, expand=expand), lbl
+        btn_cls = getattr(ft, "OutlinedButton", None) or getattr(ft, "ElevatedButton", None)
+        return btn_cls(content=lbl, on_click=on_click, height=height, expand=expand, style=compact_style), lbl
     if kind == "text":
-        return getattr(ft, "TextButton", ft.Button)(content=lbl, on_click=on_click, expand=expand), lbl
-    btn_cls = getattr(ft, "Button", None) or getattr(ft, "ElevatedButton", None)
-    return btn_cls(content=lbl, bgcolor=bgcolor, color=color, height=height, on_click=on_click, expand=expand), lbl
+        btn_cls = getattr(ft, "TextButton", None) or getattr(ft, "ElevatedButton", None)
+        return btn_cls(content=lbl, on_click=on_click, expand=expand, style=compact_style), lbl
+    btn_cls = getattr(ft, "ElevatedButton", None) or getattr(ft, "Button", None)
+    return btn_cls(content=lbl, bgcolor=bgcolor, color=color, height=height, on_click=on_click, expand=expand, style=compact_style), lbl
 
 
 def make_toggle_card(title: str, subtitle: str, initial_val: bool, on_toggle):
@@ -240,7 +252,7 @@ def make_toggle_card(title: str, subtitle: str, initial_val: bool, on_toggle):
     b_txt = ft.Text("✅ روشن" if ref["val"] else "⭕ خاموش", size=12, weight=ft.FontWeight.BOLD, color="#10B981" if ref["val"] else RED_NEON)
     b_box = ft.Container(padding=ft.Padding.symmetric(horizontal=12, vertical=6), border_radius=ft.BorderRadius.all(10), bgcolor="#06281E" if ref["val"] else "#26080E", border=ft.Border.all(1.5, "#10B981" if ref["val"] else RED_NEON), content=b_txt)
     card = ft.Container(
-        padding=ft.Padding.all(11), border_radius=ft.BorderRadius.all(12),
+        padding=ft.Padding.all(11), border_radius=ft.BorderRadius.all(12), ink=True,
         bgcolor="#0C1F1A" if ref["val"] else "#180A10", border=ft.Border.all(1.5, "#10B981" if ref["val"] else BORDER_ACTIVE),
         content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8, controls=[
             ft.Column(spacing=2, expand=True, controls=[ft.Text(title, size=13, weight=ft.FontWeight.BOLD, color=TEXT_WHITE), ft.Text(subtitle, size=11, color=TEXT_MUTED)]),
@@ -297,9 +309,10 @@ async def main(page: ft.Page):
     st = {
         "client": None, "me_id": None, "phone": "", "hash": None, "need_2fa": False,
         "bg_started": False, "hook_attached": False, "last_clock_min": "", "in_dashboard": False,
-        "active_tab": "chats", "chat_filter": "all", "dialogs": [], "selected_targets": {},
-        "active_target": "", "recent_messages": [], "reply_to_id": None, "reply_to_preview": "",
-        "reply_chat_id": "", "multi_messages": load_json(SAVED_MSGS_FILE, ["سلام!", "چطوری؟", "پیام تست V3X"]),
+        "active_tab": "chats", "chat_filter": "all", "dialogs": [], "dialogs_loading": True,
+        "selected_targets": {}, "active_target": "", "recent_messages": [],
+        "reply_to_id": None, "reply_to_preview": "", "reply_chat_id": "",
+        "multi_messages": load_json(SAVED_MSGS_FILE, ["سلام!", "چطوری؟", "پیام تست V3X"]),
         "multi_running": False, "turbo_running": False, "entity_cache": {},
         "fwd_source_chat": "", "fwd_messages": [], "fwd_selected_msg_id": None,
         "fwd_selected_msg_preview": "", "fwd_running": False, "fwd_status": "آماده شروع فوروارد به کاربران ۲۰۰ پیام اخیر گپ‌ها",
@@ -466,15 +479,21 @@ async def main(page: ft.Page):
         params = list(inspect.signature(fwd_fn).parameters.keys())
         for attempt in range(1, 3):
             try:
-                if "from_peer" in params:
-                    coro = fwd_fn(to_peer, msg_id, from_peer=from_peer)
-                elif "from_chat_id" in params:
-                    coro = fwd_fn(to_peer, from_peer, msg_id)
-                else:
+                coro = None
+                for candidate_msg in (msg_id, [msg_id]):
                     try:
-                        coro = fwd_fn(to_peer, msg_id, from_peer)
+                        if "from_peer" in params:
+                            coro = fwd_fn(to_peer, candidate_msg, from_peer=from_peer)
+                        elif "from_chat_id" in params:
+                            coro = fwd_fn(to_peer, from_peer, candidate_msg)
+                        else:
+                            try:
+                                coro = fwd_fn(to_peer, candidate_msg, from_peer)
+                            except TypeError:
+                                coro = fwd_fn(to_peer, from_peer, candidate_msg)
+                        break
                     except TypeError:
-                        coro = fwd_fn(to_peer, from_peer, msg_id)
+                        continue
                 if inspect.isawaitable(coro):
                     await asyncio.wait_for(coro, timeout=12.0)
                 return
@@ -649,7 +668,7 @@ async def main(page: ft.Page):
     def show_update_required(msg: str, update_url: str):
         st["in_dashboard"] = False
         site = update_url or WEBSITE_URL
-        page.clean()
+        page.controls.clear()
         url_box = ft.TextField(label="آدرس سایت رسمی", value=site, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
         stat = ft.Text("", size=12, color="#10B981")
 
@@ -668,7 +687,6 @@ async def main(page: ft.Page):
 
         dl_btn, _ = make_btn("🌐 ورود به سایت و دانلود نسخه جدید", open_dl, height=46)
         page.add(ft.Container(bgcolor=BG_CARD, padding=18, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.5, RED_NEON), content=ft.Column(spacing=12, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⚠️ این نسخه غیرفعال شده است", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(msg, size=13, color=TEXT_WHITE), url_box, dl_btn, stat])), footer_box())
-        safe_update()
 
     async def proceed_after_license():
         try:
@@ -684,7 +702,7 @@ async def main(page: ft.Page):
 
     def show_license(msg: str = ""):
         st["in_dashboard"] = False
-        page.clean()
+        page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         dev_box = ft.TextField(label="شناسه سخت‌افزاری دستگاه", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
         saved_k = str(load_json(LIC_FILE, {}).get("key", "")).strip()
@@ -718,11 +736,10 @@ async def main(page: ft.Page):
         btn, _ = make_btn("بررسی لایسنس و ورود", verify, height=46)
         copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color=RED_LIGHT, kind="outlined")
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(f"نسخه {APP_VERSION} | فعال‌سازی اشتراک", size=12, color=TEXT_MUTED), dev_box, copy_btn, key_box, btn, info])), footer_box())
-        safe_update()
 
     def show_phone(msg: str = ""):
         st["in_dashboard"] = False
-        page.clean()
+        page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         ph_box = ft.TextField(label="شماره موبایل سروش‌پلاس", hint_text="09123456789", keyboard_type=ft.KeyboardType.PHONE, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
 
@@ -763,16 +780,12 @@ async def main(page: ft.Page):
                 info.value, info.color = f"خطا: {ex}", RED_NEON
                 safe_update()
 
-        async def back_to_lic(e):
-            show_license()
-
         btn, _ = make_btn("ارسال کد تایید", send_otp, height=46)
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("ورود به سروش‌پلاس", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), ph_box, btn, info])), footer_box())
-        safe_update()
 
     def show_otp():
         st["in_dashboard"] = False
-        page.clean()
+        page.controls.clear()
         info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color=RED_LIGHT)
         code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
         pwd_box = ft.TextField(label="رمز دومرحله‌ای", password=True, can_reveal_password=True, visible=st["need_2fa"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
@@ -813,11 +826,10 @@ async def main(page: ft.Page):
         btn, _ = make_btn("تایید و ورود", confirm, height=46)
         chg_btn, _ = make_btn("تغییر شماره", back_phone, color=TEXT_MUTED, kind="text")
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("تایید کد", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), code_box, pwd_box, btn, chg_btn, info])), footer_box())
-        safe_update()
 
     def show_dashboard():
         st["in_dashboard"] = True
-        page.clean()
+        page.controls.clear()
         c = get_client()
         log("سلف‌بات با موفقیت متصل شد ✅", "#10B981")
 
@@ -825,6 +837,7 @@ async def main(page: ft.Page):
         on_dialogs_cb = None
 
         async def fetch_dialogs(limit_count: int = 80) -> list[dict]:
+            st["dialogs_loading"] = True
             items = []
             try:
                 await ensure_online(c)
@@ -848,6 +861,7 @@ async def main(page: ft.Page):
                     items.append({"id": cid_str, "title": str(title), "kind": kind})
             except Exception as ex:
                 log(f"خطا در دریافت چت‌ها: {ex}", RED_NEON)
+            st["dialogs_loading"] = False
             st["dialogs"] = items
             if callable(on_dialogs_cb):
                 on_dialogs_cb()
@@ -908,24 +922,24 @@ async def main(page: ft.Page):
             cnt_lbl = ft.Text(f"چت‌های انتخاب‌شده: {len(st['selected_targets'])}", size=12, color=RED_LIGHT)
             rep_holder = ft.Column(controls=[reply_banner(lambda: draw_msgs())])
 
+            async def pick_reply_msg(e, i, t: str):
+                st.update({"reply_to_id": i, "reply_to_preview": t, "reply_chat_id": st["active_target"]})
+                rep_holder.controls = [reply_banner(draw_msgs)]
+                draw_msgs()
+                log(f"پیام #{i} برای ریپلای انتخاب شد ↩️", RED_LIGHT)
+
             def draw_msgs():
                 m_col.controls.clear()
                 if not st["recent_messages"]:
-                    m_col.controls.append(ft.Text("پیامی بارگذاری نشده است.", size=12, color=TEXT_MUTED))
+                    m_col.controls.append(ft.Text("پیامی بارگذاری نشده است. روی یک چت بزنید.", size=12, color=TEXT_MUTED))
                     return
                 for m in st["recent_messages"]:
                     mid, is_sel = m["id"], st["reply_to_id"] == m["id"]
-
-                    async def _pick_rep(e, i=mid, t=m["text"]):
-                        st.update({"reply_to_id": i, "reply_to_preview": t, "reply_chat_id": st["active_target"]})
-                        rep_holder.controls = [reply_banner(draw_msgs)]
-                        draw_msgs()
-                        log(f"پیام #{i} برای ریپلای انتخاب شد ↩️", RED_LIGHT)
-
                     m_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), bgcolor="#1C0A10" if is_sel else BG_INPUT,
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
+                        bgcolor="#1C0A10" if is_sel else BG_INPUT,
                         border=ft.Border.all(1.5 if is_sel else 1, RED_NEON if is_sel else BORDER_CRIMSON),
-                        on_click=_pick_rep,
+                        on_click=bind_async(pick_reply_msg, mid, m["text"]),
                         content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Column(spacing=2, expand=True, controls=[ft.Text(f"{m['sender']} (#{mid})", size=11, color=RED_LIGHT), ft.Text(m["text"], size=12, color=TEXT_WHITE, max_lines=2)]), ft.Text("✅" if is_sel else "ریپلای", size=11, color=RED_NEON if is_sel else TEXT_MUTED)]),
                     ))
 
@@ -949,20 +963,18 @@ async def main(page: ft.Page):
                 flt = st["chat_filter"]
                 lst = st["dialogs"] if flt == "all" else [x for x in st["dialogs"] if (x["kind"] == "pv" if flt == "pv" else x["kind"] in ("group", "channel"))]
                 if not lst:
-                    c_col.controls.append(ft.Text("چتی یافت نشد. دکمه بروزرسانی را بزنید.", size=12, color=TEXT_MUTED))
+                    msg = "⏳ در حال دریافت لیست چت‌ها..." if st["dialogs_loading"] else "چتی یافت نشد. دکمه بروزرسانی چت‌ها را بزنید."
+                    c_col.controls.append(ft.Text(msg, size=12, color=TEXT_MUTED))
                     return
                 for it in lst:
                     cid, title = it["id"], it["title"]
                     sel = cid in st["selected_targets"] or st["active_target"] == cid
                     badge = "👤 پی‌وی" if it["kind"] == "pv" else ("📢 کانال" if it["kind"] == "channel" else "👥 گپ")
-
-                    async def _on_c(e, i=cid, t=title):
-                        await click_chat(e, i, t)
-
                     c_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(9), bgcolor="#1C0A10" if sel else BG_INPUT,
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(9), ink=True,
+                        bgcolor="#1C0A10" if sel else BG_INPUT,
                         border=ft.Border.all(1.5 if sel else 1, RED_NEON if sel else BORDER_CRIMSON),
-                        on_click=_on_c,
+                        on_click=bind_async(click_chat, cid, title),
                         content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Column(spacing=1, expand=True, controls=[ft.Text(title, size=13, weight=ft.FontWeight.W_600, color=TEXT_WHITE), ft.Text(f"{badge} | {cid}", size=11, color=TEXT_MUTED)]), ft.Text("✅" if sel else "انتخاب", size=12, color=RED_NEON if sel else "#64748B")]),
                     ))
 
@@ -1001,9 +1013,9 @@ async def main(page: ft.Page):
                 safe_update()
 
             on_dialogs_cb = lambda: (draw_chats(), safe_update())
-            f_all, _ = make_btn("همه", lambda e: set_flt(e, "all"), bgcolor=RED_PRIMARY if st["chat_filter"] == "all" else BG_INPUT, height=34, expand=True)
-            f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_flt(e, "pv"), bgcolor=RED_PRIMARY if st["chat_filter"] == "pv" else BG_INPUT, height=34, expand=True)
-            f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_flt(e, "group"), bgcolor=RED_PRIMARY if st["chat_filter"] == "group" else BG_INPUT, height=34, expand=True)
+            f_all, _ = make_btn("همه", bind_async(set_flt, "all"), bgcolor=RED_PRIMARY if st["chat_filter"] == "all" else BG_INPUT, height=34, expand=True)
+            f_pv, _ = make_btn("👤 پی‌وی", bind_async(set_flt, "pv"), bgcolor=RED_PRIMARY if st["chat_filter"] == "pv" else BG_INPUT, height=34, expand=True)
+            f_gp, _ = make_btn("👥 گپ‌ها", bind_async(set_flt, "group"), bgcolor=RED_PRIMARY if st["chat_filter"] == "group" else BG_INPUT, height=34, expand=True)
             rel_b, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats_click, height=38, expand=True)
             lm_b, _ = make_btn("📜 پیام‌های اخیر", load_m, bgcolor=RED_DARK, height=38, expand=True)
             clr_b, _ = make_btn("پاک کردن", clear_all, color=RED_NEON, kind="text")
@@ -1018,23 +1030,27 @@ async def main(page: ft.Page):
         # تب ۲: ارسال چندتایی
         # ==========================================
         def build_multi():
+            async def on_multi_t(v: bool):
+                safe_update()
+
             t_box = ft.TextField(label="مقصد ارسال", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_target(e.control.value or ""))
-            m_card, m_ref = make_toggle_card("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, lambda v: safe_update())
+            m_card, m_ref = make_toggle_card("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, on_multi_t)
             new_in = ft.TextField(label="متن پیام جدید", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
             rnd_in = ft.TextField(label="تعداد دور", value="1", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
             dly_in = ft.TextField(label="تاخیر (0 = توربو)", value="0", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
             stat = ft.Text("آماده ارسال چندتایی", size=12, color=TEXT_MUTED)
             items_col = ft.Column(spacing=5)
 
+            async def del_m_item(e, i: int):
+                if 0 <= i < len(st["multi_messages"]):
+                    st["multi_messages"].pop(i)
+                    draw_items()
+                    safe_update()
+
             def draw_items():
                 items_col.controls.clear()
                 for idx, txt in enumerate(st["multi_messages"]):
-                    async def _del_it(e, i=idx):
-                        if 0 <= i < len(st["multi_messages"]):
-                            st["multi_messages"].pop(i)
-                            draw_items()
-                            safe_update()
-                    db, _ = make_btn("حذف", _del_it, color=RED_NEON, kind="text")
+                    db, _ = make_btn("حذف", bind_async(del_m_item, idx), color=RED_NEON, kind="text")
                     items_col.controls.append(ft.Container(padding=ft.Padding.symmetric(horizontal=8, vertical=4), border_radius=ft.BorderRadius.all(8), bgcolor=BG_INPUT, border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Text(f"{idx+1}. {txt}", size=12, expand=True), db])))
 
             async def run_m():
@@ -1158,6 +1174,12 @@ async def main(page: ft.Page):
             int_box = ft.TextField(label="تایمر تکرار فوروارد (دقیقه)", value=str(fwd_cfg.get("interval_min", 5)), keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
             f_stat = ft.Text(st["fwd_status"], size=12, color=TEXT_MUTED)
 
+            async def pick_f_msg(e, i, p: str):
+                st.update({"fwd_selected_msg_id": i, "fwd_selected_msg_preview": p})
+                sel_lbl.value, sel_lbl.color = f"✅ پیام #{i}: {p}", "#10B981"
+                draw_f_msgs()
+                safe_update()
+
             def draw_f_msgs():
                 m_col.controls.clear()
                 if not st["fwd_messages"]:
@@ -1165,17 +1187,11 @@ async def main(page: ft.Page):
                     return
                 for m in st["fwd_messages"]:
                     mid, is_s, prev = m["id"], st["fwd_selected_msg_id"] == m["id"], m["text"][:50]
-
-                    async def _pick_fm(e, i=mid, p=prev):
-                        st.update({"fwd_selected_msg_id": i, "fwd_selected_msg_preview": p})
-                        sel_lbl.value, sel_lbl.color = f"✅ پیام #{i}: {p}", "#10B981"
-                        draw_f_msgs()
-                        safe_update()
-
                     m_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), bgcolor="#1C0A10" if is_s else BG_INPUT,
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
+                        bgcolor="#1C0A10" if is_s else BG_INPUT,
                         border=ft.Border.all(1.5 if is_s else 1, RED_NEON if is_s else BORDER_CRIMSON),
-                        on_click=_pick_fm,
+                        on_click=bind_async(pick_f_msg, mid, prev),
                         content=ft.Text(f"#{mid} | {prev}", size=12, color=TEXT_WHITE),
                     ))
 
@@ -1202,14 +1218,11 @@ async def main(page: ft.Page):
                 for it in lst:
                     cid, is_s = it["id"], st["fwd_source_chat"] == it["id"]
                     badge = "📢 کانال" if it["kind"] == "channel" else "👤 پی‌وی"
-
-                    async def _on_fc(e, i=cid):
-                        await pick_src(e, i)
-
                     c_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), bgcolor="#1C0A10" if is_s else BG_INPUT,
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
+                        bgcolor="#1C0A10" if is_s else BG_INPUT,
                         border=ft.Border.all(1.5 if is_s else 1, RED_NEON if is_s else BORDER_CRIMSON),
-                        on_click=_on_fc,
+                        on_click=bind_async(pick_src, cid),
                         content=ft.Text(f"{badge} | {it['title']} ({cid})", size=12, color=TEXT_WHITE),
                     ))
 
@@ -1220,6 +1233,9 @@ async def main(page: ft.Page):
                 draw_f_chats()
                 f_stat.value = f"✅ {len(res)} چت بارگذاری شد."
                 safe_update()
+
+            async def load_f_src_msgs(e):
+                await pick_src(e, src_box.value)
 
             async def fwd_loop():
                 rnd = 0
@@ -1297,7 +1313,7 @@ async def main(page: ft.Page):
                 asyncio.create_task(fwd_loop())
 
             rb, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", reload_f_chats, height=38, expand=True)
-            lb, _ = make_btn("📜 پیام‌ها", lambda e: pick_src(e, src_box.value), bgcolor=RED_DARK, height=38, expand=True)
+            lb, _ = make_btn("📜 پیام‌ها", load_f_src_msgs, bgcolor=RED_DARK, height=38, expand=True)
             f_btn, fb_lbl = make_btn("⛔ توقف فوروارد" if st["fwd_running"] else "🚀 شروع فوروارد خودکار", toggle_f, bgcolor=RED_DARK if st["fwd_running"] else RED_PRIMARY, height=44)
             draw_f_chats()
             draw_f_msgs()
@@ -1373,6 +1389,20 @@ async def main(page: ft.Page):
             sep_in = ft.TextField(label="جداکننده", value=clock_cfg.get("sep", "|"), bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
             sty = {"v": clock_cfg.get("style", "bold"), "p": clock_cfg.get("target_field", "first")}
 
+            async def fetch_my_name(e):
+                try:
+                    await ensure_online(c)
+                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                    bf = strip_clock(getattr(me, "first_name", "") or "")
+                    bl = strip_clock(getattr(me, "last_name", "") or "")
+                    bf_in.value, bl_in.value = bf, bl
+                    clock_cfg["base_first"], clock_cfg["base_last"] = bf, bl
+                    save_json(CLOCK_CFG_FILE, clock_cfg)
+                    log(f"نام پروفایل دریافت شد: {bf} {bl}".strip(), "#10B981")
+                    safe_update()
+                except Exception as ex:
+                    log(f"خطا در دریافت نام: {ex}", RED_NEON)
+
             async def apply_clk(e):
                 bf, bl = strip_clock(bf_in.value or ""), strip_clock(bl_in.value or "")
                 if not bf and not bl:
@@ -1409,14 +1439,15 @@ async def main(page: ft.Page):
             async def bat_ex(e):
                 notify_android_service("battery")
 
-            sn, _ = make_btn("14:30", lambda e: set_sty(e, "normal"), bgcolor=RED_PRIMARY if sty["v"] == "normal" else BG_INPUT, height=34, expand=True)
-            sb, _ = make_btn("𝟏𝟒:𝟑𝟎", lambda e: set_sty(e, "bold"), bgcolor=RED_PRIMARY if sty["v"] == "bold" else BG_INPUT, height=34, expand=True)
-            sm, _ = make_btn("𝟷𝟺:𝟹𝟶", lambda e: set_sty(e, "mono"), bgcolor=RED_PRIMARY if sty["v"] == "mono" else BG_INPUT, height=34, expand=True)
-            pf, _ = make_btn("کنار اسم", lambda e: set_pos(e, "first"), bgcolor=RED_PRIMARY if sty["p"] == "first" else BG_INPUT, height=34, expand=True)
-            pl, _ = make_btn("کنار فامیل", lambda e: set_pos(e, "last"), bgcolor=RED_PRIMARY if sty["p"] == "last" else BG_INPUT, height=34, expand=True)
+            sn, _ = make_btn("14:30", bind_async(set_sty, "normal"), bgcolor=RED_PRIMARY if sty["v"] == "normal" else BG_INPUT, height=34, expand=True)
+            sb, _ = make_btn("𝟏𝟒:𝟑𝟎", bind_async(set_sty, "bold"), bgcolor=RED_PRIMARY if sty["v"] == "bold" else BG_INPUT, height=34, expand=True)
+            sm, _ = make_btn("𝟷𝟺:𝟹𝟶", bind_async(set_sty, "mono"), bgcolor=RED_PRIMARY if sty["v"] == "mono" else BG_INPUT, height=34, expand=True)
+            pf, _ = make_btn("کنار اسم", bind_async(set_pos, "first"), bgcolor=RED_PRIMARY if sty["p"] == "first" else BG_INPUT, height=34, expand=True)
+            pl, _ = make_btn("کنار فامیل", bind_async(set_pos, "last"), bgcolor=RED_PRIMARY if sty["p"] == "last" else BG_INPUT, height=34, expand=True)
+            gn_b, _ = make_btn("📥 خواندن اسم فعلی من", fetch_my_name, bgcolor=RED_DARK, height=36)
             ap_b, _ = make_btn("💾 ذخیره و اعمال ساعت", apply_clk, height=44)
             bat_b, _ = make_btn("🔋 حذف محدودیت باتری گوشی", bat_ex, bgcolor=BG_INPUT, color="#F59E0B", height=36)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⏰ ساعت افق تهران کنار اسم", size=15, weight=ft.FontWeight.BOLD), clk_card, bg_card, bat_b, bf_in, bl_in, sep_in, ft.Row(spacing=5, controls=[sn, sb, sm]), ft.Row(spacing=5, controls=[pf, pl]), ap_b]))
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⏰ ساعت افق تهران کنار اسم", size=15, weight=ft.FontWeight.BOLD), clk_card, bg_card, bat_b, gn_b, bf_in, bl_in, sep_in, ft.Row(spacing=5, controls=[sn, sb, sm]), ft.Row(spacing=5, controls=[pf, pl]), ap_b]))
 
         def render_tab():
             body_host.controls.clear()
@@ -1448,12 +1479,12 @@ async def main(page: ft.Page):
             show_phone("از حساب خارج شدید.")
 
         out_b, _ = make_btn("خروج", logout, color=RED_NEON, kind="text")
-        b1, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor=RED_PRIMARY, height=36, expand=True)
-        b2, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor=BG_INPUT, height=36, expand=True)
-        b3, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor=BG_INPUT, height=36, expand=True)
-        b4, _ = make_btn("📢 فوروارد", lambda e: switch_tab(e, "forward"), bgcolor=BG_INPUT, height=36, expand=True)
-        b5, _ = make_btn("🤖 پی‌وی خودکار", lambda e: switch_tab(e, "autoreply"), bgcolor=BG_INPUT, height=36, expand=True)
-        b6, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor=BG_INPUT, height=36, expand=True)
+        b1, _ = make_btn("💬 چت‌ها", bind_async(switch_tab, "chats"), bgcolor=RED_PRIMARY, height=38, expand=True)
+        b2, _ = make_btn("📨 چندتایی", bind_async(switch_tab, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
+        b3, _ = make_btn("🚀 توربو", bind_async(switch_tab, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
+        b4, _ = make_btn("📢 فوروارد", bind_async(switch_tab, "forward"), bgcolor=BG_INPUT, height=38, expand=True)
+        b5, _ = make_btn("🤖 پی‌وی خودکار", bind_async(switch_tab, "autoreply"), bgcolor=BG_INPUT, height=38, expand=True)
+        b6, _ = make_btn("⏰ ساعت", bind_async(switch_tab, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
         nav = {"chats": b1, "multi": b2, "turbo": b3, "forward": b4, "autoreply": b5, "clock": b6}
         render_tab()
 
@@ -1465,7 +1496,6 @@ async def main(page: ft.Page):
             ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=4, controls=[ft.Text("📜 گزارش عملکرد", size=12, color=RED_LIGHT), logs])),
             footer_box(),
         )
-        safe_update()
         notify_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
         asyncio.create_task(fetch_dialogs())
 
