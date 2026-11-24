@@ -38,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon & Fast Flet 0.25.2 Compatibility Shim
+      - name: Bundle splusthon & Flet 0.25.2 Compatibility Shim
         run: |
           python - << 'EOF'
           import pathlib
@@ -296,7 +296,7 @@ jobs:
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
 
-      - name: Prepare Crash-Proof Android Background Service Injector
+      - name: Setup Flutter Hook for Native Background Service
         run: |
           cat << 'EOF' > /tmp/inject_v3x_service.py
           import pathlib
@@ -305,7 +305,8 @@ jobs:
 
           manifest_path = pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml")
           if not manifest_path.exists():
-              raise FileNotFoundError("AndroidManifest.xml not found!")
+              print("Manifest not ready yet, skipping injection.")
+              raise SystemExit(0)
 
           manifest = manifest_path.read_text(encoding="utf-8")
           perms = [
@@ -682,47 +683,37 @@ jobs:
           main_act.write_text(textwrap.dedent(main_activity_kt), encoding="utf-8")
           (pkg_dir / "V3XKeepAliveService.kt").write_text(textwrap.dedent(service_kt), encoding="utf-8")
           (pkg_dir / "V3XBootReceiver.kt").write_text(textwrap.dedent(boot_receiver_kt), encoding="utf-8")
-          print("Injected Crash-Proof Native Android Foreground Service into:", pkg_dir)
+          print("Injected Native Background Service successfully into:", pkg_dir)
           EOF
 
-      - name: Build 64-bit APK with Native Foreground Service
+          REAL_FLUTTER=$(which flutter)
+          mkdir -p /tmp/flutter_hook
+          cat << EOF > /tmp/flutter_hook/flutter
+          #!/usr/bin/env bash
+          if [ "\$1" = "build" ] && [ "\$2" = "apk" ]; then
+            python3 /tmp/inject_v3x_service.py
+          fi
+          exec "$REAL_FLUTTER" "\$@"
+          EOF
+          chmod +x /tmp/flutter_hook/flutter
+          echo "/tmp/flutter_hook" >> $GITHUB_PATH
+
+      - name: Build 64-bit APK (arm64-v8a)
         run: |
           rm -rf build
-          ROOT_DIR="$(pwd)"
           flet build apk --arch arm64-v8a --verbose
-          python /tmp/inject_v3x_service.py
-
-          SITE_PKGS_64="$ROOT_DIR/build/site-packages/arm64-v8a"
-          if [ ! -d "$SITE_PKGS_64" ]; then
-            SITE_PKGS_64=$(find "$ROOT_DIR/build" -maxdepth 3 -type d -name "arm64-v8a" | head -n 1)
-          fi
-          test -d "$SITE_PKGS_64"
-
           mkdir -p release-apks
-          (
-            cd build/flutter
-            SERIOUS_PYTHON_SITE_PACKAGES="$SITE_PKGS_64" SERIOUS_PYTHON_ALLOW_SOURCE=true flutter build apk --release --target-platform android-arm64
-          )
-          cp build/flutter/build/app/outputs/flutter-apk/app-release.apk release-apks/V3X-Selfbot-64bit.apk
+          APK_64=$(find build/apk -name "*.apk" | head -n 1)
+          test -n "$APK_64"
+          cp "$APK_64" release-apks/V3X-Selfbot-64bit.apk
 
-      - name: Build 32-bit APK with Native Foreground Service
+      - name: Build 32-bit APK (armeabi-v7a)
         run: |
           rm -rf build
-          ROOT_DIR="$(pwd)"
           flet build apk --arch armeabi-v7a --verbose
-          python /tmp/inject_v3x_service.py
-
-          SITE_PKGS_32="$ROOT_DIR/build/site-packages/armeabi-v7a"
-          if [ ! -d "$SITE_PKGS_32" ]; then
-            SITE_PKGS_32=$(find "$ROOT_DIR/build" -maxdepth 3 -type d -name "armeabi-v7a" | head -n 1)
-          fi
-          test -d "$SITE_PKGS_32"
-
-          (
-            cd build/flutter
-            SERIOUS_PYTHON_SITE_PACKAGES="$SITE_PKGS_32" SERIOUS_PYTHON_ALLOW_SOURCE=true flutter build apk --release --target-platform android-arm
-          )
-          cp build/flutter/build/app/outputs/flutter-apk/app-release.apk release-apks/V3X-Selfbot-32bit.apk
+          APK_32=$(find build/apk -name "*.apk" | head -n 1)
+          test -n "$APK_32"
+          cp "$APK_32" release-apks/V3X-Selfbot-32bit.apk
 
       - name: Upload Both Optimized Android APKs
         uses: actions/upload-artifact@v4
