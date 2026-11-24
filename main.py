@@ -1,4 +1,4 @@
-import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platform, re, subprocess, tempfile, time
+import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platform, re, subprocess, tempfile, time, urllib.request
 import flet as ft
 import httpx
 
@@ -19,7 +19,7 @@ if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(
     ft.border_radius.all = ft.BorderRadius.all
     ft.border_radius.only = ft.BorderRadius.only
 
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.2.2"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
@@ -186,29 +186,18 @@ def save_forward_config(cfg: dict):
         pass
 
 
-_WAKE_LOCK_REF = None
-
-
-def set_android_wakelock(enable: bool):
-    """جلوگیری از خواب پردازنده اندروید برای ادامه کار ساعت و پاسخگوی خودکار در پس‌زمینه."""
-    global _WAKE_LOCK_REF
+def notify_native_android_service(cmd: str):
+    """ارسال فرمان به سرویس بومی اندروید (start / stop / battery) بدون مسدود کردن UI."""
+    def _ping():
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:48391/{cmd}", timeout=0.6).read()
+        except Exception:
+            pass
     try:
-        from jnius import autoclass
-        PythonActivity = autoclass("org.kivy.android.PythonActivity")
-        Context = autoclass("android.content.Context")
-        PowerManager = autoclass("android.os.PowerManager")
-        activity = PythonActivity.mActivity
-        if enable:
-            if _WAKE_LOCK_REF is None:
-                pm = activity.getSystemService(Context.POWER_SERVICE)
-                _WAKE_LOCK_REF = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "V3X:KeepAliveLock")
-            if not _WAKE_LOCK_REF.isHeld():
-                _WAKE_LOCK_REF.acquire()
-        else:
-            if _WAKE_LOCK_REF is not None and _WAKE_LOCK_REF.isHeld():
-                _WAKE_LOCK_REF.release()
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, _ping)
     except Exception:
-        pass
+        _ping()
 
 
 def format_tehran_clock(style: str = "bold") -> str:
@@ -394,7 +383,7 @@ async def apply_profile_name(c, first_name: str, last_name: str) -> bool:
     raise RuntimeError("متد تغییر نام پروفایل در این نسخه کتابخانه یافت نشد.")
 
 
-def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 44, kind: str = "filled", expand: bool = False):
+def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 42, kind: str = "filled", expand: bool = False):
     lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12)
     if kind == "outlined":
         btn_cls = getattr(ft, "OutlinedButton", ft.Button)
@@ -407,7 +396,6 @@ def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT
 
 
 def make_toggle_card(title: str, subtitle: str, initial_val: bool, on_toggle_callback):
-    """کارت تیک اختصاصی پررنگ و کاملاً خوانا در موبایل (بدون بیرون‌زدگی در حالت RTL)."""
     state_ref = {"val": bool(initial_val)}
 
     badge_txt = ft.Text(
@@ -467,16 +455,16 @@ def make_toggle_card(title: str, subtitle: str, initial_val: bool, on_toggle_cal
 
 def creator_footer():
     return ft.Container(
-        margin=ft.Margin.only(top=8),
-        padding=ft.Padding.symmetric(vertical=10, horizontal=14),
-        border_radius=ft.BorderRadius.all(12),
+        margin=ft.Margin.only(top=6),
+        padding=ft.Padding.symmetric(vertical=8, horizontal=12),
+        border_radius=ft.BorderRadius.all(10),
         bgcolor=BG_CARD,
         border=ft.Border.all(1, BORDER_CRIMSON),
         content=ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             controls=[
-                ft.Text(f"نسخه {APP_VERSION}  |  طراحی و توسعه: ", size=12, color=TEXT_MUTED),
-                ft.Text(CREATOR_ID, size=13, weight=ft.FontWeight.BOLD, color=RED_NEON, selectable=True),
+                ft.Text(f"نسخه {APP_VERSION}  |  طراحی و توسعه: ", size=11, color=TEXT_MUTED),
+                ft.Text(CREATOR_ID, size=12, weight=ft.FontWeight.BOLD, color=RED_NEON, selectable=True),
             ],
         ),
     )
@@ -493,8 +481,7 @@ async def main(page: ft.Page):
     page.title = "V3X Selfbot"
     page.bgcolor = BG_GALAXY
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = ft.Padding.only(top=34, left=12, right=12, bottom=12)
-    page.scroll = ft.ScrollMode.AUTO
+    page.padding = ft.Padding.only(top=32, left=10, right=10, bottom=10)
     page.rtl = True
 
     did = get_device_id()
@@ -502,10 +489,7 @@ async def main(page: ft.Page):
     autoreply_cfg = load_autoreply_config()
     forward_cfg = load_forward_config()
 
-    if clock_cfg.get("bg_keep_alive", True):
-        set_android_wakelock(True)
-
-    client_lock = asyncio.Lock()
+    notify_native_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
 
     st = {
         "client": None,
@@ -513,7 +497,7 @@ async def main(page: ft.Page):
         "phone": "",
         "hash": None,
         "need_2fa": False,
-        "watchdog_started": False,
+        "bg_workers_started": False,
         "event_hook_attached": False,
         "last_clock_min": "",
         "in_dashboard": False,
@@ -539,11 +523,8 @@ async def main(page: ft.Page):
         "fwd_selected_msg_preview": "",
         "fwd_running": False,
         "fwd_status": "آماده شروع فوروارد هوشمند به کاربران ۲۰۰ پیام اخیر گپ‌ها",
-        # وضعیت‌های بخش پی‌وی خودکار
-        "pv_seen_msg_ids": set(),
-        "pv_seeded": False,
     }
-    logs = ft.Column(spacing=3, height=95, scroll=ft.ScrollMode.AUTO)
+    logs = ft.Column(spacing=2, height=76, scroll=ft.ScrollMode.AUTO)
     conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
 
     def safe_page_update():
@@ -554,8 +535,14 @@ async def main(page: ft.Page):
 
     def log(txt: str, col: str = TEXT_MUTED):
         logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=11, color=col))
-        if len(logs.controls) > 15:
-            del logs.controls[15:]
+        if len(logs.controls) > 12:
+            del logs.controls[12:]
+        try:
+            if logs.page is not None:
+                logs.update()
+                return
+        except Exception:
+            pass
         safe_page_update()
 
     def get_client():
@@ -586,18 +573,30 @@ async def main(page: ft.Page):
             if not c.is_connected():
                 conn_badge.value = "🟡 اتصال مجدد..."
                 conn_badge.color = "#F59E0B"
-                safe_page_update()
+                try:
+                    if conn_badge.page is not None:
+                        conn_badge.update()
+                except Exception:
+                    pass
                 await asyncio.wait_for(c.connect(), timeout=10.0)
             if conn_badge.value != "🟢 متصل":
                 conn_badge.value = "🟢 متصل"
                 conn_badge.color = "#10B981"
-                safe_page_update()
+                try:
+                    if conn_badge.page is not None:
+                        conn_badge.update()
+                except Exception:
+                    pass
             return True
         except Exception:
             if conn_badge.value != "🔴 قطع اتصال":
                 conn_badge.value = "🔴 قطع اتصال"
                 conn_badge.color = RED_NEON
-                safe_page_update()
+                try:
+                    if conn_badge.page is not None:
+                        conn_badge.update()
+                except Exception:
+                    pass
             return False
 
     async def resolve_peer(c, raw_target: str):
@@ -691,12 +690,122 @@ async def main(page: ft.Page):
                 else:
                     raise ex
 
+    # ========================================================
+    # هسته مستقل پس‌زمینه (ساعت + پاسخگوی پی‌وی حتی بیرون از اپ)
+    # ========================================================
+    async def sync_profile_clock(c, force: bool = False):
+        if not clock_cfg.get("enabled"):
+            return
+        now_min = datetime.datetime.now(TEHRAN_TZ).strftime("%H:%M")
+        if not force and st["last_clock_min"] == now_min:
+            return
+        try:
+            await ensure_online(c)
+            if not clock_cfg.get("base_first"):
+                me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                clock_cfg["base_first"] = strip_clock_suffix(getattr(me, "first_name", "") or "")
+                clock_cfg["base_last"] = strip_clock_suffix(getattr(me, "last_name", "") or "")
+                save_clock_config(clock_cfg)
+
+            clk_str = format_tehran_clock(clock_cfg.get("style", "bold"))
+            sep = clock_cfg.get("sep", "|")
+            b_first = clock_cfg.get("base_first", "")
+            b_last = clock_cfg.get("base_last", "")
+
+            if clock_cfg.get("target_field") == "last":
+                new_first = b_first
+                new_last = f"{b_last} {sep} {clk_str}".strip() if b_last else clk_str
+            else:
+                new_first = f"{b_first} {sep} {clk_str}".strip() if b_first else clk_str
+                new_last = b_last
+
+            await apply_profile_name(c, new_first, new_last)
+            st["last_clock_min"] = now_min
+            log(f"ساعت پروفایل آپدیت شد: {new_first} {new_last}".strip(), RED_LIGHT)
+        except Exception as ex:
+            log(f"خطا در آپدیت ساعت: {ex}", RED_NEON)
+
+    def attach_pv_auto_reply_hook(c):
+        if st["event_hook_attached"] or not callable(getattr(c, "add_event_handler", None)):
+            return
+        try:
+            ev_mod = importlib.import_module("splusthon.events")
+            NewMessage = getattr(ev_mod, "NewMessage", None)
+            if NewMessage is None:
+                return
+
+            async def _on_incoming_pv(event):
+                try:
+                    if not autoreply_cfg.get("enabled"):
+                        return
+                    if not getattr(event, "is_private", False) or getattr(event, "out", False):
+                        return
+                    reply_msg = str(autoreply_cfg.get("text") or "").strip()
+                    if not reply_msg:
+                        return
+                    sender = await event.get_sender()
+                    if sender is not None and bool(getattr(sender, "bot", False) or getattr(sender, "is_bot", False)):
+                        return
+                    cid = getattr(event, "chat_id", None) or getattr(event, "sender_id", None)
+                    if cid is None:
+                        return
+                    cid_str = str(cid)
+                    my_id = await get_my_user_id(c)
+                    if cid_str == my_id:
+                        return
+                    replied_set = set(str(x) for x in autoreply_cfg.get("replied_users", []))
+                    if cid_str in replied_set:
+                        return
+                    peer = await resolve_peer(c, cid_str)
+                    await send_fast_single(c, peer, cid_str, reply_msg)
+                    replied_set.add(cid_str)
+                    autoreply_cfg["replied_users"] = list(replied_set)
+                    save_autoreply_config(autoreply_cfg)
+                    title = getattr(sender, "first_name", None) or cid_str
+                    log(f"🤖 پاسخ خودکار آفلاین به «{title}» ارسال شد ✅", "#10B981")
+                except Exception:
+                    pass
+
+            c.add_event_handler(_on_incoming_pv, NewMessage(incoming=True))
+            st["event_hook_attached"] = True
+        except Exception:
+            pass
+
+    async def start_background_engine(c):
+        attach_pv_auto_reply_hook(c)
+        if st["bg_workers_started"]:
+            return
+        st["bg_workers_started"] = True
+
+        async def _clock_exact_minute_loop():
+            while st["client"] is not None:
+                try:
+                    if clock_cfg.get("enabled"):
+                        await sync_profile_clock(c, force=False)
+                except Exception:
+                    pass
+                now = datetime.datetime.now(TEHRAN_TZ)
+                sleep_sec = max(2.0, 60.5 - now.second) if clock_cfg.get("enabled") else 10.0
+                await asyncio.sleep(sleep_sec)
+
+        async def _connection_keepalive_loop():
+            while st["client"] is not None:
+                try:
+                    if not c.is_connected():
+                        await ensure_online(c)
+                except Exception:
+                    pass
+                await asyncio.sleep(15.0)
+
+        asyncio.create_task(_clock_exact_minute_loop())
+        asyncio.create_task(_connection_keepalive_loop())
+
     def on_lifecycle_change(e):
         try:
             state_str = str(getattr(e, "state", "")).lower()
             if clock_cfg.get("bg_keep_alive", True):
-                set_android_wakelock(True)
-            if st["client"] is not None and (st["in_dashboard"] or clock_cfg.get("bg_keep_alive", True)):
+                notify_native_android_service("start")
+            if st["client"] is not None:
                 asyncio.create_task(ensure_online(st["client"]))
                 if "resume" in state_str:
                     safe_page_update()
@@ -714,6 +823,7 @@ async def main(page: ft.Page):
     def show_update_required(msg: str, update_url: str):
         st["in_dashboard"] = False
         target_site = update_url or WEBSITE_URL
+        page.scroll = ft.ScrollMode.AUTO
         page.controls.clear()
         url_box = ft.TextField(
             label="آدرس سایت رسمی جهت دانلود نسخه جدید",
@@ -769,6 +879,7 @@ async def main(page: ft.Page):
             c = get_client()
             await c.connect()
             if await c.is_user_authorized():
+                await start_background_engine(c)
                 show_dashboard()
                 return
         except Exception:
@@ -780,6 +891,7 @@ async def main(page: ft.Page):
     # ==========================================
     def show_license(msg: str = ""):
         st["in_dashboard"] = False
+        page.scroll = ft.ScrollMode.AUTO
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         dev_box = ft.TextField(
@@ -860,6 +972,7 @@ async def main(page: ft.Page):
     # ==========================================
     def show_phone(msg: str = ""):
         st["in_dashboard"] = False
+        page.scroll = ft.ScrollMode.AUTO
         page.controls.clear()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         ph_box = ft.TextField(
@@ -943,6 +1056,7 @@ async def main(page: ft.Page):
     # ==========================================
     def show_otp():
         st["in_dashboard"] = False
+        page.scroll = ft.ScrollMode.AUTO
         page.controls.clear()
         info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color=RED_LIGHT)
         code_box = ft.TextField(
@@ -986,6 +1100,7 @@ async def main(page: ft.Page):
                     except TypeError:
                         await c.sign_in(st["phone"], code)
                 btn.disabled = False
+                await start_background_engine(c)
                 show_dashboard()
             except Exception as ex:
                 btn.disabled = False
@@ -1024,209 +1139,63 @@ async def main(page: ft.Page):
         safe_page_update()
 
     # ==========================================
-    # صفحه ۴: داشبورد کامل سلف‌بات (بهینه‌سازی‌شده بدون لگ)
+    # صفحه ۴: داشبورد فوق‌روان سلف‌بات
     # ==========================================
     def show_dashboard():
         st["in_dashboard"] = True
+        page.scroll = None
         page.controls.clear()
         c = get_client()
-        log("سلف‌بات با موفقیت به سروش‌پلاس متصل شد ✅", "#10B981")
+        log("سلف‌بات با موفقیت متصل شد ✅", "#10B981")
 
-        if clock_cfg.get("bg_keep_alive", True):
-            set_android_wakelock(True)
+        notify_native_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
 
-        # اتصال به رویداد آنی پیام جدید در پی‌وی (بدون مصرف پردازنده)
-        if not st["event_hook_attached"] and callable(getattr(c, "add_event_handler", None)):
-            try:
-                ev_mod = importlib.import_module("splusthon.events")
-                NewMessage = getattr(ev_mod, "NewMessage", None)
-                if NewMessage is not None:
-                    async def _on_incoming_pv(event):
-                        try:
-                            if not autoreply_cfg.get("enabled"):
-                                return
-                            if not getattr(event, "is_private", False) or getattr(event, "out", False):
-                                return
-                            reply_msg = str(autoreply_cfg.get("text") or "").strip()
-                            if not reply_msg:
-                                return
-                            sender = await event.get_sender()
-                            if sender is not None and bool(getattr(sender, "bot", False) or getattr(sender, "is_bot", False)):
-                                return
-                            cid = getattr(event, "chat_id", None) or getattr(event, "sender_id", None)
-                            if cid is None:
-                                return
-                            cid_str = str(cid)
-                            my_id = await get_my_user_id(c)
-                            if cid_str == my_id:
-                                return
-                            replied_set = set(str(x) for x in autoreply_cfg.get("replied_users", []))
-                            if cid_str in replied_set:
-                                return
-                            peer = await resolve_peer(c, cid_str)
-                            await send_fast_single(c, peer, cid_str, reply_msg)
-                            replied_set.add(cid_str)
-                            autoreply_cfg["replied_users"] = list(replied_set)
-                            save_autoreply_config(autoreply_cfg)
-                            title = getattr(sender, "first_name", None) or cid_str
-                            log(f"🤖 پاسخ خودکار آفلاین به «{title}» ارسال شد ✅", "#10B981")
-                        except Exception:
-                            pass
+        body_host = ft.Column(spacing=10, scroll=ft.ScrollMode.AUTO, expand=True, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
+        on_dialogs_loaded_callback = None
 
-                    c.add_event_handler(_on_incoming_pv, NewMessage(incoming=True))
-                    st["event_hook_attached"] = True
-            except Exception:
-                pass
-
-        async def sync_profile_clock(force: bool = False):
-            if not clock_cfg.get("enabled"):
-                return
-            now_min = datetime.datetime.now(TEHRAN_TZ).strftime("%H:%M")
-            if not force and st["last_clock_min"] == now_min:
-                return
+        async def fetch_dialogs_list(limit_count: int = 80):
+            items = []
             try:
                 await ensure_online(c)
-                if not clock_cfg.get("base_first"):
-                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
-                    clock_cfg["base_first"] = strip_clock_suffix(getattr(me, "first_name", "") or "")
-                    clock_cfg["base_last"] = strip_clock_suffix(getattr(me, "last_name", "") or "")
-                    save_clock_config(clock_cfg)
-
-                clk_str = format_tehran_clock(clock_cfg.get("style", "bold"))
-                sep = clock_cfg.get("sep", "|")
-                b_first = clock_cfg.get("base_first", "")
-                b_last = clock_cfg.get("base_last", "")
-
-                if clock_cfg.get("target_field") == "last":
-                    new_first = b_first
-                    new_last = f"{b_last} {sep} {clk_str}".strip() if b_last else clk_str
-                else:
-                    new_first = f"{b_first} {sep} {clk_str}".strip() if b_first else clk_str
-                    new_last = b_last
-
-                await apply_profile_name(c, new_first, new_last)
-                st["last_clock_min"] = now_min
-                log(f"ساعت پروفایل آپدیت شد: {new_first} {new_last}".strip(), RED_LIGHT)
-            except Exception as ex:
-                log(f"خطا در آپدیت ساعت پروفایل: {ex}", RED_NEON)
-
-        async def check_pv_auto_reply_light():
-            """بررسی فوق‌سبک فقط برای چت‌های دارای پیام خوانده‌نشده (بدون لگ)."""
-            if not autoreply_cfg.get("enabled"):
-                return
-            reply_msg = str(autoreply_cfg.get("text") or "").strip()
-            if not reply_msg:
-                return
-
-            try:
-                await ensure_online(c)
-                my_id = await get_my_user_id(c)
                 raw_dialogs = []
                 if callable(getattr(c, "get_dialogs", None)):
-                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=15), timeout=8.0)
-
-                replied_set = set(str(x) for x in autoreply_cfg.get("replied_users", []))
+                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=limit_count), timeout=12.0)
+                elif callable(getattr(c, "iter_dialogs", None)):
+                    async for d in c.iter_dialogs(limit=limit_count):
+                        raw_dialogs.append(d)
 
                 for d in raw_dialogs:
-                    unread = getattr(d, "unread_count", 0) or 0
-                    if unread <= 0:
-                        continue
                     ent = getattr(d, "entity", None)
                     cid = getattr(d, "id", None)
                     if cid is None and ent is not None:
                         cid = getattr(ent, "id", None) or getattr(ent, "guid", None)
                     if cid is None:
                         continue
-                    cid_str = str(cid)
-                    if cid_str == my_id or cid_str in replied_set:
-                        continue
 
+                    title = (
+                        getattr(d, "name", None)
+                        or getattr(d, "title", None)
+                        or getattr(ent, "title", None)
+                        or getattr(ent, "first_name", None)
+                        or str(cid)
+                    )
                     is_user = getattr(d, "is_user", None)
-                    is_group = getattr(d, "is_group", None) or getattr(d, "is_channel", None)
-                    is_pv = (is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group))
-                    if not is_pv:
-                        continue
-                    if ent is not None and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
-                        continue
+                    is_group_flag = getattr(d, "is_group", None)
+                    is_channel_flag = getattr(d, "is_channel", None)
+                    is_broadcast = bool(getattr(ent, "broadcast", False)) if ent is not None else False
+                    is_megagroup = bool(getattr(ent, "megagroup", False)) if ent is not None else False
 
-                    peer = await resolve_peer(c, cid_str)
-                    await send_fast_single(c, peer, cid_str, reply_msg)
-                    replied_set.add(cid_str)
-                    autoreply_cfg["replied_users"] = list(replied_set)
-                    save_autoreply_config(autoreply_cfg)
-                    title = getattr(d, "name", None) or getattr(d, "title", None) or cid_str
-                    log(f"🤖 پاسخ خودکار آفلاین به «{title}» ارسال شد ✅", "#10B981")
-            except Exception:
-                pass
+                    cid_str = str(cid)
+                    if is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group_flag and not is_channel_flag):
+                        kind = "pv"
+                    elif is_channel_flag and (is_broadcast or not is_megagroup) and not is_group_flag:
+                        kind = "channel"
+                    else:
+                        kind = "group"
 
-        async def connection_and_bg_watchdog():
-            """ناظر سبک پس‌زمینه: فقط در صورت آزاد بودن شبکه اجرا می‌شود تا لمس‌ها روان بمانند."""
-            while st["in_dashboard"] or clock_cfg.get("bg_keep_alive", True):
-                if st["client"] is None:
-                    break
-                if not client_lock.locked():
-                    async with client_lock:
-                        try:
-                            await ensure_online(c)
-                            if clock_cfg.get("enabled"):
-                                await sync_profile_clock(force=False)
-                            if autoreply_cfg.get("enabled"):
-                                await check_pv_auto_reply_light()
-                        except Exception:
-                            pass
-                await asyncio.sleep(10.0)
-
-        if not st["watchdog_started"]:
-            st["watchdog_started"] = True
-            asyncio.create_task(connection_and_bg_watchdog())
-
-        body_host = ft.Column(spacing=12, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
-        on_dialogs_loaded_callback = None
-
-        async def fetch_dialogs_list(limit_count: int = 80):
-            items = []
-            async with client_lock:
-                try:
-                    await ensure_online(c)
-                    raw_dialogs = []
-                    if callable(getattr(c, "get_dialogs", None)):
-                        raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=limit_count), timeout=12.0)
-                    elif callable(getattr(c, "iter_dialogs", None)):
-                        async for d in c.iter_dialogs(limit=limit_count):
-                            raw_dialogs.append(d)
-
-                    for d in raw_dialogs:
-                        ent = getattr(d, "entity", None)
-                        cid = getattr(d, "id", None)
-                        if cid is None and ent is not None:
-                            cid = getattr(ent, "id", None) or getattr(ent, "guid", None)
-                        if cid is None:
-                            continue
-
-                        title = (
-                            getattr(d, "name", None)
-                            or getattr(d, "title", None)
-                            or getattr(ent, "title", None)
-                            or getattr(ent, "first_name", None)
-                            or str(cid)
-                        )
-                        is_user = getattr(d, "is_user", None)
-                        is_group_flag = getattr(d, "is_group", None)
-                        is_channel_flag = getattr(d, "is_channel", None)
-                        is_broadcast = bool(getattr(ent, "broadcast", False)) if ent is not None else False
-                        is_megagroup = bool(getattr(ent, "megagroup", False)) if ent is not None else False
-
-                        cid_str = str(cid)
-                        if is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group_flag and not is_channel_flag):
-                            kind = "pv"
-                        elif is_channel_flag and (is_broadcast or not is_megagroup) and not is_group_flag:
-                            kind = "channel"
-                        else:
-                            kind = "group"
-
-                        items.append({"id": cid_str, "title": str(title), "kind": kind})
-                except Exception as ex:
-                    log(f"خطا در دریافت لیست چت‌ها: {ex}", RED_NEON)
+                    items.append({"id": cid_str, "title": str(title), "kind": kind})
+            except Exception as ex:
+                log(f"خطا در دریافت لیست چت‌ها: {ex}", RED_NEON)
             st["dialogs"] = items
             if callable(on_dialogs_loaded_callback):
                 on_dialogs_loaded_callback()
@@ -1237,45 +1206,44 @@ async def main(page: ft.Page):
             tgt_str = (raw_target or "").strip()
             if not tgt_str:
                 return msgs
-            async with client_lock:
-                try:
-                    await ensure_online(c)
-                    peer = await resolve_peer(c, tgt_str)
-                    raw_msgs = []
-                    if callable(getattr(c, "get_messages", None)):
-                        raw_msgs = await asyncio.wait_for(c.get_messages(peer, limit=limit_count), timeout=12.0)
-                    elif callable(getattr(c, "iter_messages", None)):
-                        async for m in c.iter_messages(peer, limit=limit_count):
-                            raw_msgs.append(m)
+            try:
+                await ensure_online(c)
+                peer = await resolve_peer(c, tgt_str)
+                raw_msgs = []
+                if callable(getattr(c, "get_messages", None)):
+                    raw_msgs = await asyncio.wait_for(c.get_messages(peer, limit=limit_count), timeout=12.0)
+                elif callable(getattr(c, "iter_messages", None)):
+                    async for m in c.iter_messages(peer, limit=limit_count):
+                        raw_msgs.append(m)
 
-                    for m in raw_msgs:
-                        mid = getattr(m, "id", None)
-                        if mid is None:
-                            continue
-                        txt = (
-                            getattr(m, "raw_text", None)
-                            or getattr(m, "text", None)
-                            or getattr(m, "message", None)
-                            or ""
-                        ).strip()
-                        if not txt and getattr(m, "media", None) is not None:
-                            txt = "[رسانه / فایل / استیکر]"
-                        if not txt:
-                            continue
+                for m in raw_msgs:
+                    mid = getattr(m, "id", None)
+                    if mid is None:
+                        continue
+                    txt = (
+                        getattr(m, "raw_text", None)
+                        or getattr(m, "text", None)
+                        or getattr(m, "message", None)
+                        or ""
+                    ).strip()
+                    if not txt and getattr(m, "media", None) is not None:
+                        txt = "[رسانه / فایل / استیکر]"
+                    if not txt:
+                        continue
 
-                        sender = getattr(m, "sender", None)
-                        sender_name = (
-                            getattr(sender, "first_name", None)
-                            or getattr(sender, "title", None)
-                            or ("شما" if getattr(m, "out", False) else str(getattr(m, "sender_id", "کاربر")))
-                        )
-                        msgs.append({
-                            "id": mid,
-                            "sender": str(sender_name),
-                            "text": txt,
-                        })
-                except Exception as ex:
-                    log(f"خطا در دریافت پیام‌های اخیر: {ex}", RED_NEON)
+                    sender = getattr(m, "sender", None)
+                    sender_name = (
+                        getattr(sender, "first_name", None)
+                        or getattr(sender, "title", None)
+                        or ("شما" if getattr(m, "out", False) else str(getattr(m, "sender_id", "کاربر")))
+                    )
+                    msgs.append({
+                        "id": mid,
+                        "sender": str(sender_name),
+                        "text": txt,
+                    })
+            except Exception as ex:
+                log(f"خطا در دریافت پیام‌های اخیر: {ex}", RED_NEON)
             return msgs
 
         async def fetch_recent_messages(raw_target: str):
@@ -1336,8 +1304,8 @@ async def main(page: ft.Page):
                 border_color=BORDER_CRIMSON,
                 on_change=lambda e: set_active_target_clean(e.control.value or ""),
             )
-            chat_list_col = ft.Column(spacing=6, height=175, scroll=ft.ScrollMode.AUTO)
-            recent_msgs_col = ft.Column(spacing=6, height=200, scroll=ft.ScrollMode.AUTO)
+            chat_list_col = ft.Column(spacing=6, height=165, scroll=ft.ScrollMode.AUTO)
+            recent_msgs_col = ft.Column(spacing=6, height=180, scroll=ft.ScrollMode.AUTO)
             selected_count_lbl = ft.Text(f"چت‌های انتخاب‌شده برای ارسال گروهی: {len(st['selected_targets'])}", size=12, color=RED_LIGHT)
             reply_banner_holder = ft.Column(controls=[build_reply_status_banner(lambda: refresh_recent_msg_cards())])
 
@@ -1491,31 +1459,31 @@ async def main(page: ft.Page):
 
             on_dialogs_loaded_callback = lambda: (refresh_chat_cards(), safe_page_update())
 
-            f_all, _ = make_btn("همه", lambda e: set_filter(e, "all"), bgcolor=RED_PRIMARY if st["chat_filter"] == "all" else BG_INPUT, height=36, expand=True)
-            f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_filter(e, "pv"), bgcolor=RED_PRIMARY if st["chat_filter"] == "pv" else BG_INPUT, height=36, expand=True)
-            f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_filter(e, "group"), bgcolor=RED_PRIMARY if st["chat_filter"] == "group" else BG_INPUT, height=36, expand=True)
-            rel_btn, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats, bgcolor=RED_PRIMARY, height=40, expand=True)
-            load_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_msgs_for_current_target, bgcolor=RED_DARK, height=40, expand=True)
+            f_all, _ = make_btn("همه", lambda e: set_filter(e, "all"), bgcolor=RED_PRIMARY if st["chat_filter"] == "all" else BG_INPUT, height=34, expand=True)
+            f_pv, _ = make_btn("👤 پی‌وی", lambda e: set_filter(e, "pv"), bgcolor=RED_PRIMARY if st["chat_filter"] == "pv" else BG_INPUT, height=34, expand=True)
+            f_gp, _ = make_btn("👥 گپ‌ها", lambda e: set_filter(e, "group"), bgcolor=RED_PRIMARY if st["chat_filter"] == "group" else BG_INPUT, height=34, expand=True)
+            rel_btn, _ = make_btn("🔄 بروزرسانی چت‌ها", reload_chats, bgcolor=RED_PRIMARY, height=38, expand=True)
+            load_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_msgs_for_current_target, bgcolor=RED_DARK, height=38, expand=True)
             clr_btn, _ = make_btn("پاک کردن", clear_selected, color=RED_NEON, kind="text")
 
             refresh_chat_cards()
             refresh_recent_msg_cards()
 
             return ft.Column(
-                spacing=10,
+                spacing=8,
                 horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                 controls=[
                     ft.Container(
                         bgcolor=BG_CARD,
-                        padding=14,
+                        padding=12,
                         border_radius=ft.BorderRadius.all(12),
                         border=ft.Border.all(1, BORDER_CRIMSON),
                         content=ft.Column(
-                            spacing=10,
+                            spacing=8,
                             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                             controls=[
                                 ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
-                                    ft.Text("💬 انتخاب پی‌وی یا گپ", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                                    ft.Text("💬 انتخاب پی‌وی یا گپ", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                                     clr_btn,
                                 ]),
                                 manual_target,
@@ -1528,14 +1496,14 @@ async def main(page: ft.Page):
                     ),
                     ft.Container(
                         bgcolor=BG_CARD,
-                        padding=14,
+                        padding=12,
                         border_radius=ft.BorderRadius.all(12),
                         border=ft.Border.all(1, BORDER_CRIMSON),
                         content=ft.Column(
-                            spacing=8,
+                            spacing=6,
                             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                             controls=[
-                                ft.Text("📜 پیام‌های اخیر چت (برای ریپلای لمس کنید)", size=14, weight=ft.FontWeight.BOLD, color=RED_LIGHT),
+                                ft.Text("📜 پیام‌های اخیر چت (برای ریپلای لمس کنید)", size=13, weight=ft.FontWeight.BOLD, color=RED_LIGHT),
                                 reply_banner_holder,
                                 recent_msgs_col,
                             ],
@@ -1661,51 +1629,50 @@ async def main(page: ft.Page):
                 last_ui_tick = 0.0
 
                 try:
-                    async with client_lock:
-                        await ensure_online(c)
-                        resolved_peers = {}
-                        for t_raw in targets:
-                            resolved_peers[t_raw] = await resolve_peer(c, t_raw)
+                    await ensure_online(c)
+                    resolved_peers = {}
+                    for t_raw in targets:
+                        resolved_peers[t_raw] = await resolve_peer(c, t_raw)
 
-                        queue = []
-                        for _ in range(rounds):
-                            for raw_t in targets:
-                                rep_id = st["reply_to_id"] if (st["reply_to_id"] and st["reply_chat_id"] == raw_t) else None
-                                for m_txt in messages:
-                                    queue.append((raw_t, resolved_peers[raw_t], m_txt, rep_id))
+                    queue = []
+                    for _ in range(rounds):
+                        for raw_t in targets:
+                            rep_id = st["reply_to_id"] if (st["reply_to_id"] and st["reply_chat_id"] == raw_t) else None
+                            for m_txt in messages:
+                                queue.append((raw_t, resolved_peers[raw_t], m_txt, rep_id))
 
-                        if dly == 0:
-                            batch_size = 5
-                            for i in range(0, len(queue), batch_size):
-                                if not st["multi_running"]:
-                                    log(f"ارسال چندتایی متوقف شد ({done} از {total_ops}).", "#F59E0B")
-                                    return
-                                chunk = queue[i:i + batch_size]
-                                await asyncio.gather(
-                                    *(send_fast_single(c, peer, rt, txt, rep) for rt, peer, txt, rep in chunk)
-                                )
-                                done += len(chunk)
-                                now = time.monotonic()
-                                if now - last_ui_tick >= 0.3 or done == total_ops:
-                                    last_ui_tick = now
-                                    m_stat.value = f"ارسال شد: {done} از {total_ops}"
-                                    m_stat.color = "#10B981"
-                                    safe_page_update()
-                        else:
-                            for rt, peer, txt, rep in queue:
-                                if not st["multi_running"]:
-                                    log(f"ارسال چندتایی متوقف شد ({done} از {total_ops}).", "#F59E0B")
-                                    return
-                                await send_fast_single(c, peer, rt, txt, rep)
-                                done += 1
-                                now = time.monotonic()
-                                if now - last_ui_tick >= 0.3 or done == total_ops:
-                                    last_ui_tick = now
-                                    m_stat.value = f"ارسال شد: {done} از {total_ops}"
-                                    m_stat.color = "#10B981"
-                                    safe_page_update()
-                                if done < total_ops:
-                                    await asyncio.sleep(dly)
+                    if dly == 0:
+                        batch_size = 5
+                        for i in range(0, len(queue), batch_size):
+                            if not st["multi_running"]:
+                                log(f"ارسال چندتایی متوقف شد ({done} از {total_ops}).", "#F59E0B")
+                                return
+                            chunk = queue[i:i + batch_size]
+                            await asyncio.gather(
+                                *(send_fast_single(c, peer, rt, txt, rep) for rt, peer, txt, rep in chunk)
+                            )
+                            done += len(chunk)
+                            now = time.monotonic()
+                            if now - last_ui_tick >= 0.35 or done == total_ops:
+                                last_ui_tick = now
+                                m_stat.value = f"ارسال شد: {done} از {total_ops}"
+                                m_stat.color = "#10B981"
+                                safe_page_update()
+                    else:
+                        for rt, peer, txt, rep in queue:
+                            if not st["multi_running"]:
+                                log(f"ارسال چندتایی متوقف شد ({done} از {total_ops}).", "#F59E0B")
+                                return
+                            await send_fast_single(c, peer, rt, txt, rep)
+                            done += 1
+                            now = time.monotonic()
+                            if now - last_ui_tick >= 0.35 or done == total_ops:
+                                last_ui_tick = now
+                                m_stat.value = f"ارسال شد: {done} از {total_ops}"
+                                m_stat.color = "#10B981"
+                                safe_page_update()
+                            if done < total_ops:
+                                await asyncio.sleep(dly)
 
                     log(f"ارسال چندتایی با موفقیت کامل شد ({done} پیام) ✅", "#10B981")
                 except asyncio.CancelledError:
@@ -1736,21 +1703,21 @@ async def main(page: ft.Page):
                 safe_page_update()
                 asyncio.create_task(run_multi_sender())
 
-            add_btn, _ = make_btn("➕ افزودن به لیست", add_msg_item, bgcolor=RED_PRIMARY, height=40, expand=True)
-            save_msgs_btn, _ = make_btn("💾 ذخیره پیام‌ها (پیش‌فرض)", save_messages_as_default, bgcolor=RED_DARK, height=40, expand=True)
-            m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_multi, bgcolor=RED_PRIMARY, height=46)
+            add_btn, _ = make_btn("➕ افزودن به لیست", add_msg_item, bgcolor=RED_PRIMARY, height=38, expand=True)
+            save_msgs_btn, _ = make_btn("💾 ذخیره پیام‌ها (پیش‌فرض)", save_messages_as_default, bgcolor=RED_DARK, height=38, expand=True)
+            m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_multi, bgcolor=RED_PRIMARY, height=44)
             render_msg_items()
 
             return ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
+                padding=12,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("📨 ارسال چندتایی (Multi-Message)", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text("📨 ارسال چندتایی (Multi-Message)", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         build_reply_status_banner(),
                         target_field,
                         multi_targets_card,
@@ -1796,36 +1763,35 @@ async def main(page: ft.Page):
                 last_ui_tick = 0.0
 
                 try:
-                    async with client_lock:
-                        await ensure_online(c)
-                        peer = await resolve_peer(c, raw_t)
+                    await ensure_online(c)
+                    peer = await resolve_peer(c, raw_t)
 
-                        if dly == 0:
-                            batch_size = 5
-                            while st["turbo_running"] and sent < total:
-                                cur_batch = min(batch_size, total - sent)
-                                await asyncio.gather(
-                                    *(send_fast_single(c, peer, raw_t, txt, rep_id) for _ in range(cur_batch))
-                                )
-                                sent += cur_batch
-                                now = time.monotonic()
-                                if now - last_ui_tick >= 0.3 or sent == total:
-                                    last_ui_tick = now
-                                    t_stat.value = f"ارسال شد: {sent}/{total}"
-                                    t_stat.color = "#10B981"
-                                    safe_page_update()
-                        else:
-                            while st["turbo_running"] and sent < total:
-                                await send_fast_single(c, peer, raw_t, txt, rep_id)
-                                sent += 1
-                                now = time.monotonic()
-                                if now - last_ui_tick >= 0.3 or sent == total:
-                                    last_ui_tick = now
-                                    t_stat.value = f"ارسال شد: {sent}/{total}"
-                                    t_stat.color = "#10B981"
-                                    safe_page_update()
-                                if sent < total:
-                                    await asyncio.sleep(dly)
+                    if dly == 0:
+                        batch_size = 5
+                        while st["turbo_running"] and sent < total:
+                            cur_batch = min(batch_size, total - sent)
+                            await asyncio.gather(
+                                *(send_fast_single(c, peer, raw_t, txt, rep_id) for _ in range(cur_batch))
+                            )
+                            sent += cur_batch
+                            now = time.monotonic()
+                            if now - last_ui_tick >= 0.35 or sent == total:
+                                last_ui_tick = now
+                                t_stat.value = f"ارسال شد: {sent}/{total}"
+                                t_stat.color = "#10B981"
+                                safe_page_update()
+                    else:
+                        while st["turbo_running"] and sent < total:
+                            await send_fast_single(c, peer, raw_t, txt, rep_id)
+                            sent += 1
+                            now = time.monotonic()
+                            if now - last_ui_tick >= 0.35 or sent == total:
+                                last_ui_tick = now
+                                t_stat.value = f"ارسال شد: {sent}/{total}"
+                                t_stat.color = "#10B981"
+                                safe_page_update()
+                            if sent < total:
+                                await asyncio.sleep(dly)
 
                     log(f"پایان ارسال توربو ({sent} پیام) ✅", "#10B981")
                 except asyncio.CancelledError:
@@ -1859,14 +1825,14 @@ async def main(page: ft.Page):
             t_btn, t_lbl = make_btn("🚀 شروع توربو", toggle_turbo, bgcolor=RED_PRIMARY, height=44)
             return ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
+                padding=12,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("🚀 ارسال توربو فوق‌سریع", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         build_reply_status_banner(),
                         target_box,
                         msg_box,
@@ -1890,8 +1856,8 @@ async def main(page: ft.Page):
                 border_color=BORDER_CRIMSON,
                 on_change=lambda e: st.update({"fwd_source_chat": (e.control.value or "").strip()}),
             )
-            src_chats_col = ft.Column(spacing=6, height=145, scroll=ft.ScrollMode.AUTO)
-            src_msgs_col = ft.Column(spacing=6, height=175, scroll=ft.ScrollMode.AUTO)
+            src_chats_col = ft.Column(spacing=6, height=135, scroll=ft.ScrollMode.AUTO)
+            src_msgs_col = ft.Column(spacing=6, height=160, scroll=ft.ScrollMode.AUTO)
 
             selected_msg_lbl = ft.Text(
                 f"✅ پیام انتخاب‌شده (#{st['fwd_selected_msg_id']}): {st['fwd_selected_msg_preview']}"
@@ -2062,14 +2028,13 @@ async def main(page: ft.Page):
                             safe_page_update()
 
                             try:
-                                async with client_lock:
-                                    g_peer = await resolve_peer(c, gid)
-                                    recent_g_msgs = []
-                                    if callable(getattr(c, "get_messages", None)):
-                                        recent_g_msgs = await asyncio.wait_for(c.get_messages(g_peer, limit=200), timeout=15.0)
-                                    elif callable(getattr(c, "iter_messages", None)):
-                                        async for gm in c.iter_messages(g_peer, limit=200):
-                                            recent_g_msgs.append(gm)
+                                g_peer = await resolve_peer(c, gid)
+                                recent_g_msgs = []
+                                if callable(getattr(c, "get_messages", None)):
+                                    recent_g_msgs = await asyncio.wait_for(c.get_messages(g_peer, limit=200), timeout=15.0)
+                                elif callable(getattr(c, "iter_messages", None)):
+                                    async for gm in c.iter_messages(g_peer, limit=200):
+                                        recent_g_msgs.append(gm)
 
                                 for gm in recent_g_msgs:
                                     if getattr(gm, "post", False):
@@ -2099,9 +2064,8 @@ async def main(page: ft.Page):
                             if not st["fwd_running"]:
                                 break
                             try:
-                                async with client_lock:
-                                    target_peer = await resolve_peer(c, target_uid)
-                                    await forward_fast_single(c, target_peer, target_uid, src_peer, msg_id)
+                                target_peer = await resolve_peer(c, target_uid)
+                                await forward_fast_single(c, target_peer, target_uid, src_peer, msg_id)
                                 sent_ok += 1
                                 st["fwd_status"] = (
                                     f"📨 دور {round_idx} | ارسال به پی‌وی ({u_idx}/{total_targets}) | موفق: {sent_ok}"
@@ -2176,13 +2140,13 @@ async def main(page: ft.Page):
                 safe_page_update()
                 asyncio.create_task(forward_worker_loop())
 
-            rel_src_btn, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", reload_src_chats, bgcolor=RED_PRIMARY, height=40, expand=True)
-            load_src_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_src_messages, bgcolor=RED_DARK, height=40, expand=True)
+            rel_src_btn, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", reload_src_chats, bgcolor=RED_PRIMARY, height=38, expand=True)
+            load_src_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_src_messages, bgcolor=RED_DARK, height=38, expand=True)
             fwd_toggle_btn, fwd_btn_lbl = make_btn(
                 "⛔ توقف فوروارد خودکار" if st["fwd_running"] else "🚀 شروع فوروارد خودکار",
                 toggle_forward,
                 bgcolor=RED_DARK if st["fwd_running"] else RED_PRIMARY,
-                height=46,
+                height=44,
             )
 
             render_src_chats()
@@ -2190,14 +2154,14 @@ async def main(page: ft.Page):
 
             return ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
+                padding=12,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("📢 فوروارد هوشمند به کاربران فعال گپ‌ها", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text("📢 فوروارد هوشمند به کاربران فعال گپ‌ها", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         ft.Text(
                             "یک پیام از کانال یا پی‌وی انتخاب کنید؛ ربات ۲۰۰ پیام اخیر تمام گپ‌های عضو را بررسی کرده و بدون تکرار به پی‌وی آن‌ها فوروارد می‌کند.",
                             size=12,
@@ -2223,7 +2187,7 @@ async def main(page: ft.Page):
             )
 
         # ==========================================
-        # ویجت ۵: ارسال پیام خودکار در پی‌وی هنگام آفلاین بودن + کارت تیک واضح
+        # ویجت ۵: ارسال پیام خودکار در پی‌وی هنگام آفلاین بودن + سرویس بومی پس‌زمینه
         # ==========================================
         def build_autoreply_widget():
             def on_ar_toggle(new_val: bool):
@@ -2231,6 +2195,7 @@ async def main(page: ft.Page):
                 autoreply_cfg["text"] = (ar_text_box.value or "").strip()
                 save_autoreply_config(autoreply_cfg)
                 if new_val:
+                    attach_pv_auto_reply_hook(c)
                     log("پیام خودکار آفلاین در پی‌وی روشن شد 🤖✅", "#10B981")
                 else:
                     log("پیام خودکار پی‌وی خاموش شد.", RED_LIGHT)
@@ -2239,8 +2204,8 @@ async def main(page: ft.Page):
             def on_bg_toggle_from_ar(new_val: bool):
                 clock_cfg["bg_keep_alive"] = new_val
                 save_clock_config(clock_cfg)
-                set_android_wakelock(new_val)
-                log("اجرای پس‌زمینه ساعت و پی‌وی خودکار روشن شد 🔒✅" if new_val else "اجرای پس‌زمینه خاموش شد.", "#10B981" if new_val else RED_LIGHT)
+                notify_native_android_service("start" if new_val else "stop")
+                log("سرویس پس‌زمینه اندروید روشن شد 🔒✅" if new_val else "سرویس پس‌زمینه خاموش شد.", "#10B981" if new_val else RED_LIGHT)
                 safe_page_update()
 
             ar_toggle_card, ar_toggle_state, _ = make_toggle_card(
@@ -2261,8 +2226,8 @@ async def main(page: ft.Page):
             )
 
             bg_keep_card, bg_keep_state, _ = make_toggle_card(
-                title="🔒 اجرای مداوم در پس‌زمینه (حتی پس از بستن برنامه)",
-                subtitle="فعال ماندن همزمان ساعت و پیام خودکار پی‌وی در پس‌زمینه",
+                title="🔒 سرویس پس‌زمینه اندروید (خروج و بستن برنامه)",
+                subtitle="فعال نگه داشتن ساعت و پیام خودکار با نوتیفیکیشن دائمی",
                 initial_val=bool(clock_cfg.get("bg_keep_alive", True)),
                 on_toggle_callback=on_bg_toggle_from_ar,
             )
@@ -2281,7 +2246,9 @@ async def main(page: ft.Page):
                 keep_bg = bool(bg_keep_state["val"])
                 clock_cfg["bg_keep_alive"] = keep_bg
                 save_clock_config(clock_cfg)
-                set_android_wakelock(keep_bg)
+                notify_native_android_service("start" if keep_bg else "stop")
+                if autoreply_cfg["enabled"]:
+                    attach_pv_auto_reply_hook(c)
                 log("متن و تنظیمات پیام خودکار ذخیره شد 💾✅", "#10B981")
                 safe_page_update()
 
@@ -2292,27 +2259,24 @@ async def main(page: ft.Page):
                 log("لیست افراد پاسخ‌داده‌شده پاک شد ✅", "#10B981")
                 safe_page_update()
 
-            save_ar_btn, _ = make_btn("💾 ذخیره متن پاسخ خودکار", save_ar_settings, bgcolor=RED_PRIMARY, height=44, expand=True)
-            reset_ar_btn, _ = make_btn("🗑️ ریست لیست افراد", reset_ar_users, bgcolor=RED_DARK, height=44, expand=True)
+            save_ar_btn, _ = make_btn("💾 ذخیره متن پاسخ خودکار", save_ar_settings, bgcolor=RED_PRIMARY, height=42, expand=True)
+            reset_ar_btn, _ = make_btn("🗑️ ریست لیست افراد", reset_ar_users, bgcolor=RED_DARK, height=42, expand=True)
+            bat_btn, _ = make_btn("🔋 حذف محدودیت باتری گوشی (پیشنهادی)", lambda e: notify_native_android_service("battery"), bgcolor=BG_INPUT, color="#F59E0B", height=38)
 
             return ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
+                padding=12,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("🤖 پیام خودکار پی‌وی (حالت آفلاین)", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text("🤖 پیام خودکار پی‌وی (حالت آفلاین)", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         ar_toggle_card,
                         ar_text_box,
                         bg_keep_card,
-                        ft.Text(
-                            "نکته: برای بسته نشدن برنامه توسط گوشی، در تنظیمات باتری اندروید گزینه مصرف باتری این برنامه را روی Unrestricted (بدون محدودیت) بگذارید.",
-                            size=11,
-                            color="#F59E0B",
-                        ),
+                        bat_btn,
                         replied_lbl,
                         ft.Row(spacing=6, controls=[save_ar_btn, reset_ar_btn]),
                     ],
@@ -2320,7 +2284,7 @@ async def main(page: ft.Page):
             )
 
         # ==========================================
-        # ویجت ۶: ساعت افق تهران کنار اسم پروفایل + کارت تیک واضح
+        # ویجت ۶: ساعت افق تهران کنار اسم پروفایل + سرویس بومی پس‌زمینه
         # ==========================================
         def build_clock_widget():
             cur_tehran = format_tehran_clock(clock_cfg.get("style", "bold"))
@@ -2335,8 +2299,8 @@ async def main(page: ft.Page):
             def on_bg_toggle_from_clock(new_val: bool):
                 clock_cfg["bg_keep_alive"] = new_val
                 save_clock_config(clock_cfg)
-                set_android_wakelock(new_val)
-                log("اجرای پس‌زمینه ساعت و پی‌وی خودکار روشن شد 🔒✅" if new_val else "اجرای پس‌زمینه خاموش شد.", "#10B981" if new_val else RED_LIGHT)
+                notify_native_android_service("start" if new_val else "stop")
+                log("سرویس پس‌زمینه اندروید روشن شد 🔒✅" if new_val else "سرویس پس‌زمینه خاموش شد.", "#10B981" if new_val else RED_LIGHT)
                 safe_page_update()
 
             clock_toggle_card, clock_toggle_state, _ = make_toggle_card(
@@ -2347,8 +2311,8 @@ async def main(page: ft.Page):
             )
 
             bg_keep_clock_card, bg_keep_clock_state, _ = make_toggle_card(
-                title="🔒 اجرای مداوم در پس‌زمینه (حتی پس از بستن برنامه)",
-                subtitle="فعال ماندن همزمان ساعت و پیام خودکار پی‌وی در پس‌زمینه",
+                title="🔒 سرویس پس‌زمینه اندروید (خروج و بستن برنامه)",
+                subtitle="فعال نگه داشتن ساعت و پیام خودکار با نوتیفیکیشن دائمی",
                 initial_val=bool(clock_cfg.get("bg_keep_alive", True)),
                 on_toggle_callback=on_bg_toggle_from_clock,
             )
@@ -2389,19 +2353,18 @@ async def main(page: ft.Page):
                 pos_last_btn.bgcolor = RED_PRIMARY if p_val == "last" else BG_INPUT
                 safe_page_update()
 
-            s_norm, _ = make_btn("ساده 14:30", lambda e: select_style(e, "normal"), bgcolor=RED_PRIMARY if style_state["val"] == "normal" else BG_INPUT, height=36, expand=True)
-            s_bold, _ = make_btn("ضخیم 𝟏𝟒:𝟑𝟎", lambda e: select_style(e, "bold"), bgcolor=RED_PRIMARY if style_state["val"] == "bold" else BG_INPUT, height=36, expand=True)
-            s_mono, _ = make_btn("فانتزی 𝟷𝟺:𝟹𝟶", lambda e: select_style(e, "mono"), bgcolor=RED_PRIMARY if style_state["val"] == "mono" else BG_INPUT, height=36, expand=True)
+            s_norm, _ = make_btn("ساده 14:30", lambda e: select_style(e, "normal"), bgcolor=RED_PRIMARY if style_state["val"] == "normal" else BG_INPUT, height=34, expand=True)
+            s_bold, _ = make_btn("ضخیم 𝟏𝟒:𝟑𝟎", lambda e: select_style(e, "bold"), bgcolor=RED_PRIMARY if style_state["val"] == "bold" else BG_INPUT, height=34, expand=True)
+            s_mono, _ = make_btn("فانتزی 𝟷𝟺:𝟹𝟶", lambda e: select_style(e, "mono"), bgcolor=RED_PRIMARY if style_state["val"] == "mono" else BG_INPUT, height=34, expand=True)
             style_btns = {"normal": s_norm, "bold": s_bold, "mono": s_mono}
 
-            pos_first_btn, _ = make_btn("کنار اسم (First Name)", lambda e: select_pos(e, "first"), bgcolor=RED_PRIMARY if style_state["pos"] == "first" else BG_INPUT, height=36, expand=True)
-            pos_last_btn, _ = make_btn("کنار فامیل (Last Name)", lambda e: select_pos(e, "last"), bgcolor=RED_PRIMARY if style_state["pos"] == "last" else BG_INPUT, height=36, expand=True)
+            pos_first_btn, _ = make_btn("کنار اسم (First Name)", lambda e: select_pos(e, "first"), bgcolor=RED_PRIMARY if style_state["pos"] == "first" else BG_INPUT, height=34, expand=True)
+            pos_last_btn, _ = make_btn("کنار فامیل (Last Name)", lambda e: select_pos(e, "last"), bgcolor=RED_PRIMARY if style_state["pos"] == "last" else BG_INPUT, height=34, expand=True)
 
             async def fetch_current_name(e):
                 try:
-                    async with client_lock:
-                        await ensure_online(c)
-                        me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                    await ensure_online(c)
+                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
                     bf = strip_clock_suffix(getattr(me, "first_name", "") or "")
                     bl = strip_clock_suffix(getattr(me, "last_name", "") or "")
                     base_first_box.value = bf
@@ -2422,9 +2385,8 @@ async def main(page: ft.Page):
 
                 if not bf and not bl:
                     try:
-                        async with client_lock:
-                            await ensure_online(c)
-                            me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                        await ensure_online(c)
+                        me = await asyncio.wait_for(c.get_me(), timeout=8.0)
                         bf = strip_clock_suffix(getattr(me, "first_name", "") or "")
                         bl = strip_clock_suffix(getattr(me, "last_name", "") or "")
                         base_first_box.value = bf
@@ -2440,39 +2402,39 @@ async def main(page: ft.Page):
                 clock_cfg["target_field"] = style_state["pos"]
                 clock_cfg["sep"] = (sep_box.value or "|").strip()
                 save_clock_config(clock_cfg)
-                set_android_wakelock(keep_bg)
+                notify_native_android_service("start" if keep_bg else "stop")
                 st["last_clock_min"] = ""
 
                 if enabled:
-                    async with client_lock:
-                        await sync_profile_clock(force=True)
+                    await sync_profile_clock(c, force=True)
                     log("ساعت افق تهران فعال شد و هر دقیقه آپدیت می‌شود ⏰✅", "#10B981")
                 else:
                     try:
-                        async with client_lock:
-                            await ensure_online(c)
-                            await apply_profile_name(c, bf or "User", bl)
+                        await ensure_online(c)
+                        await apply_profile_name(c, bf or "User", bl)
                         log("ساعت غیرفعال شد و نام پروفایل به حالت عادی برگشت ✅", RED_LIGHT)
                     except Exception as ex:
                         log(f"خطا در بازگردانی نام: {ex}", RED_NEON)
                 safe_page_update()
 
-            get_name_btn, _ = make_btn("📥 خواندن اسم فعلی من", fetch_current_name, bgcolor=RED_DARK, height=40)
-            apply_clk_btn, _ = make_btn("💾 ذخیره و اعمال تنظیمات ساعت", save_and_apply_clock, bgcolor=RED_PRIMARY, height=46)
+            get_name_btn, _ = make_btn("📥 خواندن اسم فعلی من", fetch_current_name, bgcolor=RED_DARK, height=38)
+            apply_clk_btn, _ = make_btn("💾 ذخیره و اعمال تنظیمات ساعت", save_and_apply_clock, bgcolor=RED_PRIMARY, height=44)
+            bat_clock_btn, _ = make_btn("🔋 حذف محدودیت باتری گوشی (پیشنهادی)", lambda e: notify_native_android_service("battery"), bgcolor=BG_INPUT, color="#F59E0B", height=38)
 
             return ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
+                padding=12,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=10,
+                    spacing=8,
                     horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
                     controls=[
-                        ft.Text("⏰ ساعت افق تهران کنار اسم", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text("⏰ ساعت افق تهران کنار اسم", size=15, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         live_time_txt,
                         clock_toggle_card,
                         bg_keep_clock_card,
+                        bat_clock_btn,
                         get_name_btn,
                         base_first_box,
                         base_last_box,
@@ -2520,7 +2482,7 @@ async def main(page: ft.Page):
             save_clock_config(clock_cfg)
             autoreply_cfg["enabled"] = False
             save_autoreply_config(autoreply_cfg)
-            set_android_wakelock(False)
+            notify_native_android_service("stop")
             try:
                 await c.log_out()
             except Exception:
@@ -2541,12 +2503,12 @@ async def main(page: ft.Page):
             show_phone("از حساب خارج شدید.")
 
         out_btn, _ = make_btn("خروج", logout, color=RED_NEON, kind="text")
-        b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor=RED_PRIMARY, height=38, expand=True)
-        b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
-        b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
-        b_fwd, _ = make_btn("📢 فوروارد", lambda e: switch_tab(e, "forward"), bgcolor=BG_INPUT, height=38, expand=True)
-        b_auto, _ = make_btn("🤖 پی‌وی خودکار", lambda e: switch_tab(e, "autoreply"), bgcolor=BG_INPUT, height=38, expand=True)
-        b_clock, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
+        b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor=RED_PRIMARY, height=36, expand=True)
+        b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor=BG_INPUT, height=36, expand=True)
+        b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor=BG_INPUT, height=36, expand=True)
+        b_fwd, _ = make_btn("📢 فوروارد", lambda e: switch_tab(e, "forward"), bgcolor=BG_INPUT, height=36, expand=True)
+        b_auto, _ = make_btn("🤖 پی‌وی خودکار", lambda e: switch_tab(e, "autoreply"), bgcolor=BG_INPUT, height=36, expand=True)
+        b_clock, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor=BG_INPUT, height=36, expand=True)
         nav_buttons = {
             "chats": b_chats,
             "multi": b_multi,
@@ -2561,14 +2523,14 @@ async def main(page: ft.Page):
         page.add(
             ft.Container(
                 bgcolor=BG_CARD,
-                padding=14,
-                border_radius=ft.BorderRadius.all(14),
+                padding=10,
+                border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1.2, BORDER_ACTIVE),
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
                         ft.Row(spacing=8, controls=[
-                            ft.Text("⚡ V3X Selfbot", size=18, weight=ft.FontWeight.BOLD, color=RED_NEON),
+                            ft.Text("⚡ V3X Selfbot", size=17, weight=ft.FontWeight.BOLD, color=RED_NEON),
                             conn_badge,
                         ]),
                         out_btn,
@@ -2580,13 +2542,13 @@ async def main(page: ft.Page):
             body_host,
             ft.Container(
                 bgcolor=BG_CARD,
-                padding=12,
+                padding=10,
                 border_radius=ft.BorderRadius.all(12),
                 border=ft.Border.all(1, BORDER_CRIMSON),
                 content=ft.Column(
-                    spacing=6,
+                    spacing=4,
                     controls=[
-                        ft.Text("📜 گزارش زنده عملکرد", size=13, color=RED_LIGHT),
+                        ft.Text("📜 گزارش زنده عملکرد", size=12, color=RED_LIGHT),
                         logs,
                     ],
                 ),
