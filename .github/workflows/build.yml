@@ -294,14 +294,9 @@ jobs:
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
 
-      - name: Bootstrap Flutter Android Project (64-bit)
+      - name: Prepare Native Android Service Injector
         run: |
-          rm -rf build
-          flet build apk --arch arm64-v8a --verbose
-
-      - name: Inject Native Android Foreground Service & WakeLock
-        run: |
-          python - << 'EOF'
+          cat << 'EOF' > /tmp/inject_v3x_service.py
           import pathlib
           import re
           import textwrap
@@ -324,7 +319,8 @@ jobs:
               if p not in manifest:
                   perm_xml += f'    <uses-permission android:name="{p}" />\n'
 
-          manifest = manifest.replace("<application", perm_xml + "    <application", 1)
+          if perm_xml:
+              manifest = manifest.replace("<application", perm_xml + "    <application", 1)
 
           service_block = textwrap.dedent("""\
                   <service
@@ -519,18 +515,19 @@ jobs:
                   val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
                   if (prefs.getBoolean("bg_keep_alive", true)) {{
                       try {{
-                          val restartIntent = Intent(applicationContext, MainActivity::class.java).apply {{
-                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                              putExtra("v3x_bg_boot", true)
-                          }}
+                          val restartSvc = Intent(applicationContext, V3XKeepAliveService::class.java)
                           val piFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
                               PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                           }} else {{
                               PendingIntent.FLAG_UPDATE_CURRENT
                           }}
-                          val pi = PendingIntent.getActivity(applicationContext, 1002, restartIntent, piFlags)
+                          val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
+                              PendingIntent.getForegroundService(applicationContext, 1002, restartSvc, piFlags)
+                          }} else {{
+                              PendingIntent.getService(applicationContext, 1002, restartSvc, piFlags)
+                          }}
                           val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                          am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 1500L, pi)
+                          am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 1200L, pi)
                       }} catch (_: Exception) {{}}
                   }}
                   super.onTaskRemoved(rootIntent)
@@ -612,13 +609,7 @@ jobs:
               override fun onReceive(context: Context, intent: Intent) {{
                   val prefs = context.getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
                   if (prefs.getBoolean("bg_keep_alive", true)) {{
-                      try {{
-                          val launch = Intent(context, MainActivity::class.java).apply {{
-                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                              putExtra("v3x_bg_boot", true)
-                          }}
-                          context.startActivity(launch)
-                      }} catch (_: Exception) {{}}
+                      MainActivity.startKeepAliveService(context)
                   }}
               }}
           }}
@@ -630,42 +621,46 @@ jobs:
           print("Injected Native Android Foreground Service into:", pkg_dir)
           EOF
 
-      - name: Compile Final 64-bit & 32-bit APKs with Native Service
+      - name: Build 64-bit APK with Native Foreground Service
         run: |
-          mkdir -p release-apks
-          cd build/flutter
-          flutter build apk --release --target-platform android-arm64
-          cp build/app/outputs/flutter-apk/app-release.apk ../../release-apks/V3X-Selfbot-64bit.apk
-          cd ../..
+          rm -rf build
+          ROOT_DIR="$(pwd)"
+          flet build apk --arch arm64-v8a --verbose
+          python /tmp/inject_v3x_service.py
 
-          rm -rf build/apk
+          SITE_PKGS_64="$ROOT_DIR/build/site-packages/arm64-v8a"
+          if [ ! -d "$SITE_PKGS_64" ]; then
+            SITE_PKGS_64=$(find "$ROOT_DIR/build" -maxdepth 3 -type d -name "arm64-v8a" | head -n 1)
+          fi
+          test -d "$SITE_PKGS_64"
+          echo "64-bit SERIOUS_PYTHON_SITE_PACKAGES=$SITE_PKGS_64"
+
+          mkdir -p release-apks
+          (
+            cd build/flutter
+            SERIOUS_PYTHON_SITE_PACKAGES="$SITE_PKGS_64" flutter build apk --release --target-platform android-arm64
+          )
+          cp build/flutter/build/app/outputs/flutter-apk/app-release.apk release-apks/V3X-Selfbot-64bit.apk
+
+      - name: Build 32-bit APK with Native Foreground Service
+        run: |
+          ROOT_DIR="$(pwd)"
+          rm -rf build/apk build/flutter/build
           flet build apk --arch armeabi-v7a --verbose
-          python - << 'EOF'
-          import pathlib, re, textwrap
-          # Re-inject native service for 32-bit build
-          manifest_path = pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml")
-          manifest = manifest_path.read_text(encoding="utf-8")
-          for p in [
-              "android.permission.WAKE_LOCK",
-              "android.permission.FOREGROUND_SERVICE",
-              "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
-              "android.permission.POST_NOTIFICATIONS",
-              "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
-              "android.permission.RECEIVE_BOOT_COMPLETED",
-          ]:
-              if p not in manifest:
-                  manifest = manifest.replace("<application", f'    <uses-permission android:name="{p}" />\n    <application', 1)
-          if "V3XKeepAliveService" not in manifest:
-              manifest = manifest.replace("</application>", (
-                  '        <service android:name=".V3XKeepAliveService" android:enabled="true" android:exported="false" android:stopWithTask="false" android:foregroundServiceType="dataSync" />\n'
-                  '        <receiver android:name=".V3XBootReceiver" android:enabled="true" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter></receiver>\n'
-                  '    </application>'
-              ), 1)
-          manifest_path.write_text(manifest, encoding="utf-8")
-          EOF
-          cd build/flutter
-          flutter build apk --release --target-platform android-arm
-          cp build/app/outputs/flutter-apk/app-release.apk ../../release-apks/V3X-Selfbot-32bit.apk
+          python /tmp/inject_v3x_service.py
+
+          SITE_PKGS_32="$ROOT_DIR/build/site-packages/armeabi-v7a"
+          if [ ! -d "$SITE_PKGS_32" ]; then
+            SITE_PKGS_32=$(find "$ROOT_DIR/build" -maxdepth 3 -type d -name "armeabi-v7a" | head -n 1)
+          fi
+          test -d "$SITE_PKGS_32"
+          echo "32-bit SERIOUS_PYTHON_SITE_PACKAGES=$SITE_PKGS_32"
+
+          (
+            cd build/flutter
+            SERIOUS_PYTHON_SITE_PACKAGES="$SITE_PKGS_32" flutter build apk --release --target-platform android-arm
+          )
+          cp build/flutter/build/app/outputs/flutter-apk/app-release.apk release-apks/V3X-Selfbot-32bit.apk
 
       - name: Upload Both Optimized Android APKs
         uses: actions/upload-artifact@v4
