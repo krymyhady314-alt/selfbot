@@ -11,7 +11,7 @@ if hasattr(ft, "margin") and hasattr(ft, "Margin") and not hasattr(ft.margin, "a
 if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(ft.border_radius, "all"):
     ft.border_radius.all, ft.border_radius.only = ft.BorderRadius.all, ft.BorderRadius.only
 
-APP_VERSION = "2.2.3"
+APP_VERSION = "2.2.5"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
@@ -257,8 +257,6 @@ async def main(page: ft.Page):
     ar_cfg = load_json(AUTOREPLY_CFG_FILE, {"enabled": False, "text": "سلام، در حال حاضر آفلاین هستم. به محض آنلاین شدن پاسخ می‌دهم.", "replied_users": []})
     fwd_cfg = load_json(FORWARD_CFG_FILE, {"interval_min": 5})
 
-    notify_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
-
     st = {
         "client": None, "me_id": None, "phone": "", "hash": None, "need_2fa": False,
         "bg_started": False, "hook_attached": False, "last_clock_min": "", "in_dashboard": False,
@@ -383,7 +381,10 @@ async def main(page: ft.Page):
                 elif "from_chat_id" in params:
                     coro = fwd_fn(to_peer, from_peer, msg_id)
                 else:
-                    coro = fwd_fn(to_peer, msg_id, from_peer)
+                    try:
+                        coro = fwd_fn(to_peer, msg_id, from_peer)
+                    except TypeError:
+                        coro = fwd_fn(to_peer, from_peer, msg_id)
                 if inspect.isawaitable(coro):
                     await asyncio.wait_for(coro, timeout=12.0)
                 return
@@ -425,6 +426,39 @@ async def main(page: ft.Page):
             log(f"ساعت آپدیت شد: {nf} {nl}".strip(), RED_LIGHT)
         except Exception as ex:
             log(f"خطای ساعت: {ex}", RED_NEON)
+
+    async def check_unread_pv_autoreply(c):
+        if not ar_cfg.get("enabled"):
+            return
+        txt = str(ar_cfg.get("text") or "").strip()
+        if not txt or not callable(getattr(c, "get_dialogs", None)):
+            return
+        try:
+            await ensure_online(c)
+            my_id = await get_my_id(c)
+            raw = await asyncio.wait_for(c.get_dialogs(limit=12), timeout=8.0)
+            replied = set(str(x) for x in ar_cfg.get("replied_users", []))
+            for d in raw:
+                if (getattr(d, "unread_count", 0) or 0) <= 0:
+                    continue
+                ent = getattr(d, "entity", None)
+                cid = str(getattr(d, "id", None) or (getattr(ent, "id", "") if ent else "")).strip()
+                if not cid or cid == my_id or cid in replied:
+                    continue
+                is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
+                if not (is_u is True or cid.startswith("u0") or (cid.lstrip("-").isdigit() and int(cid) > 0 and not is_g and not is_ch)):
+                    continue
+                if ent and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
+                    continue
+                peer = await resolve_peer(c, cid)
+                await send_fast(c, peer, cid, txt)
+                replied.add(cid)
+                ar_cfg["replied_users"] = list(replied)
+                save_json(AUTOREPLY_CFG_FILE, ar_cfg)
+                title = getattr(d, "name", None) or getattr(d, "title", None) or cid
+                log(f"🤖 پاسخ خودکار به «{title}» ارسال شد ✅", "#10B981")
+        except Exception:
+            pass
 
     def attach_pv_hook(c):
         if st["hook_attached"] or not callable(getattr(c, "add_event_handler", None)):
@@ -480,22 +514,24 @@ async def main(page: ft.Page):
                 sec = datetime.datetime.now(TEHRAN_TZ).second
                 await asyncio.sleep(max(2.0, 60.5 - sec) if clock_cfg.get("enabled") else 10.0)
 
-        async def _keepalive_loop():
+        async def _keepalive_and_pv_loop():
             while st["client"] is not None:
                 try:
                     if not c.is_connected():
                         await ensure_online(c)
+                    if ar_cfg.get("enabled"):
+                        await check_unread_pv_autoreply(c)
                 except Exception:
                     pass
-                await asyncio.sleep(15.0)
+                await asyncio.sleep(8.0)
 
         asyncio.create_task(_clock_loop())
-        asyncio.create_task(_keepalive_loop())
+        asyncio.create_task(_keepalive_and_pv_loop())
 
     def show_update_required(msg: str, update_url: str):
         st["in_dashboard"] = False
         site = update_url or WEBSITE_URL
-        page.controls.clear()
+        page.clean()
         url_box = ft.TextField(label="آدرس سایت رسمی", value=site, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
         stat = ft.Text("", size=12, color="#10B981")
 
@@ -530,7 +566,7 @@ async def main(page: ft.Page):
 
     def show_license(msg: str = ""):
         st["in_dashboard"] = False
-        page.controls.clear()
+        page.clean()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         dev_box = ft.TextField(label="شناسه سخت‌افزاری دستگاه", value=did, read_only=True, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
         saved_k = str(load_json(LIC_FILE, {}).get("key", "")).strip()
@@ -568,7 +604,7 @@ async def main(page: ft.Page):
 
     def show_phone(msg: str = ""):
         st["in_dashboard"] = False
-        page.controls.clear()
+        page.clean()
         info = ft.Text(msg, size=13, color="#F59E0B", selectable=True)
         ph_box = ft.TextField(label="شماره موبایل سروش‌پلاس", hint_text="09123456789", keyboard_type=ft.KeyboardType.PHONE, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
 
@@ -615,7 +651,7 @@ async def main(page: ft.Page):
 
     def show_otp():
         st["in_dashboard"] = False
-        page.controls.clear()
+        page.clean()
         info = ft.Text(f"کد تایید به {st['phone']} ارسال شد.", size=13, color=RED_LIGHT)
         code_box = ft.TextField(label="کد تایید", hint_text="12345", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
         pwd_box = ft.TextField(label="رمز دومرحله‌ای", password=True, can_reveal_password=True, visible=st["need_2fa"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
@@ -657,10 +693,9 @@ async def main(page: ft.Page):
 
     def show_dashboard():
         st["in_dashboard"] = True
-        page.controls.clear()
+        page.clean()
         c = get_client()
         log("سلف‌بات با موفقیت متصل شد ✅", "#10B981")
-        notify_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
 
         body_host = ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         on_dialogs_cb = None
@@ -694,7 +729,7 @@ async def main(page: ft.Page):
                 on_dialogs_cb()
             return items
 
-        async def fetch_msgs(raw_target: str, limit_count: int = 20) -> list[dict]:
+        async def fetch_msgs(raw_target: str, limit_count: int = 25) -> list[dict]:
             msgs = []
             tgt = (raw_target or "").strip()
             if not tgt:
@@ -1142,6 +1177,7 @@ async def main(page: ft.Page):
             footer_box(),
         )
         safe_update()
+        notify_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
         asyncio.create_task(fetch_dialogs())
 
     saved = str(load_json(LIC_FILE, {}).get("key", "")).strip()
