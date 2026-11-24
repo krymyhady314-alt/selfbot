@@ -1074,7 +1074,7 @@ async def main(page: ft.Page):
                 safe_update()
                 asyncio.create_task(fwd_loop())
 
-            rb, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", lambda e: page.run_task(lambda: fetch_dialogs(80)), height=38, expand=True)
+            rb, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", lambda e: page.run_task(lambda: (fetch_dialogs(80), draw_f_chats())), height=38, expand=True)
             lb, _ = make_btn("📜 پیام‌ها", lambda e: page.run_task(lambda: pick_src(e, src_box.value)), bgcolor=RED_DARK, height=38, expand=True)
             f_btn, fb_lbl = make_btn("⛔ توقف فوروارد" if st["fwd_running"] else "🚀 شروع فوروارد خودکار", toggle_f, bgcolor=RED_DARK if st["fwd_running"] else RED_PRIMARY, height=44)
             draw_f_chats()
