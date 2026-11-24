@@ -22,6 +22,9 @@
       --text-white: #f8fafc;
       --text-dim: #94a3b8;
       --emerald: #10b981;
+      --gold: #f59e0b;
+      --gold-light: #fcd34d;
+      --cyan: #38bdf8;
     }
 
     * {
@@ -235,6 +238,17 @@
       box-shadow: 0 10px 30px rgba(255, 10, 52, 0.55);
     }
 
+    .btn-ultra {
+      background: linear-gradient(135deg, #d97706, #b45309, #ff0a34);
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-ultra:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(245, 158, 11, 0.55);
+    }
+
     .btn-glass {
       background: rgba(255, 255, 255, 0.05);
       color: var(--text-white);
@@ -263,7 +277,82 @@
     .dl-arch-btn .dl-sub {
       font-size: 11.5px;
       font-weight: 600;
-      opacity: 0.85;
+      opacity: 0.88;
+    }
+
+    /* نشان‌های سطح اشتراک (PRO / ULTRA) */
+    .plan-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 900;
+      padding: 3px 11px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+
+    .plan-pill.pro {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #7dd3fc;
+    }
+
+    .plan-pill.ultra {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(255, 10, 52, 0.22));
+      border: 1px solid rgba(252, 211, 77, 0.65);
+      color: #fde68a;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+    }
+
+    .tier-selector-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .tier-choice-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-dim);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .tier-choice-btn.active-pro {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: #38bdf8;
+      color: #e0f2fe;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
+    }
+
+    .tier-choice-btn.active-ultra {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.26), rgba(255, 10, 52, 0.22));
+      border-color: #fbbf24;
+      color: #fef3c7;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.25);
+    }
+
+    .admin-sub-box {
+      background: rgba(3, 2, 8, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .admin-sub-box.pro-box {
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .admin-sub-box.ultra-box {
+      border-color: rgba(251, 191, 36, 0.38);
     }
 
     .tilt-card {
@@ -716,6 +805,12 @@
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(255, 10, 52, 0.15);
     }
 
+    .dash-welcome-banner.ultra-theme {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(255, 10, 52, 0.16) 40%, rgba(14, 10, 22, 0.96) 75%);
+      border-color: rgba(251, 191, 36, 0.55);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(245, 158, 11, 0.16);
+    }
+
     .user-avatar-ring {
       width: 58px;
       height: 58px;
@@ -728,6 +823,11 @@
       color: #fff;
       box-shadow: 0 0 24px var(--crimson-glow);
       flex-shrink: 0;
+    }
+
+    .user-avatar-ring.ultra-avatar {
+      background: linear-gradient(135deg, #f59e0b, #b45309, #991b1b);
+      box-shadow: 0 0 26px rgba(245, 158, 11, 0.45);
     }
 
     .dash-grid-main {
@@ -866,6 +966,11 @@
       margin-bottom: 16px;
     }
 
+    .dash-download-hero.ultra-dl {
+      background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.22), rgba(6, 5, 12, 0.96));
+      border-color: rgba(251, 191, 36, 0.45);
+    }
+
     /* کارت‌های امکانات */
     .features-grid {
       display: grid;
@@ -947,7 +1052,7 @@
       border: 1px solid var(--border-red);
       border-radius: 24px;
       width: 100%;
-      max-width: 550px;
+      max-width: 570px;
       max-height: 90vh;
       overflow-y: auto;
       padding: 22px;
@@ -1132,7 +1237,7 @@
         <div>
           <div class="hero-tag">
             <i></i>
-            <span>هسته اختصاصی فعال · نسخه 2.2.0</span>
+            <span>هسته اختصاصی فعال · نسخه 2.2.1 (PRO & ULTRA)</span>
           </div>
 
           <h1>
@@ -1140,7 +1245,7 @@
           </h1>
 
           <p class="lead">
-            همگام‌سازی لحظه‌ای ساعت افق تهران کنار نام پروفایل، ارسال چندتایی با حافظه دائمی و موتور توربو بدون تاخیر؛ طراحی‌شده برای پایداری بی‌وقفه و اتصال مستقیم.
+            همگام‌سازی لحظه‌ای ساعت افق تهران کنار نام پروفایل، فوروارد هوشمند، پاسخگوی خودکار آفلاین و موتور توربو بدون تاخیر؛ در دو نسخه اختصاصی پرو و اولترا.
           </p>
 
           <div class="hero-cta">
@@ -1168,7 +1273,7 @@
               <span>تاخیر هسته مرکزی</span>
             </div>
             <div class="tilt-card kpi-box">
-              <strong>نسخه 2.2.0</strong>
+              <strong>نسخه 2.2.1</strong>
               <span>ضدقطعی و رمزنگاری‌شده</span>
             </div>
           </div>
@@ -1246,7 +1351,7 @@
         <div class="section-title">
           <div class="kicker">MEMBER PORTAL ACCESS</div>
           <h2>ورود به پنل کاربری V3X</h2>
-          <p>کلید لایسنس خود را وارد کنید تا وارد داشبورد اختصاصی، تایمر زنده اشتراک و بخش دانلود شوید</p>
+          <p>کلید لایسنس خود را وارد کنید تا نوع اشتراک (پرو یا اولترا) و لینک‌های دانلود اختصاصی نمایش داده شود</p>
         </div>
 
         <div class="tilt-card portal-card">
@@ -1303,8 +1408,8 @@
                 <path d="M8 21h8M12 18v3" />
               </svg>
             </div>
-            <h3>ارسال چندتایی با حافظه دائمی</h3>
-            <p>لیست پیام‌های دلخواه خود را بسازید، در حافظه برنامه ذخیره کنید و همزمان به چند پی‌وی یا گروه ارسال نمایید.</p>
+            <h3>فوروارد هوشمند و پاسخگوی آفلاین</h3>
+            <p>ارسال خودکار به کاربران فعال ۲۰۰ پیام اخیر گپ‌ها با تایمر قابل تنظیم و پاسخگوی خودکار یک‌باره در پی‌وی هنگام آفلاین بودن.</p>
           </div>
 
           <div class="tilt-card feat-box">
@@ -1313,8 +1418,8 @@
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
             </div>
-            <h3>انتخاب چت و ریپلای سریع</h3>
-            <p>مشاهده لیست کامل پی‌وی‌ها و گروه‌ها، خواندن پیام‌های اخیر هر چت و انتخاب دقیق پیام برای ریپلای خودکار.</p>
+            <h3>دو سطح اشتراک PRO و ULTRA</h3>
+            <p>پنل مجزا و فایل نصب اختصاصی برای کاربران نسخه پرو و نسخه اولترا همراه با پشتیبانی کامل از گوشی‌های ۶۴ و ۳۲ بیتی.</p>
           </div>
         </div>
       </section>
@@ -1357,8 +1462,8 @@
     </header>
 
     <div class="container">
-      <!-- کارت خوش‌آمدگویی با نام ثبت‌شده کاربر -->
-      <div class="dash-welcome-banner">
+      <!-- کارت خوش‌آمدگویی با نام ثبت‌شده و نوع اشتراک (PRO / ULTRA) -->
+      <div class="dash-welcome-banner" id="dashWelcomeBanner">
         <div style="display:flex;align-items:center;gap:14px;">
           <div class="user-avatar-ring" id="userAvatarInitial">V</div>
           <div>
@@ -1366,12 +1471,13 @@
               <h2 style="font-size:clamp(19px, 3vw, 25px);font-weight:900;">
                 خوش آمدی، <span style="color:var(--crimson-hot);" id="dashOwnerName">کاربر ویژه</span>
               </h2>
+              <span class="plan-pill pro" id="dashPlanBadge">💎 اشتراک PRO</span>
               <span style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);color:#6ee7b7;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:999px;">
-                ● اشتراک فعال
+                ● فعال
               </span>
             </div>
-            <p style="font-size:13.5px;color:var(--text-dim);">
-              وضعیت اشتراک، شمارشگر زنده اعتبار و لینک‌های دانلود مستقیم نسخه 2.2.0 در اختیار شماست.
+            <p style="font-size:13.5px;color:var(--text-dim);" id="dashWelcomeSub">
+              وضعیت اشتراک، شمارشگر زنده اعتبار و لینک‌های دانلود اختصاصی شما آماده است.
             </p>
           </div>
         </div>
@@ -1397,7 +1503,6 @@
             </span>
           </div>
 
-          <!-- شمارشگر معکوس زنده ثانیه‌به‌ثانیه -->
           <div class="countdown-grid">
             <div class="cd-cell">
               <span class="cd-num" id="cdDays">00</span>
@@ -1433,12 +1538,12 @@
               <strong id="metaOwnerName">کاربر ویژه</strong>
             </div>
             <div class="lic-meta-box">
-              <span>مدت کل بسته</span>
-              <strong id="hudTotalDays">30 روز</strong>
+              <span>نوع بسته اشتراک</span>
+              <strong id="metaPlanType">نسخه پرو (PRO)</strong>
             </div>
             <div class="lic-meta-box">
-              <span>وضعیت قفل گوشی</span>
-              <strong id="hudDeviceStatus">آماده اتصال</strong>
+              <span>مدت کل بسته</span>
+              <strong id="hudTotalDays">30 روز</strong>
             </div>
             <div class="lic-meta-box">
               <span>تاریخ و ساعت انقضا</span>
@@ -1447,33 +1552,33 @@
           </div>
         </div>
 
-        <!-- ستون دریافت اپلیکیشن و ویدیو آموزش -->
+        <!-- ستون دریافت اپلیکیشن متناسب با سطح اشتراک کاربر و ویدیو آموزش -->
         <div class="dash-panel-card">
           <h3 style="font-size:16.5px;font-weight:900;margin-bottom:14px;">📦 مرکز دانلود و آموزش</h3>
 
-          <div class="dash-download-hero">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <strong style="font-size:15px;">نسخه نهایی V3X Selfbot</strong>
-              <span style="background:var(--crimson);color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:8px;">v2.2.0</span>
+          <div class="dash-download-hero" id="dashDownloadHero">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
+              <strong style="font-size:15px;" id="dlCardTitle">نسخه پرو V3X Selfbot (PRO)</strong>
+              <span class="plan-pill pro" id="dlCardTierTag">PRO EDITION</span>
             </div>
-            <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">
-              شامل ساعت زنده افق تهران، ارسال توربو، بهینه‌سازی گوشی‌های ضعیف و اتصال مستقیم بدون فیلترشکن.
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;" id="dlCardDesc">
+              فایل نصب اختصاصی مخصوص اشتراک شما؛ نسخه متناسب با گوشی خود را دانلود کنید.
             </p>
 
             <div class="dl-arch-stack">
               <a href="#" target="_blank" rel="noopener" class="btn btn-crimson dl-arch-btn" id="apkDownloadBtn64">
-                <span>⬇️ دانلود نسخه ۶۴ بیتی (ARM64)</span>
+                <span id="dlBtn64Title">⬇️ دانلود نسخه ۶۴ بیتی (ARM64)</span>
                 <span class="dl-sub">پیشنهادی · مخصوص گوشی‌های جدید (اندروید ۸ به بالا)</span>
               </a>
 
               <a href="#" target="_blank" rel="noopener" class="btn btn-glass dl-arch-btn" id="apkDownloadBtn32" style="border-color: rgba(255, 10, 52, 0.35);">
-                <span>⬇️ دانلود نسخه ۳۲ بیتی (ARMv7)</span>
+                <span id="dlBtn32Title">⬇️ دانلود نسخه ۳۲ بیتی (ARMv7)</span>
                 <span class="dl-sub">مخصوص گوشی‌های قدیمی، ضعیف و اندروید پایین</span>
               </a>
             </div>
 
             <p id="noApkHint" style="display:none;margin-top:10px;font-size:12.5px;color:#fcd34d;text-align:center;">
-              ⚠️ لینک فایل‌های نصب هنوز توسط مدیریت قرار داده نشده است.
+              ⚠️ لینک فایل‌های نصب این نسخه هنوز توسط مدیریت قرار داده نشده است.
             </p>
           </div>
 
@@ -1505,7 +1610,7 @@
 
       <div id="adminLoginView">
         <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">
-          برای دسترسی به تنظیمات سایت، ویدیو تست و ساخت لایسنس، رمز مدیریت را وارد کنید:
+          برای دسترسی به ساخت لایسنس‌های پرو و اولترا، لینک‌های دانلود و ویدیو تست، رمز مدیریت را وارد کنید:
         </p>
         <input type="password" id="adminPassInput" placeholder="رمز مدیریت را وارد کنید..." dir="ltr" />
         <button type="button" class="btn btn-crimson" id="adminLoginSubmit" style="width:100%;margin-top:12px;">
@@ -1515,38 +1620,57 @@
       </div>
 
       <div id="adminPanelView" style="display:none;">
-        <!-- ساخت لایسنس همراه با نام -->
+        <!-- بخش ۱: ساخت لایسنس پرو یا اولترا -->
         <div class="admin-block">
-          <h4>🔑 ساخت کلید لایسنس جدید (همراه با نام کاربر)</h4>
+          <h4>🔑 ساخت کلید لایسنس جدید (پرو یا اولترا)</h4>
+
+          <div class="tier-selector-row">
+            <button type="button" class="tier-choice-btn active-pro" id="selectPlanProBtn">
+              💎 اشتراک پرو (PRO)
+            </button>
+            <button type="button" class="tier-choice-btn" id="selectPlanUltraBtn">
+              👑 اشتراک اولترا (ULTRA)
+            </button>
+          </div>
+
           <div style="display:flex;flex-direction:column;gap:8px;">
             <input type="text" id="genOwnerInput" placeholder="نام کاربر / مشتری (مثلاً: علی رضایی)" />
             <div style="display:flex;gap:8px;">
               <input type="number" id="genDaysInput" value="30" min="1" placeholder="تعداد روز" />
               <button type="button" class="btn btn-crimson" id="genKeyBtn" style="white-space:nowrap;">
-                ساخت لایسنس
+                ساخت لایسنس پرو
               </button>
             </div>
           </div>
           <div id="generatedKeyBox" style="display:none;margin-top:10px;padding:12px;border-radius:12px;background:#030207;border:1px solid var(--emerald);color:#6ee7b7;font-weight:800;text-align:center;"></div>
         </div>
 
+        <!-- بخش ۲: لینک‌های دانلود مجزا برای پرو و اولترا -->
         <div class="admin-block">
-          <h4>📦 لینک‌های دانلود مستقیم اپلیکیشن (APK)</h4>
-          <label for="adminApkUrl64" style="display:block;font-size:12px;color:#fda4af;margin-bottom:5px;font-weight:700;">
-            لینک نسخه ۶۴ بیتی (ARM64 - گوشی‌های جدید):
-          </label>
-          <input type="url" id="adminApkUrl64" placeholder="https://www.mediafire.com/.../V3X-Selfbot-64bit.apk" dir="ltr" style="margin-bottom:10px;" />
+          <h4>📦 مدیریت لینک‌های دانلود اختصاصی (پرو و اولترا)</h4>
 
-          <label for="adminApkUrl32" style="display:block;font-size:12px;color:#94a3b8;margin-bottom:5px;font-weight:700;">
-            لینک نسخه ۳۲ بیتی (ARMv7 - گوشی‌های ضعیف و اندروید پایین):
-          </label>
-          <input type="url" id="adminApkUrl32" placeholder="https://www.mediafire.com/.../V3X-Selfbot-32bit.apk" dir="ltr" />
+          <div class="admin-sub-box pro-box">
+            <div style="font-size:12.5px;font-weight:800;color:#7dd3fc;margin-bottom:8px;">
+              💎 لینک‌های نسخه پرو (PRO)
+            </div>
+            <input type="url" id="adminProUrl64" placeholder="لینک ۶۴ بیتی پرو (ARM64)..." dir="ltr" style="margin-bottom:8px;" />
+            <input type="url" id="adminProUrl32" placeholder="لینک ۳۲ بیتی پرو (ARMv7)..." dir="ltr" />
+          </div>
 
-          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:12px;">
-            ذخیره سراسری هر دو لینک دانلود
+          <div class="admin-sub-box ultra-box">
+            <div style="font-size:12.5px;font-weight:800;color:#fde68a;margin-bottom:8px;">
+              👑 لینک‌های نسخه اولترا (ULTRA)
+            </div>
+            <input type="url" id="adminUltraUrl64" placeholder="لینک ۶۴ بیتی اولترا (ARM64)..." dir="ltr" style="margin-bottom:8px;" />
+            <input type="url" id="adminUltraUrl32" placeholder="لینک ۳۲ بیتی اولترا (ARMv7)..." dir="ltr" />
+          </div>
+
+          <button type="button" class="btn btn-crimson" id="saveApkUrlBtn" style="width:100%;margin-top:6px;">
+            💾 ذخیره سراسری لینک‌های پرو و اولترا
           </button>
         </div>
 
+        <!-- بخش ۳: ویدیو تست -->
         <div class="admin-block">
           <h4>🎬 ویدیو تست عملکرد برنامه</h4>
           <input type="url" id="adminVideoUrl" placeholder="لینک مستقیم MP4 یا لینک آپارات / گیت‌هاب..." dir="ltr" />
@@ -1568,34 +1692,91 @@
     const API_BASE = "https://api.v3xsys.ir";
     const ADMIN_CODE = "krymyhady314";
 
-    let globalDownloadUrl64 = "";
-    let globalDownloadUrl32 = "";
+    let linksStore = {
+      pro64: "",
+      pro32: "",
+      ultra64: "",
+      ultra32: ""
+    };
+
+    let selectedGenPlan = "pro"; // "pro" | "ultra"
     let globalVideoUrl = localStorage.getItem("v3x_vid_url") || "";
     let savedUserKey = localStorage.getItem("v3x_user_license") || "";
     let activeLicenseData = null;
     let countdownTimerId = null;
     let isAdminLogged = false;
 
-    function applyPackedDownloadUrls(rawMain, raw32 = "") {
-      const str = String(rawMain || "").trim();
-      if (str.includes("|||")) {
-        const parts = str.split("|||");
-        globalDownloadUrl64 = (parts[0] || "").trim();
-        globalDownloadUrl32 = (parts[1] || raw32 || "").trim();
-      } else {
-        globalDownloadUrl64 = str;
-        if (raw32 !== undefined && raw32 !== null) {
-          globalDownloadUrl32 = String(raw32).trim();
-        }
-      }
-      localStorage.setItem("v3x_dl_url_64", globalDownloadUrl64);
-      localStorage.setItem("v3x_dl_url_32", globalDownloadUrl32);
+    function packAllLinks(obj) {
+      return JSON.stringify({
+        v: 2,
+        pro64: (obj.pro64 || "").trim(),
+        pro32: (obj.pro32 || "").trim(),
+        ultra64: (obj.ultra64 || "").trim(),
+        ultra32: (obj.ultra32 || "").trim()
+      });
     }
 
-    applyPackedDownloadUrls(
-      localStorage.getItem("v3x_dl_url_64") || localStorage.getItem("v3x_dl_url") || "",
-      localStorage.getItem("v3x_dl_url_32") || ""
-    );
+    function applyPackedDownloadUrls(rawMain, raw32 = "", extraData = null) {
+      const str = String(rawMain || "").trim();
+      if (str.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(str);
+          linksStore.pro64 = (parsed.pro64 || "").trim();
+          linksStore.pro32 = (parsed.pro32 || "").trim();
+          linksStore.ultra64 = (parsed.ultra64 || "").trim();
+          linksStore.ultra32 = (parsed.ultra32 || "").trim();
+        } catch (e) {}
+      } else if (str.includes("|||")) {
+        const parts = str.split("|||");
+        linksStore.pro64 = (parts[0] || "").trim();
+        linksStore.pro32 = (parts[1] || raw32 || "").trim();
+        if (parts[2] !== undefined) linksStore.ultra64 = (parts[2] || "").trim();
+        if (parts[3] !== undefined) linksStore.ultra32 = (parts[3] || "").trim();
+      } else if (str) {
+        linksStore.pro64 = str;
+        if (raw32) linksStore.pro32 = String(raw32).trim();
+      }
+
+      if (extraData && typeof extraData === "object") {
+        if (extraData.pro_64 !== undefined) linksStore.pro64 = String(extraData.pro_64 || "").trim();
+        if (extraData.pro_32 !== undefined) linksStore.pro32 = String(extraData.pro_32 || "").trim();
+        if (extraData.ultra_64 !== undefined) linksStore.ultra64 = String(extraData.ultra_64 || "").trim();
+        if (extraData.ultra_32 !== undefined) linksStore.ultra32 = String(extraData.ultra_32 || "").trim();
+      }
+
+      localStorage.setItem("v3x_links_store_v2", JSON.stringify(linksStore));
+    }
+
+    // بازیابی کش محلی لینک‌ها
+    try {
+      const cachedV2 = localStorage.getItem("v3x_links_store_v2");
+      if (cachedV2) {
+        applyPackedDownloadUrls(cachedV2);
+      } else {
+        applyPackedDownloadUrls(
+          localStorage.getItem("v3x_dl_url_64") || localStorage.getItem("v3x_dl_url") || "",
+          localStorage.getItem("v3x_dl_url_32") || ""
+        );
+      }
+    } catch (e) {}
+
+    function detectLicensePlan(key, data) {
+      const rawPlan = String((data && (data.plan || data.tier || data.subscription || data.type)) || "").toLowerCase().trim();
+      const rawOwner = String((data && data.owner_name) || "");
+      const upperKey = String(key || "").toUpperCase();
+
+      if (rawPlan.includes("ultra") || /\[ULTRA\]/i.test(rawOwner) || upperKey.includes("-ULT")) {
+        return "ultra";
+      }
+      return "pro";
+    }
+
+    function cleanDisplayOwnerName(rawName) {
+      const cleaned = String(rawName || "کاربر ویژه")
+        .replace(/\[(ULTRA|PRO)\]/gi, "")
+        .trim();
+      return cleaned || "کاربر ویژه";
+    }
 
     // ========================================================
     // ۱. کهکشان زنده سبک و روان بدون لگ اسکرول
@@ -1922,53 +2103,109 @@
     requestAnimationFrame(renderScope);
 
     // ========================================================
-    // ۴. پنل اختصاصی کاربر و تایمر شمارش معکوس زنده
+    // ۴. پنل اختصاصی کاربر (تفکیک PRO و ULTRA) و تایمر زنده
     // ========================================================
     function pad2(n) {
       return String(Math.max(0, Math.floor(n))).padStart(2, "0");
     }
 
     function updateDownloadButtonState() {
+      if (!activeLicenseData) return;
+      const plan = activeLicenseData.plan || "pro";
+      const isUltra = plan === "ultra";
+
+      const url64 = isUltra ? linksStore.ultra64 : linksStore.pro64;
+      const url32 = isUltra ? linksStore.ultra32 : linksStore.pro32;
+
       const dlBtn64 = document.getElementById("apkDownloadBtn64");
       const dlBtn32 = document.getElementById("apkDownloadBtn32");
       const noApkHint = document.getElementById("noApkHint");
 
-      if (globalDownloadUrl64) {
-        dlBtn64.href = globalDownloadUrl64;
+      document.getElementById("dlCardTitle").textContent = isUltra
+        ? "نسخه اولترا V3X Selfbot (ULTRA)"
+        : "نسخه پرو V3X Selfbot (PRO)";
+
+      const tierTag = document.getElementById("dlCardTierTag");
+      tierTag.textContent = isUltra ? "👑 ULTRA EDITION" : "💎 PRO EDITION";
+      tierTag.className = `plan-pill ${isUltra ? "ultra" : "pro"}`;
+
+      document.getElementById("dlBtn64Title").textContent = isUltra
+        ? "⬇️ دانلود نسخه اولترا ۶۴ بیتی (ARM64)"
+        : "⬇️ دانلود نسخه پرو ۶۴ بیتی (ARM64)";
+
+      document.getElementById("dlBtn32Title").textContent = isUltra
+        ? "⬇️ دانلود نسخه اولترا ۳۲ بیتی (ARMv7)"
+        : "⬇️ دانلود نسخه پرو ۳۲ بیتی (ARMv7)";
+
+      dlBtn64.className = `btn ${isUltra ? "btn-ultra" : "btn-crimson"} dl-arch-btn`;
+
+      if (url64) {
+        dlBtn64.href = url64;
         dlBtn64.style.display = "flex";
       } else {
         dlBtn64.style.display = "none";
       }
 
-      if (globalDownloadUrl32) {
-        dlBtn32.href = globalDownloadUrl32;
+      if (url32) {
+        dlBtn32.href = url32;
         dlBtn32.style.display = "flex";
       } else {
         dlBtn32.style.display = "none";
       }
 
-      noApkHint.style.display = (!globalDownloadUrl64 && !globalDownloadUrl32) ? "block" : "none";
+      if (!url64 && !url32) {
+        noApkHint.textContent = isUltra
+          ? "⚠️ لینک فایل‌های نصب نسخه اولترا (ULTRA) هنوز توسط مدیریت قرار داده نشده است."
+          : "⚠️ لینک فایل‌های نصب نسخه پرو (PRO) هنوز توسط مدیریت قرار داده نشده است.";
+        noApkHint.style.display = "block";
+      } else {
+        noApkHint.style.display = "none";
+      }
     }
 
     function enterDedicatedUserPanel(key, data) {
-      activeLicenseData = { key, ...data };
+      const plan = detectLicensePlan(key, data);
+      const isUltra = plan === "ultra";
+      activeLicenseData = { key, plan, ...data };
 
-      // مخفی کردن صفحه اصلی و نمایش پنل کاربری مجزا
       document.getElementById("landingShell").style.display = "none";
       document.getElementById("userDashboardShell").classList.add("active");
       window.scrollTo({ top: 0, behavior: "instant" });
 
-      const ownerName = String(data.owner_name || "کاربر ویژه").trim() || "کاربر ویژه";
+      const ownerName = cleanDisplayOwnerName(data.owner_name);
       document.getElementById("dashOwnerName").textContent = ownerName;
       document.getElementById("metaOwnerName").textContent = ownerName;
       document.getElementById("userAvatarInitial").textContent = ownerName.charAt(0).toUpperCase();
       document.getElementById("dashKeyBadge").textContent = key;
 
+      // استایل‌دهی داشبورد بر اساس پرو یا اولترا
+      const welcomeBanner = document.getElementById("dashWelcomeBanner");
+      const avatarRing = document.getElementById("userAvatarInitial");
+      const planBadge = document.getElementById("dashPlanBadge");
+      const dlHero = document.getElementById("dashDownloadHero");
+
+      if (isUltra) {
+        welcomeBanner.classList.add("ultra-theme");
+        avatarRing.classList.add("ultra-avatar");
+        dlHero.classList.add("ultra-dl");
+        planBadge.className = "plan-pill ultra";
+        planBadge.textContent = "👑 اشتراک اولترا (ULTRA)";
+        document.getElementById("metaPlanType").textContent = "👑 نسخه اولترا (ULTRA)";
+        document.getElementById("dashWelcomeSub").textContent =
+          "شما وارد پنل اختصاصی اولترا (ULTRA) شده‌اید؛ تایمر زنده اشتراک و فایل‌های نصب اولترا در اختیار شماست.";
+      } else {
+        welcomeBanner.classList.remove("ultra-theme");
+        avatarRing.classList.remove("ultra-avatar");
+        dlHero.classList.remove("ultra-dl");
+        planBadge.className = "plan-pill pro";
+        planBadge.textContent = "💎 اشتراک پرو (PRO)";
+        document.getElementById("metaPlanType").textContent = "💎 نسخه پرو (PRO)";
+        document.getElementById("dashWelcomeSub").textContent =
+          "شما وارد پنل اختصاصی پرو (PRO) شده‌اید؛ تایمر زنده اشتراک و فایل‌های نصب پرو در اختیار شماست.";
+      }
+
       const totalDays = Number(data.days || data.days_left || 30);
       document.getElementById("hudTotalDays").textContent = `${totalDays} روز`;
-      document.getElementById("hudDeviceStatus").textContent = data.device_locked
-        ? "قفل‌شده روی گوشی شما"
-        : "آماده ورود در اپلیکیشن";
 
       updateDownloadButtonState();
       renderShowcaseVideo(globalVideoUrl);
@@ -1983,7 +2220,6 @@
       const progPct = document.getElementById("licProgressPct");
       const progLabel = document.getElementById("licProgressLabel");
 
-      // محاسبه دقیق زمان انقضا
       const targetMs = data.expires_at
         ? Date.parse(data.expires_at)
         : Date.now() + totalDays * 86400000;
@@ -2060,7 +2296,7 @@
 
       if (!silent) {
         resBox.className = "status-banner loading";
-        resBox.textContent = "⏳ در حال احراز هویت و ورود به پنل کاربری...";
+        resBox.textContent = "⏳ در حال احراز هویت و بررسی نوع اشتراک...";
       }
 
       try {
@@ -2122,7 +2358,7 @@
     document.getElementById("logoutLicenseBtn").addEventListener("click", exitDedicatedUserPanel);
 
     // ========================================================
-    // ۵. ویدیو تست و پنل مدیریت
+    // ۵. ویدیو تست و پنل مدیریت (ساخت لایسنس پرو/اولترا + لینک‌ها)
     // ========================================================
     function renderShowcaseVideo(url) {
       const clean = String(url || "").trim();
@@ -2162,6 +2398,14 @@
       });
     });
 
+    function fillAdminInputs() {
+      document.getElementById("adminProUrl64").value = linksStore.pro64;
+      document.getElementById("adminProUrl32").value = linksStore.pro32;
+      document.getElementById("adminUltraUrl64").value = linksStore.ultra64;
+      document.getElementById("adminUltraUrl32").value = linksStore.ultra32;
+      document.getElementById("adminVideoUrl").value = globalVideoUrl;
+    }
+
     async function initPortal() {
       renderShowcaseVideo(globalVideoUrl);
       if (savedUserKey) {
@@ -2172,9 +2416,15 @@
         const res = await fetch(`${API_BASE}/api/config?t=${Date.now()}`);
         const data = await res.json();
         if (data && data.ok) {
-          if (data.download_url !== undefined || data.download_url_32 !== undefined) {
-            applyPackedDownloadUrls(data.download_url, data.download_url_32);
+          if (
+            data.download_url !== undefined ||
+            data.download_url_32 !== undefined ||
+            data.pro_64 !== undefined ||
+            data.ultra_64 !== undefined
+          ) {
+            applyPackedDownloadUrls(data.download_url, data.download_url_32, data);
             if (activeLicenseData) updateDownloadButtonState();
+            if (isAdminLogged) fillAdminInputs();
           }
           if (data.video_url !== undefined) {
             globalVideoUrl = data.video_url;
@@ -2190,9 +2440,7 @@
       btn.addEventListener("click", () => {
         adminModal.classList.add("open");
         if (isAdminLogged) {
-          document.getElementById("adminApkUrl64").value = globalDownloadUrl64;
-          document.getElementById("adminApkUrl32").value = globalDownloadUrl32;
-          document.getElementById("adminVideoUrl").value = globalVideoUrl;
+          fillAdminInputs();
         }
       });
     });
@@ -2209,13 +2457,34 @@
         errEl.textContent = "";
         document.getElementById("adminLoginView").style.display = "none";
         document.getElementById("adminPanelView").style.display = "block";
-        document.getElementById("adminApkUrl64").value = globalDownloadUrl64;
-        document.getElementById("adminApkUrl32").value = globalDownloadUrl32;
-        document.getElementById("adminVideoUrl").value = globalVideoUrl;
+        fillAdminInputs();
       } else {
         errEl.textContent = "❌ رمز مدیریت اشتباه است.";
       }
     });
+
+    // انتخاب سطح اشتراک در پنل مدیریت (PRO یا ULTRA)
+    const selectPlanProBtn = document.getElementById("selectPlanProBtn");
+    const selectPlanUltraBtn = document.getElementById("selectPlanUltraBtn");
+    const genKeyBtn = document.getElementById("genKeyBtn");
+
+    function setAdminGenPlan(plan) {
+      selectedGenPlan = plan;
+      if (plan === "ultra") {
+        selectPlanProBtn.className = "tier-choice-btn";
+        selectPlanUltraBtn.className = "tier-choice-btn active-ultra";
+        genKeyBtn.className = "btn btn-ultra";
+        genKeyBtn.textContent = "ساخت لایسنس اولترا";
+      } else {
+        selectPlanProBtn.className = "tier-choice-btn active-pro";
+        selectPlanUltraBtn.className = "tier-choice-btn";
+        genKeyBtn.className = "btn btn-crimson";
+        genKeyBtn.textContent = "ساخت لایسنس پرو";
+      }
+    }
+
+    selectPlanProBtn.addEventListener("click", () => setAdminGenPlan("pro"));
+    selectPlanUltraBtn.addEventListener("click", () => setAdminGenPlan("ultra"));
 
     document.getElementById("localVideoPicker").addEventListener("change", (e) => {
       const file = e.target.files && e.target.files[0];
@@ -2226,31 +2495,39 @@
     });
 
     document.getElementById("saveApkUrlBtn").addEventListener("click", async () => {
-      const url64 = document.getElementById("adminApkUrl64").value.trim();
-      const url32 = document.getElementById("adminApkUrl32").value.trim();
-      const packedUrl = url32 ? `${url64}|||${url32}` : url64;
+      const nextStore = {
+        pro64: document.getElementById("adminProUrl64").value.trim(),
+        pro32: document.getElementById("adminProUrl32").value.trim(),
+        ultra64: document.getElementById("adminUltraUrl64").value.trim(),
+        ultra32: document.getElementById("adminUltraUrl32").value.trim()
+      };
+      const packedJson = packAllLinks(nextStore);
       const fb = document.getElementById("adminFeedback");
-      fb.textContent = "در حال ذخیره لینک‌های دانلود...";
+      fb.textContent = "⏳ در حال ذخیره لینک‌های پرو و اولترا...";
       try {
         const r = await fetch(`${API_BASE}/api/config`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             secret: ADMIN_CODE,
-            download_url: packedUrl,
-            download_url_32: url32
+            download_url: packedJson,
+            pro_64: nextStore.pro64,
+            pro_32: nextStore.pro32,
+            ultra_64: nextStore.ultra64,
+            ultra_32: nextStore.ultra32
           })
         });
         const d = await r.json();
         if (d.ok) {
           applyPackedDownloadUrls(
-            d.download_url !== undefined ? d.download_url : packedUrl,
-            d.download_url_32 !== undefined ? d.download_url_32 : url32
+            d.download_url !== undefined ? d.download_url : packedJson,
+            "",
+            d
           );
           if (activeLicenseData) updateDownloadButtonState();
-          fb.textContent = "✅ هر دو لینک دانلود (۶۴ بیت و ۳۲ بیت) برای تمام دستگاه‌ها ذخیره شد!";
+          fb.textContent = "✅ تمام لینک‌های نسخه پرو (PRO) و اولترا (ULTRA) ذخیره شدند!";
         } else {
-          fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک");
+          fb.textContent = "❌ " + (d.error || "خطا در ذخیره لینک‌ها");
         }
       } catch {
         fb.textContent = "❌ خطا در ارتباط با سرور";
@@ -2281,23 +2558,39 @@
       }
     });
 
-    document.getElementById("genKeyBtn").addEventListener("click", async () => {
+    genKeyBtn.addEventListener("click", async () => {
       const days = parseInt(document.getElementById("genDaysInput").value || "30", 10);
-      const ownerName = document.getElementById("genOwnerInput").value.trim() || "کاربر ویژه";
+      const rawOwner = document.getElementById("genOwnerInput").value.trim() || "کاربر ویژه";
+      const planTag = selectedGenPlan === "ultra" ? "[ULTRA]" : "[PRO]";
+      const taggedOwner = `${cleanDisplayOwnerName(rawOwner)} ${planTag}`;
+
       const box = document.getElementById("generatedKeyBox");
       box.style.display = "block";
-      box.textContent = "در حال ساخت...";
+      box.textContent = "⏳ در حال ساخت لایسنس...";
       try {
         const r = await fetch(`${API_BASE}/api/admin-gen`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ secret: ADMIN_CODE, days, owner_name: ownerName })
+          body: JSON.stringify({
+            secret: ADMIN_CODE,
+            days,
+            owner_name: taggedOwner,
+            plan: selectedGenPlan,
+            tier: selectedGenPlan
+          })
         });
         const d = await r.json();
         if (d.ok && d.key) {
-          box.innerHTML = `<div style="font-size:12px;color:#a7f3d0;margin-bottom:4px;">👤 ${d.owner_name} (${d.days} روز)</div><div dir="ltr" style="font-size:16px;">${d.key}</div>`;
+          const isUltra = selectedGenPlan === "ultra";
+          const displayOwner = cleanDisplayOwnerName(d.owner_name || rawOwner);
+          box.style.borderColor = isUltra ? "#fbbf24" : "#10b981";
+          box.innerHTML =
+            `<div style="font-size:12px;color:${isUltra ? "#fde68a" : "#a7f3d0"};margin-bottom:4px;">` +
+            `${isUltra ? "👑 اشتراک اولترا (ULTRA)" : "💎 اشتراک پرو (PRO)"} · 👤 ${displayOwner} (${d.days} روز)</div>` +
+            `<div dir="ltr" style="font-size:16px;color:#ffffff;">${d.key}</div>`;
           navigator.clipboard?.writeText(d.key);
-          document.getElementById("adminFeedback").textContent = "✅ کد لایسنس به نام کاربر ساخته و کپی شد!";
+          document.getElementById("adminFeedback").textContent =
+            `✅ کد لایسنس ${isUltra ? "اولترا" : "پرو"} ساخته و کپی شد!`;
         } else {
           box.textContent = "❌ خطا در ساخت کد";
         }
