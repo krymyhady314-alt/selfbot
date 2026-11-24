@@ -2,7 +2,7 @@ import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platfo
 import flet as ft
 import httpx
 
-# لایه سازگاری کامل با Flet 1.1.2
+# لایه سازگاری کامل با Flet 1.1.2 و 0.25.2
 if hasattr(ft, "border") and hasattr(ft, "Border") and not hasattr(ft.border, "all"):
     ft.border.all = ft.Border.all
     ft.border.only = ft.Border.only
@@ -19,7 +19,7 @@ if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(
     ft.border_radius.all = ft.BorderRadius.all
     ft.border_radius.only = ft.BorderRadius.only
 
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.2.0"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
@@ -48,6 +48,8 @@ LIC_FILE = os.path.join(STORAGE_DIR, "v3x_lic.json")
 SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 SAVED_MSGS_FILE = os.path.join(STORAGE_DIR, "v3x_saved_msgs.json")
 CLOCK_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_clock_cfg.json")
+AUTOREPLY_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_autoreply_cfg.json")
+FORWARD_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_forward_cfg.json")
 
 
 def parse_version_tuple(v: str) -> tuple[int, ...]:
@@ -123,6 +125,7 @@ def load_clock_config() -> dict:
         "style": "bold",  # normal | bold | mono | circle
         "target_field": "first",  # first | last
         "sep": "|",
+        "bg_keep_alive": True,
     }
     try:
         if os.path.exists(CLOCK_CFG_FILE):
@@ -137,6 +140,75 @@ def load_clock_config() -> dict:
 def save_clock_config(cfg: dict):
     try:
         json.dump(cfg, open(CLOCK_CFG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def load_autoreply_config() -> dict:
+    default_cfg = {
+        "enabled": False,
+        "text": "سلام، در حال حاضر آفلاین هستم. به محض آنلاین شدن پاسخ می‌دهم.",
+        "replied_users": [],
+    }
+    try:
+        if os.path.exists(AUTOREPLY_CFG_FILE):
+            data = json.load(open(AUTOREPLY_CFG_FILE, "r", encoding="utf-8"))
+            if isinstance(data, dict):
+                default_cfg.update(data)
+    except Exception:
+        pass
+    return default_cfg
+
+
+def save_autoreply_config(cfg: dict):
+    try:
+        json.dump(cfg, open(AUTOREPLY_CFG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def load_forward_config() -> dict:
+    default_cfg = {
+        "interval_min": 5,
+    }
+    try:
+        if os.path.exists(FORWARD_CFG_FILE):
+            data = json.load(open(FORWARD_CFG_FILE, "r", encoding="utf-8"))
+            if isinstance(data, dict):
+                default_cfg.update(data)
+    except Exception:
+        pass
+    return default_cfg
+
+
+def save_forward_config(cfg: dict):
+    try:
+        json.dump(cfg, open(FORWARD_CFG_FILE, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception:
+        pass
+
+
+_WAKE_LOCK_REF = None
+
+
+def set_android_wakelock(enable: bool):
+    """جلوگیری از خواب پردازنده اندروید برای ادامه کار ساعت و پاسخگوی خودکار در پس‌زمینه."""
+    global _WAKE_LOCK_REF
+    try:
+        from jnius import autoclass
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        Context = autoclass("android.content.Context")
+        PowerManager = autoclass("android.os.PowerManager")
+        activity = PythonActivity.mActivity
+        if enable:
+            if _WAKE_LOCK_REF is None:
+                pm = activity.getSystemService(Context.POWER_SERVICE)
+                _WAKE_LOCK_REF = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "V3X:KeepAliveLock")
+            if not _WAKE_LOCK_REF.isHeld():
+                _WAKE_LOCK_REF.acquire()
+        else:
+            if _WAKE_LOCK_REF is not None and _WAKE_LOCK_REF.isHeld():
+                _WAKE_LOCK_REF.release()
     except Exception:
         pass
 
@@ -161,7 +233,6 @@ def strip_clock_suffix(name: str) -> str:
 
 def extract_clean_key(raw_input: str) -> str:
     txt = str(raw_input or "")
-    # تبدیل اعداد فارسی و عربی به انگلیسی و حذف کاراکترهای مخفی
     txt = txt.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩–—−", "01234567890123456789---"))
     txt = re.sub(r"[\u200b-\u200f\ufeff`\"'\s]", "", txt)
     m = re.search(r"(V3X-[A-Za-z0-9\-_]{3,})", txt, re.IGNORECASE)
@@ -231,7 +302,6 @@ async def check_license(raw_key: str, did: str) -> tuple[str, str, str, str]:
                 status_val = str(d.get("status", "")).lower().strip()
                 min_ver = str(d.get("min_version") or d.get("required_version") or "").strip()
 
-                # بررسی اجباری بودن آپدیت و غیرفعال‌سازی نسخه قدیمی
                 if (
                     d.get("force_update") is True
                     or d.get("outdated") is True
@@ -374,17 +444,22 @@ async def main(page: ft.Page):
 
     did = get_device_id()
     clock_cfg = load_clock_config()
+    autoreply_cfg = load_autoreply_config()
+    forward_cfg = load_forward_config()
+
+    if clock_cfg.get("bg_keep_alive", True):
+        set_android_wakelock(True)
 
     st = {
         "client": None,
+        "me_id": None,
         "phone": "",
         "hash": None,
         "need_2fa": False,
         "watchdog_started": False,
-        "clock_worker_started": False,
         "last_clock_min": "",
         "in_dashboard": False,
-        "active_tab": "chats",  # chats | multi | turbo | clock
+        "active_tab": "chats",  # chats | multi | turbo | forward | autoreply | clock
         "chat_filter": "all",
         "dialogs": [],
         "selected_targets": {},
@@ -398,6 +473,17 @@ async def main(page: ft.Page):
         "multi_running": False,
         "turbo_running": False,
         "entity_cache": {},
+        # وضعیت‌های بخش فوروارد
+        "fwd_source_chat": "",
+        "fwd_source_title": "",
+        "fwd_messages": [],
+        "fwd_selected_msg_id": None,
+        "fwd_selected_msg_preview": "",
+        "fwd_running": False,
+        "fwd_status": "آماده شروع فوروارد هوشمند به کاربران ۲۰۰ پیام اخیر گروه‌ها",
+        # وضعیت‌های بخش پی‌وی خودکار
+        "pv_seen_msg_ids": set(),
+        "pv_seeded": False,
     }
     logs = ft.Column(spacing=4, height=110, scroll=ft.ScrollMode.AUTO)
     conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
@@ -417,6 +503,19 @@ async def main(page: ft.Page):
         if st["client"] is None:
             st["client"] = create_splus_client()
         return st["client"]
+
+    async def get_my_user_id(c) -> str:
+        if st["me_id"]:
+            return st["me_id"]
+        try:
+            me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+            uid = getattr(me, "id", None) or getattr(me, "user_id", None) or getattr(me, "guid", None)
+            if uid is not None:
+                st["me_id"] = str(uid)
+                return st["me_id"]
+        except Exception:
+            pass
+        return ""
 
     async def ensure_online(c, force_reset: bool = False) -> bool:
         try:
@@ -494,12 +593,53 @@ async def main(page: ft.Page):
                 else:
                     raise ex
 
+    async def forward_fast_single(c, to_peer, raw_to: str, from_peer, msg_id):
+        """فوروارد امن یک پیام به پی‌وی کاربر همراه با مدیریت خودکار FloodWait."""
+        fwd_fn = getattr(c, "forward_messages", None) or getattr(c, "forward", None)
+        if not callable(fwd_fn):
+            raise RuntimeError("متد forward_messages در splusthon یافت نشد.")
+
+        sig_params = list(inspect.signature(fwd_fn).parameters.keys())
+        for attempt in range(1, 3):
+            try:
+                if "from_peer" in sig_params:
+                    coro = fwd_fn(to_peer, msg_id, from_peer=from_peer)
+                elif "from_chat_id" in sig_params:
+                    coro = fwd_fn(to_peer, from_peer, msg_id)
+                else:
+                    coro = fwd_fn(to_peer, msg_id, from_peer)
+                if inspect.isawaitable(coro):
+                    await asyncio.wait_for(coro, timeout=12.0)
+                return
+            except Exception as ex:
+                err_low = str(ex).lower()
+                wait_sec = getattr(ex, "seconds", None)
+                if wait_sec is None:
+                    m = re.search(r"wait of (\d+)", err_low)
+                    if m:
+                        wait_sec = int(m.group(1))
+                if wait_sec:
+                    sleep_t = min(int(wait_sec) + 1, 25)
+                    log(f"محدودیت سرعت فوروارد؛ مکث {sleep_t} ثانیه...", "#F59E0B")
+                    await asyncio.sleep(sleep_t)
+                    continue
+                if attempt < 2:
+                    await ensure_online(c, force_reset=True)
+                    st["entity_cache"].pop((raw_to or "").strip(), None)
+                    to_peer = await resolve_peer(c, raw_to)
+                    await asyncio.sleep(0.3)
+                else:
+                    raise ex
+
     def on_lifecycle_change(e):
         try:
             state_str = str(getattr(e, "state", "")).lower()
-            if "resume" in state_str and st["in_dashboard"] and st["client"] is not None:
+            if clock_cfg.get("bg_keep_alive", True):
+                set_android_wakelock(True)
+            if st["client"] is not None and (st["in_dashboard"] or clock_cfg.get("bg_keep_alive", True)):
                 asyncio.create_task(ensure_online(st["client"]))
-                safe_page_update()
+                if "resume" in state_str:
+                    safe_page_update()
         except Exception:
             pass
 
@@ -832,6 +972,9 @@ async def main(page: ft.Page):
         c = get_client()
         log("سلف‌بات با موفقیت به سروش‌پلاس متصل شد ✅", "#10B981")
 
+        if clock_cfg.get("bg_keep_alive", True):
+            set_android_wakelock(True)
+
         async def sync_profile_clock(force: bool = False):
             """به‌روزرسانی خودکار ساعت افق تهران کنار اسم پروفایل هر دقیقه."""
             if not clock_cfg.get("enabled"):
@@ -865,32 +1008,121 @@ async def main(page: ft.Page):
             except Exception as ex:
                 log(f"خطا در آپدیت ساعت پروفایل: {ex}", RED_NEON)
 
-        async def connection_and_clock_watchdog():
-            while st["in_dashboard"]:
+        async def check_pv_auto_reply():
+            """بررسی پیام‌های جدید در پی‌وی و ارسال پاسخ خودکار (فقط یک بار برای هر نفر)."""
+            if not autoreply_cfg.get("enabled"):
+                return
+            reply_msg = str(autoreply_cfg.get("text") or "").strip()
+            if not reply_msg:
+                return
+
+            try:
+                await ensure_online(c)
+                my_id = await get_my_user_id(c)
+                raw_dialogs = []
+                if callable(getattr(c, "get_dialogs", None)):
+                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=40), timeout=10.0)
+                elif callable(getattr(c, "iter_dialogs", None)):
+                    async for d in c.iter_dialogs(limit=40):
+                        raw_dialogs.append(d)
+
+                replied_set = set(str(x) for x in autoreply_cfg.get("replied_users", []))
+
+                for d in raw_dialogs:
+                    ent = getattr(d, "entity", None)
+                    cid = getattr(d, "id", None)
+                    if cid is None and ent is not None:
+                        cid = getattr(ent, "id", None) or getattr(ent, "guid", None)
+                    if cid is None:
+                        continue
+
+                    cid_str = str(cid)
+                    if cid_str == my_id:
+                        continue
+
+                    is_user = getattr(d, "is_user", None)
+                    is_group = getattr(d, "is_group", None) or getattr(d, "is_channel", None)
+                    is_pv = (is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group))
+                    if not is_pv:
+                        continue
+
+                    # جلوگیری از پاسخ به ربات‌ها
+                    if ent is not None and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
+                        continue
+
+                    peer = await resolve_peer(c, cid_str)
+                    recent = []
+                    if callable(getattr(c, "get_messages", None)):
+                        recent = await asyncio.wait_for(c.get_messages(peer, limit=2), timeout=8.0)
+                    elif callable(getattr(c, "iter_messages", None)):
+                        async for m in c.iter_messages(peer, limit=2):
+                            recent.append(m)
+
+                    for m in recent:
+                        mid = getattr(m, "id", None)
+                        if mid is None:
+                            continue
+                        msg_uid = f"{cid_str}:{mid}"
+
+                        # در اولین بار اجرای ناظر، پیام‌های قدیمی را علامت‌گذاری کن تا پاسخ ندهد
+                        if not st["pv_seeded"]:
+                            st["pv_seen_msg_ids"].add(msg_uid)
+                            continue
+
+                        if msg_uid in st["pv_seen_msg_ids"]:
+                            continue
+                        st["pv_seen_msg_ids"].add(msg_uid)
+
+                        if getattr(m, "out", False):
+                            continue
+                        sender_id = getattr(m, "sender_id", None) or getattr(m, "from_id", None)
+                        if sender_id is not None and str(sender_id) == my_id:
+                            continue
+
+                        if cid_str not in replied_set:
+                            await send_fast_single(c, peer, cid_str, reply_msg)
+                            replied_set.add(cid_str)
+                            autoreply_cfg["replied_users"] = list(replied_set)
+                            save_autoreply_config(autoreply_cfg)
+                            title = getattr(d, "name", None) or getattr(d, "title", None) or cid_str
+                            log(f"🤖 پاسخ خودکار آفلاین به «{title}» ارسال شد ✅", "#10B981")
+
+                if not st["pv_seeded"]:
+                    st["pv_seeded"] = True
+            except Exception:
+                pass
+
+        async def connection_and_bg_watchdog():
+            """ناظر دائمی اتصال، ساعت پروفایل و پاسخگوی خودکار پی‌وی (حتی در پس‌زمینه)."""
+            while st["in_dashboard"] or clock_cfg.get("bg_keep_alive", True):
+                if st["client"] is None:
+                    break
                 try:
                     await ensure_online(c)
                     if clock_cfg.get("enabled"):
                         await sync_profile_clock(force=False)
+                    if autoreply_cfg.get("enabled"):
+                        await check_pv_auto_reply()
                 except Exception:
                     pass
-                await asyncio.sleep(2.5)
+                await asyncio.sleep(3.0)
 
         if not st["watchdog_started"]:
             st["watchdog_started"] = True
-            asyncio.create_task(connection_and_clock_watchdog())
+            asyncio.create_task(connection_and_bg_watchdog())
 
         body_host = ft.Column(spacing=12, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         on_dialogs_loaded_callback = None
 
-        async def fetch_dialogs_list():
+        async def fetch_dialogs_list(limit_count: int = 100):
             items = []
             try:
                 await ensure_online(c)
                 raw_dialogs = []
                 if callable(getattr(c, "get_dialogs", None)):
-                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=60), timeout=12.0)
+                    raw_dialogs = await asyncio.wait_for(c.get_dialogs(limit=limit_count), timeout=14.0)
                 elif callable(getattr(c, "iter_dialogs", None)):
-                    async for d in c.iter_dialogs(limit=60):
+                    async for d in c.iter_dialogs(limit=limit_count):
                         raw_dialogs.append(d)
 
                 for d in raw_dialogs:
@@ -909,11 +1141,16 @@ async def main(page: ft.Page):
                         or str(cid)
                     )
                     is_user = getattr(d, "is_user", None)
-                    is_group = getattr(d, "is_group", None) or getattr(d, "is_channel", None)
+                    is_group_flag = getattr(d, "is_group", None)
+                    is_channel_flag = getattr(d, "is_channel", None)
+                    is_broadcast = bool(getattr(ent, "broadcast", False)) if ent is not None else False
+                    is_megagroup = bool(getattr(ent, "megagroup", False)) if ent is not None else False
 
                     cid_str = str(cid)
-                    if is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group):
+                    if is_user is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_group_flag and not is_channel_flag):
                         kind = "pv"
+                    elif is_channel_flag and (is_broadcast or not is_megagroup) and not is_group_flag:
+                        kind = "channel"
                     else:
                         kind = "group"
 
@@ -923,21 +1160,21 @@ async def main(page: ft.Page):
             st["dialogs"] = items
             if callable(on_dialogs_loaded_callback):
                 on_dialogs_loaded_callback()
+            return items
 
-        async def fetch_recent_messages(raw_target: str):
+        async def fetch_messages_for_chat(raw_target: str, limit_count: int = 25) -> list[dict]:
             msgs = []
             tgt_str = (raw_target or "").strip()
             if not tgt_str:
-                st["recent_messages"] = []
-                return
+                return msgs
             try:
                 await ensure_online(c)
                 peer = await resolve_peer(c, tgt_str)
                 raw_msgs = []
                 if callable(getattr(c, "get_messages", None)):
-                    raw_msgs = await asyncio.wait_for(c.get_messages(peer, limit=25), timeout=12.0)
+                    raw_msgs = await asyncio.wait_for(c.get_messages(peer, limit=limit_count), timeout=14.0)
                 elif callable(getattr(c, "iter_messages", None)):
-                    async for m in c.iter_messages(peer, limit=25):
+                    async for m in c.iter_messages(peer, limit=limit_count):
                         raw_msgs.append(m)
 
                 for m in raw_msgs:
@@ -968,7 +1205,10 @@ async def main(page: ft.Page):
                     })
             except Exception as ex:
                 log(f"خطا در دریافت پیام‌های اخیر: {ex}", RED_NEON)
-            st["recent_messages"] = msgs
+            return msgs
+
+        async def fetch_recent_messages(raw_target: str):
+            st["recent_messages"] = await fetch_messages_for_chat(raw_target, limit_count=25)
 
         def set_active_target_clean(new_val: str, title: str = ""):
             val = (new_val or "").strip()
@@ -1106,7 +1346,13 @@ async def main(page: ft.Page):
             def refresh_chat_cards():
                 chat_list_col.controls.clear()
                 flt = st["chat_filter"]
-                filtered = [x for x in st["dialogs"] if flt == "all" or x["kind"] == flt]
+                if flt == "all":
+                    filtered = st["dialogs"]
+                elif flt == "pv":
+                    filtered = [x for x in st["dialogs"] if x["kind"] == "pv"]
+                else:
+                    filtered = [x for x in st["dialogs"] if x["kind"] in ("group", "channel")]
+
                 if not filtered:
                     chat_list_col.controls.append(
                         ft.Text("چتی یافت نشد. دکمه بروزرسانی چت‌ها را بزنید.", size=12, color=TEXT_MUTED)
@@ -1116,9 +1362,13 @@ async def main(page: ft.Page):
                 for item in filtered:
                     cid = item["id"]
                     title = item["title"]
-                    is_pv = item["kind"] == "pv"
                     selected = cid in st["selected_targets"] or st["active_target"] == cid
-                    badge = "👤 پی‌وی" if is_pv else "👥 گپ"
+                    if item["kind"] == "pv":
+                        badge = "👤 پی‌وی"
+                    elif item["kind"] == "channel":
+                        badge = "📢 کانال"
+                    else:
+                        badge = "👥 گپ"
                     card = ft.Container(
                         padding=ft.Padding.all(10),
                         border_radius=ft.BorderRadius.all(10),
@@ -1554,7 +1804,435 @@ async def main(page: ft.Page):
             )
 
         # ==========================================
-        # ویجت ۴: ساعت افق تهران کنار اسم پروفایل
+        # ویجت ۴: فوروارد هوشمند به کاربران فعال گروه‌ها (۲۰۰ پیام اخیر)
+        # ==========================================
+        def build_forward_widget():
+            src_id_box = ft.TextField(
+                label="شناسه یا آیدی کانال / پی‌وی مبدأ",
+                hint_text="از لیست پایین انتخاب کنید یا آیدی وارد کنید",
+                value=st["fwd_source_chat"],
+                text_align=ft.TextAlign.LEFT,
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
+                on_change=lambda e: st.update({"fwd_source_chat": (e.control.value or "").strip()}),
+            )
+            src_chats_col = ft.Column(spacing=6, height=150, scroll=ft.ScrollMode.AUTO)
+            src_msgs_col = ft.Column(spacing=6, height=185, scroll=ft.ScrollMode.AUTO)
+
+            selected_msg_lbl = ft.Text(
+                f"✅ پیام انتخاب‌شده (#{st['fwd_selected_msg_id']}): {st['fwd_selected_msg_preview']}"
+                if st["fwd_selected_msg_id"] is not None
+                else "⚠️ هنوز پیامی برای فوروارد انتخاب نشده است",
+                size=12,
+                color="#10B981" if st["fwd_selected_msg_id"] is not None else "#F59E0B",
+                weight=ft.FontWeight.W_600,
+            )
+
+            interval_box = ft.TextField(
+                label="تایمر تکرار فوروارد (دقیقه)",
+                value=str(forward_cfg.get("interval_min", 5)),
+                keyboard_type=ft.KeyboardType.NUMBER,
+                text_align=ft.TextAlign.LEFT,
+                bgcolor=BG_INPUT,
+                border_color=BORDER_ACTIVE,
+                on_change=lambda e: save_forward_config({"interval_min": max(1, int(e.control.value))}) if (e.control.value or "").isdigit() and int(e.control.value) >= 1 else None,
+            )
+
+            fwd_stat_lbl = ft.Text(st["fwd_status"], size=12, color=TEXT_MUTED)
+
+            def render_src_messages():
+                src_msgs_col.controls.clear()
+                if not st["fwd_messages"]:
+                    src_msgs_col.controls.append(
+                        ft.Text("پیامی بارگذاری نشده است. یک کانال یا پی‌وی را انتخاب کنید.", size=12, color=TEXT_MUTED)
+                    )
+                    return
+
+                for m in st["fwd_messages"]:
+                    mid = m["id"]
+                    is_sel = st["fwd_selected_msg_id"] == mid
+                    preview = m["text"]
+                    if len(preview) > 55:
+                        preview = preview[:55] + "..."
+
+                    def pick_fwd_msg(e, m_id=mid, m_prev=preview):
+                        st["fwd_selected_msg_id"] = m_id
+                        st["fwd_selected_msg_preview"] = m_prev
+                        selected_msg_lbl.value = f"✅ پیام انتخاب‌شده (#{m_id}): {m_prev}"
+                        selected_msg_lbl.color = "#10B981"
+                        render_src_messages()
+                        log(f"پیام #{m_id} برای فوروارد خودکار انتخاب شد 📢", RED_LIGHT)
+                        safe_page_update()
+
+                    src_msgs_col.controls.append(
+                        ft.Container(
+                            padding=ft.Padding.all(9),
+                            border_radius=ft.BorderRadius.all(8),
+                            bgcolor="#1C0A10" if is_sel else BG_INPUT,
+                            border=ft.Border.all(1.5 if is_sel else 1, RED_NEON if is_sel else BORDER_CRIMSON),
+                            on_click=pick_fwd_msg,
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Text(f"#{mid} | {preview}", size=12, color=TEXT_WHITE, expand=True),
+                                    ft.Text("✅ انتخاب" if is_sel else "انتخاب", size=11, color=RED_NEON if is_sel else TEXT_MUTED),
+                                ],
+                            ),
+                        )
+                    )
+
+            async def load_src_messages(e=None):
+                cid = (src_id_box.value or st["fwd_source_chat"] or "").strip()
+                if not cid:
+                    log("ابتدا یک کانال یا پی‌وی را انتخاب کنید.", RED_NEON)
+                    return
+                st["fwd_source_chat"] = cid
+                fwd_stat_lbl.value = "⏳ در حال دریافت پیام‌های اخیر کانال/پی‌وی..."
+                safe_page_update()
+                st["fwd_messages"] = await fetch_messages_for_chat(cid, limit_count=30)
+                render_src_messages()
+                fwd_stat_lbl.value = f"✅ {len(st['fwd_messages'])} پیام اخیر بارگذاری شد. پیام مورد نظر را لمس کنید."
+                safe_page_update()
+
+            async def on_src_chat_click(e, cid: str, title: str):
+                st["fwd_source_chat"] = cid
+                st["fwd_source_title"] = title
+                st["fwd_selected_msg_id"] = None
+                st["fwd_selected_msg_preview"] = ""
+                selected_msg_lbl.value = "⚠️ پیام مورد نظر را از لیست پایین انتخاب کنید"
+                selected_msg_lbl.color = "#F59E0B"
+                src_id_box.value = cid
+                render_src_chats()
+                safe_page_update()
+                await load_src_messages()
+
+            def render_src_chats():
+                src_chats_col.controls.clear()
+                # نمایش کانال‌ها و پی‌وی‌ها (و در صورت خالی بودن، تمام چت‌ها)
+                pv_and_channels = [x for x in st["dialogs"] if x["kind"] in ("pv", "channel")]
+                target_list = pv_and_channels if pv_and_channels else st["dialogs"]
+                if not target_list:
+                    src_chats_col.controls.append(
+                        ft.Text("کانال یا پی‌وی یافت نشد. دکمه بروزرسانی لیست را بزنید.", size=12, color=TEXT_MUTED)
+                    )
+                    return
+
+                for item in target_list:
+                    cid = item["id"]
+                    title = item["title"]
+                    is_sel = st["fwd_source_chat"] == cid
+                    badge = "📢 کانال" if item["kind"] == "channel" else ("👤 پی‌وی" if item["kind"] == "pv" else "👥 گپ")
+                    src_chats_col.controls.append(
+                        ft.Container(
+                            padding=ft.Padding.all(9),
+                            border_radius=ft.BorderRadius.all(8),
+                            bgcolor="#1C0A10" if is_sel else BG_INPUT,
+                            border=ft.Border.all(1.5 if is_sel else 1, RED_NEON if is_sel else BORDER_CRIMSON),
+                            on_click=lambda e, c_id=cid, c_t=title: page.run_task(on_src_chat_click, e, c_id, c_t),
+                            content=ft.Row(
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                controls=[
+                                    ft.Column(
+                                        spacing=1,
+                                        expand=True,
+                                        controls=[
+                                            ft.Text(title, size=13, weight=ft.FontWeight.W_600, color=TEXT_WHITE),
+                                            ft.Text(f"{badge} | ID: {cid}", size=11, color=TEXT_MUTED),
+                                        ],
+                                    ),
+                                    ft.Text("✅" if is_sel else "انتخاب", size=12, color=RED_NEON if is_sel else TEXT_MUTED),
+                                ],
+                            ),
+                        )
+                    )
+
+            async def reload_src_chats(e):
+                fwd_stat_lbl.value = "⏳ در حال دریافت لیست کانال‌ها و پی‌وی‌ها..."
+                safe_page_update()
+                await fetch_dialogs_list(limit_count=100)
+                render_src_chats()
+                fwd_stat_lbl.value = "✅ لیست کانال‌ها و پی‌وی‌ها بروزرسانی شد."
+                safe_page_update()
+
+            async def forward_worker_loop():
+                round_idx = 0
+                src_chat_raw = st["fwd_source_chat"]
+                msg_id = st["fwd_selected_msg_id"]
+
+                while st["fwd_running"]:
+                    round_idx += 1
+                    try:
+                        await ensure_online(c)
+                        my_id = await get_my_user_id(c)
+                        src_peer = await resolve_peer(c, src_chat_raw)
+
+                        st["fwd_status"] = f"🔄 دور {round_idx}: در حال دریافت لیست گپ‌های عضو..."
+                        fwd_stat_lbl.value = st["fwd_status"]
+                        safe_page_update()
+
+                        all_dialogs = await fetch_dialogs_list(limit_count=120)
+                        groups = [d for d in all_dialogs if d["kind"] == "group"]
+
+                        unique_users = []
+                        seen_users = set()
+
+                        for g_idx, grp in enumerate(groups, start=1):
+                            if not st["fwd_running"]:
+                                break
+                            gid = grp["id"]
+                            gtitle = grp["title"]
+                            st["fwd_status"] = (
+                                f"🔍 دور {round_idx} | بررسی گپ ({g_idx}/{len(groups)}): {gtitle} "
+                                f"| کاربران یکتا: {len(unique_users)}"
+                            )
+                            fwd_stat_lbl.value = st["fwd_status"]
+                            safe_page_update()
+
+                            try:
+                                g_peer = await resolve_peer(c, gid)
+                                recent_g_msgs = []
+                                if callable(getattr(c, "get_messages", None)):
+                                    recent_g_msgs = await asyncio.wait_for(c.get_messages(g_peer, limit=200), timeout=15.0)
+                                elif callable(getattr(c, "iter_messages", None)):
+                                    async for gm in c.iter_messages(g_peer, limit=200):
+                                        recent_g_msgs.append(gm)
+
+                                for gm in recent_g_msgs:
+                                    if getattr(gm, "post", False):
+                                        continue
+                                    sender_obj = getattr(gm, "sender", None)
+                                    if sender_obj is not None and bool(getattr(sender_obj, "bot", False) or getattr(sender_obj, "is_bot", False)):
+                                        continue
+                                    uid = getattr(gm, "sender_id", None) or getattr(gm, "from_id", None)
+                                    if uid is None and sender_obj is not None:
+                                        uid = getattr(sender_obj, "id", None) or getattr(sender_obj, "guid", None)
+                                    if uid is None:
+                                        continue
+                                    uid_str = str(uid).strip()
+                                    if not uid_str or uid_str == my_id or uid_str == gid or uid_str.startswith("-"):
+                                        continue
+                                    if uid_str not in seen_users:
+                                        seen_users.add(uid_str)
+                                        unique_users.append(uid_str)
+                            except Exception:
+                                continue
+
+                        sent_ok = 0
+                        total_targets = len(unique_users)
+                        log(f"دور {round_idx}: {total_targets} کاربر یکتا از ۲۰۰ پیام اخیر {len(groups)} گپ پیدا شد.", RED_LIGHT)
+
+                        for u_idx, target_uid in enumerate(unique_users, start=1):
+                            if not st["fwd_running"]:
+                                break
+                            try:
+                                target_peer = await resolve_peer(c, target_uid)
+                                await forward_fast_single(c, target_peer, target_uid, src_peer, msg_id)
+                                sent_ok += 1
+                                st["fwd_status"] = (
+                                    f"📨 دور {round_idx} | ارسال به پی‌وی ({u_idx}/{total_targets}) | موفق: {sent_ok}"
+                                )
+                                fwd_stat_lbl.value = st["fwd_status"]
+                                safe_page_update()
+                                await asyncio.sleep(1.5)
+                            except Exception:
+                                await asyncio.sleep(0.6)
+
+                        if not st["fwd_running"]:
+                            break
+
+                        try:
+                            wait_mins = max(1, int(interval_box.value or forward_cfg.get("interval_min", 5)))
+                        except ValueError:
+                            wait_mins = 5
+                        forward_cfg["interval_min"] = wait_mins
+                        save_forward_config(forward_cfg)
+
+                        log(f"پایان دور {round_idx}: {sent_ok} فوروارد موفق انجام شد ✅", "#10B981")
+
+                        wait_secs = wait_mins * 60
+                        for rem in range(wait_secs, 0, -1):
+                            if not st["fwd_running"]:
+                                break
+                            if rem % 5 == 0 or rem <= 10:
+                                st["fwd_status"] = (
+                                    f"✅ دور {round_idx} تکمیل شد ({sent_ok} ارسال موفق به {total_targets} کاربر یکتا). "
+                                    f"دور بعدی تا {rem} ثانیه دیگر..."
+                                )
+                                fwd_stat_lbl.value = st["fwd_status"]
+                                safe_page_update()
+                            await asyncio.sleep(1.0)
+
+                    except Exception as ex:
+                        log(f"خطا در دور {round_idx} فوروارد: {ex}", RED_NEON)
+                        st["fwd_status"] = f"⚠️ خطا: {ex} (تلاش مجدد تا ۲۰ ثانیه)"
+                        fwd_stat_lbl.value = st["fwd_status"]
+                        safe_page_update()
+                        for _ in range(20):
+                            if not st["fwd_running"]:
+                                break
+                            await asyncio.sleep(1.0)
+
+                st["fwd_running"] = False
+                fwd_btn_lbl.value = "🚀 شروع فوروارد خودکار"
+                fwd_toggle_btn.bgcolor = RED_PRIMARY
+                st["fwd_status"] = "🛑 فوروارد خودکار متوقف شد."
+                fwd_stat_lbl.value = st["fwd_status"]
+                safe_page_update()
+
+            async def toggle_forward(e):
+                if st["fwd_running"]:
+                    st["fwd_running"] = False
+                    log("در حال توقف فوروارد خودکار...", "#F59E0B")
+                    return
+                if not st["fwd_source_chat"] or st["fwd_selected_msg_id"] is None:
+                    log("ابتدا یک کانال/پی‌وی و یک پیام را برای فوروارد انتخاب کنید!", RED_NEON)
+                    return
+                try:
+                    mins = max(1, int(interval_box.value or 5))
+                except ValueError:
+                    mins = 5
+                    interval_box.value = "5"
+                forward_cfg["interval_min"] = mins
+                save_forward_config(forward_cfg)
+
+                st["fwd_running"] = True
+                fwd_btn_lbl.value = "⛔ توقف فوروارد خودکار"
+                fwd_toggle_btn.bgcolor = RED_DARK
+                safe_page_update()
+                asyncio.create_task(forward_worker_loop())
+
+            rel_src_btn, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", reload_src_chats, bgcolor=RED_PRIMARY, height=40, expand=True)
+            load_src_msg_btn, _ = make_btn("📜 پیام‌های اخیر", load_src_messages, bgcolor=RED_DARK, height=40, expand=True)
+            fwd_toggle_btn, fwd_btn_lbl = make_btn(
+                "⛔ توقف فوروارد خودکار" if st["fwd_running"] else "🚀 شروع فوروارد خودکار",
+                toggle_forward,
+                bgcolor=RED_DARK if st["fwd_running"] else RED_PRIMARY,
+                height=46,
+            )
+
+            render_src_chats()
+            render_src_messages()
+
+            return ft.Container(
+                bgcolor=BG_CARD,
+                padding=14,
+                border_radius=ft.BorderRadius.all(12),
+                border=ft.Border.all(1, BORDER_CRIMSON),
+                content=ft.Column(
+                    spacing=10,
+                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                    controls=[
+                        ft.Text("📢 فوروارد هوشمند به کاربران فعال گپ‌ها", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text(
+                            "یک پیام از کانال یا پی‌وی انتخاب کنید؛ ربات ۲۰۰ پیام اخیر تمام گپ‌های عضو را بررسی کرده و بدون تکرار به پی‌وی آن‌ها فوروارد می‌کند.",
+                            size=12,
+                            color=TEXT_MUTED,
+                        ),
+                        src_id_box,
+                        ft.Row(spacing=6, controls=[rel_src_btn, load_src_msg_btn]),
+                        src_chats_col,
+                        ft.Text("📜 پیام‌های اخیر (پیام مورد نظر برای فوروارد را لمس کنید):", size=13, color=RED_LIGHT, weight=ft.FontWeight.W_600),
+                        src_msgs_col,
+                        selected_msg_lbl,
+                        interval_box,
+                        fwd_toggle_btn,
+                        ft.Container(
+                            padding=ft.Padding.all(10),
+                            border_radius=ft.BorderRadius.all(8),
+                            bgcolor=BG_INPUT,
+                            border=ft.Border.all(1, BORDER_ACTIVE),
+                            content=fwd_stat_lbl,
+                        ),
+                    ],
+                ),
+            )
+
+        # ==========================================
+        # ویجت ۵: ارسال پیام خودکار در پی‌وی هنگام آفلاین بودن + تیک پس‌زمینه
+        # ==========================================
+        def build_autoreply_widget():
+            ar_switch = ft.Switch(
+                label="فعال‌سازی ارسال پیام خودکار در پی‌وی (حالت آفلاین)",
+                value=bool(autoreply_cfg.get("enabled", False)),
+                active_color=RED_NEON,
+            )
+            ar_text_box = ft.TextField(
+                label="متن پیام خودکار (برای هر نفر فقط یک بار ارسال می‌شود)",
+                value=autoreply_cfg.get("text", ""),
+                multiline=True,
+                min_lines=3,
+                max_lines=5,
+                bgcolor=BG_INPUT,
+                border_color=BORDER_CRIMSON,
+            )
+            bg_keep_check = ft.Checkbox(
+                label="🔒 اجرای مداوم ساعت و پیام خودکار در پس‌زمینه (حتی پس از بستن برنامه)",
+                value=bool(clock_cfg.get("bg_keep_alive", True)),
+                active_color=RED_PRIMARY,
+            )
+            replied_lbl = ft.Text(
+                f"تعداد افرادی که تا الان پیام خودکار دریافت کرده‌اند: {len(autoreply_cfg.get('replied_users', []))} نفر",
+                size=12,
+                color="#10B981",
+            )
+
+            def save_ar_settings(e):
+                autoreply_cfg["enabled"] = bool(ar_switch.value)
+                autoreply_cfg["text"] = (ar_text_box.value or "").strip()
+                save_autoreply_config(autoreply_cfg)
+
+                keep_bg = bool(bg_keep_check.value)
+                clock_cfg["bg_keep_alive"] = keep_bg
+                save_clock_config(clock_cfg)
+                set_android_wakelock(keep_bg)
+
+                if autoreply_cfg["enabled"]:
+                    log("پیام خودکار آفلاین در پی‌وی فعال و ذخیره شد 🤖✅", "#10B981")
+                else:
+                    log("پیام خودکار پی‌وی غیرفعال شد.", RED_LIGHT)
+                safe_page_update()
+
+            def reset_ar_users(e):
+                autoreply_cfg["replied_users"] = []
+                save_autoreply_config(autoreply_cfg)
+                replied_lbl.value = "تعداد افرادی که تا الان پیام خودکار دریافت کرده‌اند: 0 نفر"
+                log("لیست افراد پاسخ‌داده‌شده پاک شد ✅", "#10B981")
+                safe_page_update()
+
+            save_ar_btn, _ = make_btn("💾 ذخیره تنظیمات پیام خودکار", save_ar_settings, bgcolor=RED_PRIMARY, height=44, expand=True)
+            reset_ar_btn, _ = make_btn("🗑️ ریست لیست افراد", reset_ar_users, bgcolor=RED_DARK, height=44, expand=True)
+
+            return ft.Container(
+                bgcolor=BG_CARD,
+                padding=14,
+                border_radius=ft.BorderRadius.all(12),
+                border=ft.Border.all(1, BORDER_CRIMSON),
+                content=ft.Column(
+                    spacing=10,
+                    horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                    controls=[
+                        ft.Text("🤖 پیام خودکار پی‌وی (حالت آفلاین)", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
+                        ft.Text(
+                            "وقتی آفلاین هستید، هر کاربری در پی‌وی پیام بدهد متن زیر فقط یک بار برای او ارسال می‌شود.",
+                            size=12,
+                            color=TEXT_MUTED,
+                        ),
+                        ar_switch,
+                        ar_text_box,
+                        bg_keep_check,
+                        ft.Text(
+                            "نکته: با روشن بودن این تیک، ساعت و پاسخگوی خودکار در حافظه قفل می‌شوند و در پس‌زمینه فعال می‌مانند (در تنظیمات باتری گوشی، برنامه را روی Unrestricted بگذارید).",
+                            size=11,
+                            color="#F59E0B",
+                        ),
+                        replied_lbl,
+                        ft.Row(spacing=6, controls=[save_ar_btn, reset_ar_btn]),
+                    ],
+                ),
+            )
+
+        # ==========================================
+        # ویجت ۶: ساعت افق تهران کنار اسم پروفایل
         # ==========================================
         def build_clock_widget():
             cur_tehran = format_tehran_clock(clock_cfg.get("style", "bold"))
@@ -1563,6 +2241,11 @@ async def main(page: ft.Page):
             clock_check = ft.Checkbox(
                 label="فعال‌سازی ساعت افق تهران کنار اسم پروفایل",
                 value=bool(clock_cfg.get("enabled", False)),
+                active_color=RED_PRIMARY,
+            )
+            bg_keep_clock_check = ft.Checkbox(
+                label="🔒 اجرای مداوم ساعت و پیام خودکار در پس‌زمینه (حتی پس از بستن برنامه)",
+                value=bool(clock_cfg.get("bg_keep_alive", True)),
                 active_color=RED_PRIMARY,
             )
             base_first_box = ft.TextField(
@@ -1627,6 +2310,7 @@ async def main(page: ft.Page):
 
             async def save_and_apply_clock(e):
                 enabled = bool(clock_check.value)
+                keep_bg = bool(bg_keep_clock_check.value)
                 bf = strip_clock_suffix(base_first_box.value or "")
                 bl = strip_clock_suffix(base_last_box.value or "")
 
@@ -1642,12 +2326,14 @@ async def main(page: ft.Page):
                         pass
 
                 clock_cfg["enabled"] = enabled
+                clock_cfg["bg_keep_alive"] = keep_bg
                 clock_cfg["base_first"] = bf
                 clock_cfg["base_last"] = bl
                 clock_cfg["style"] = style_state["val"]
                 clock_cfg["target_field"] = style_state["pos"]
                 clock_cfg["sep"] = (sep_box.value or "|").strip()
                 save_clock_config(clock_cfg)
+                set_android_wakelock(keep_bg)
                 st["last_clock_min"] = ""
 
                 if enabled:
@@ -1677,6 +2363,7 @@ async def main(page: ft.Page):
                         ft.Text("⏰ ساعت افق تهران کنار اسم", size=16, weight=ft.FontWeight.BOLD, color=TEXT_WHITE),
                         live_time_txt,
                         clock_check,
+                        bg_keep_clock_check,
                         get_name_btn,
                         base_first_box,
                         base_last_box,
@@ -1699,6 +2386,10 @@ async def main(page: ft.Page):
                 body_host.controls.append(build_multi_msg_widget())
             elif tab == "turbo":
                 body_host.controls.append(build_turbo_widget())
+            elif tab == "forward":
+                body_host.controls.append(build_forward_widget())
+            elif tab == "autoreply":
+                body_host.controls.append(build_autoreply_widget())
             elif tab == "clock":
                 body_host.controls.append(build_clock_widget())
 
@@ -1713,6 +2404,12 @@ async def main(page: ft.Page):
             st["in_dashboard"] = False
             st["turbo_running"] = False
             st["multi_running"] = False
+            st["fwd_running"] = False
+            clock_cfg["enabled"] = False
+            save_clock_config(clock_cfg)
+            autoreply_cfg["enabled"] = False
+            save_autoreply_config(autoreply_cfg)
+            set_android_wakelock(False)
             try:
                 await c.log_out()
             except Exception:
@@ -1721,6 +2418,7 @@ async def main(page: ft.Page):
                 except Exception:
                     pass
             st["client"] = None
+            st["me_id"] = None
             st["entity_cache"].clear()
             base = os.path.basename(SESSION_PATH)
             for f in os.listdir(STORAGE_DIR):
@@ -1735,8 +2433,17 @@ async def main(page: ft.Page):
         b_chats, _ = make_btn("💬 چت‌ها", lambda e: switch_tab(e, "chats"), bgcolor=RED_PRIMARY, height=38, expand=True)
         b_multi, _ = make_btn("📨 چندتایی", lambda e: switch_tab(e, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
         b_turbo, _ = make_btn("🚀 توربو", lambda e: switch_tab(e, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
+        b_fwd, _ = make_btn("📢 فوروارد", lambda e: switch_tab(e, "forward"), bgcolor=BG_INPUT, height=38, expand=True)
+        b_auto, _ = make_btn("🤖 پی‌وی خودکار", lambda e: switch_tab(e, "autoreply"), bgcolor=BG_INPUT, height=38, expand=True)
         b_clock, _ = make_btn("⏰ ساعت", lambda e: switch_tab(e, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
-        nav_buttons = {"chats": b_chats, "multi": b_multi, "turbo": b_turbo, "clock": b_clock}
+        nav_buttons = {
+            "chats": b_chats,
+            "multi": b_multi,
+            "turbo": b_turbo,
+            "forward": b_fwd,
+            "autoreply": b_auto,
+            "clock": b_clock,
+        }
 
         render_body()
 
@@ -1757,7 +2464,8 @@ async def main(page: ft.Page):
                     ],
                 ),
             ),
-            ft.Row(spacing=5, controls=[b_chats, b_multi, b_turbo, b_clock]),
+            ft.Row(spacing=5, controls=[b_chats, b_multi, b_turbo]),
+            ft.Row(spacing=5, controls=[b_fwd, b_auto, b_clock]),
             body_host,
             ft.Container(
                 bgcolor=BG_CARD,
