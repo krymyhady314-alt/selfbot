@@ -2,6 +2,28 @@ import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platfo
 import flet as ft
 import httpx
 
+# لایه سازگاری کامل با Flet 0.25.2 و Flet 1.x (اجرای بدون خطا روی ویندوز و اندروید)
+if hasattr(ft, "Padding"):
+    if not hasattr(ft.Padding, "only"):
+        ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: ft.Padding(left=left, top=top, right=right, bottom=bottom))
+    if not hasattr(ft.Padding, "all"):
+        ft.Padding.all = staticmethod(lambda value: ft.Padding(left=value, top=value, right=value, bottom=value))
+    if not hasattr(ft.Padding, "symmetric"):
+        ft.Padding.symmetric = staticmethod(lambda vertical=0, horizontal=0: ft.Padding(left=horizontal, top=vertical, right=horizontal, bottom=vertical))
+if hasattr(ft, "Margin"):
+    if not hasattr(ft.Margin, "only"):
+        ft.Margin.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: ft.Margin(left=left, top=top, right=right, bottom=bottom))
+    if not hasattr(ft.Margin, "all"):
+        ft.Margin.all = staticmethod(lambda value: ft.Margin(left=value, top=value, right=value, bottom=value))
+    if not hasattr(ft.Margin, "symmetric"):
+        ft.Margin.symmetric = staticmethod(lambda vertical=0, horizontal=0: ft.Margin(left=horizontal, top=vertical, right=horizontal, bottom=vertical))
+if hasattr(ft, "Border"):
+    if not hasattr(ft.Border, "all"):
+        ft.Border.all = staticmethod(lambda width=1, color=None: ft.Border(top=ft.BorderSide(width, color), right=ft.BorderSide(width, color), bottom=ft.BorderSide(width, color), left=ft.BorderSide(width, color)))
+if hasattr(ft, "BorderRadius"):
+    if not hasattr(ft.BorderRadius, "all"):
+        ft.BorderRadius.all = staticmethod(lambda value: ft.BorderRadius(top_left=value, top_right=value, bottom_left=value, bottom_right=value))
+
 if hasattr(ft, "border") and hasattr(ft, "Border") and not hasattr(ft.border, "all"):
     ft.border.all, ft.border.only, ft.border.symmetric = ft.Border.all, ft.Border.only, ft.Border.symmetric
 if hasattr(ft, "padding") and hasattr(ft, "Padding") and not hasattr(ft.padding, "all"):
@@ -11,7 +33,7 @@ if hasattr(ft, "margin") and hasattr(ft, "Margin") and not hasattr(ft.margin, "a
 if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(ft.border_radius, "all"):
     ft.border_radius.all, ft.border_radius.only = ft.BorderRadius.all, ft.BorderRadius.only
 
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.3.1"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
@@ -35,7 +57,6 @@ FORWARD_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_forward_cfg.json")
 
 
 def bind_async(fn, *args):
-    """اتصال امن رویدادهای Flet به توابع async بدون استفاده از lambda."""
     async def _handler(e):
         await fn(e, *args)
     return _handler
@@ -197,7 +218,7 @@ async def apply_profile_name(c, first_name: str, last_name: str):
     raise RuntimeError("متد تغییر نام پروفایل یافت نشد.")
 
 
-async def resolve_async_items(res, timeout: float = 12.0) -> list:
+async def resolve_async_items(res, timeout: float = 14.0) -> list:
     if res is None:
         return []
     if hasattr(res, "__aiter__"):
@@ -232,19 +253,15 @@ async def resolve_async_items(res, timeout: float = 12.0) -> list:
 
 
 def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 40, kind: str = "filled", expand: bool = False):
-    lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12, no_wrap=True)
-    compact_style = ft.ButtonStyle(
-        padding=ft.Padding.symmetric(horizontal=6, vertical=0),
-        shape=ft.RoundedRectangleBorder(radius=10),
-    )
+    lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12)
     if kind == "outlined":
         btn_cls = getattr(ft, "OutlinedButton", None) or getattr(ft, "ElevatedButton", None)
-        return btn_cls(content=lbl, on_click=on_click, height=height, expand=expand, style=compact_style), lbl
+        return btn_cls(content=lbl, on_click=on_click, height=height, expand=expand), lbl
     if kind == "text":
         btn_cls = getattr(ft, "TextButton", None) or getattr(ft, "ElevatedButton", None)
-        return btn_cls(content=lbl, on_click=on_click, expand=expand, style=compact_style), lbl
+        return btn_cls(content=lbl, on_click=on_click, expand=expand), lbl
     btn_cls = getattr(ft, "ElevatedButton", None) or getattr(ft, "Button", None)
-    return btn_cls(content=lbl, bgcolor=bgcolor, color=color, height=height, on_click=on_click, expand=expand, style=compact_style), lbl
+    return btn_cls(content=lbl, bgcolor=bgcolor, color=color, height=height, on_click=on_click, expand=expand), lbl
 
 
 def make_toggle_card(title: str, subtitle: str, initial_val: bool, on_toggle):
@@ -305,6 +322,8 @@ async def main(page: ft.Page):
     clock_cfg = load_json(CLOCK_CFG_FILE, {"enabled": False, "base_first": "", "base_last": "", "style": "bold", "target_field": "first", "sep": "|", "bg_keep_alive": True})
     ar_cfg = load_json(AUTOREPLY_CFG_FILE, {"enabled": False, "text": "سلام، در حال حاضر آفلاین هستم. به محض آنلاین شدن پاسخ می‌دهم.", "replied_users": []})
     fwd_cfg = load_json(FORWARD_CFG_FILE, {"interval_min": 5})
+
+    net_lock = asyncio.Lock()
 
     st = {
         "client": None, "me_id": None, "phone": "", "hash": None, "need_2fa": False,
@@ -479,23 +498,31 @@ async def main(page: ft.Page):
         params = list(inspect.signature(fwd_fn).parameters.keys())
         for attempt in range(1, 3):
             try:
-                coro = None
+                sent_ok = False
+                last_type_err = None
                 for candidate_msg in (msg_id, [msg_id]):
-                    try:
-                        if "from_peer" in params:
-                            coro = fwd_fn(to_peer, candidate_msg, from_peer=from_peer)
-                        elif "from_chat_id" in params:
-                            coro = fwd_fn(to_peer, from_peer, candidate_msg)
-                        else:
-                            try:
-                                coro = fwd_fn(to_peer, candidate_msg, from_peer)
-                            except TypeError:
-                                coro = fwd_fn(to_peer, from_peer, candidate_msg)
+                    calls = []
+                    if "from_peer" in params:
+                        calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, cm, from_peer=from_peer))
+                    if "from_chat_id" in params:
+                        calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, from_peer, cm))
+                    calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, cm, from_peer))
+                    calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, from_peer, cm))
+
+                    for make_coro in calls:
+                        try:
+                            coro = make_coro()
+                            if inspect.isawaitable(coro):
+                                await asyncio.wait_for(coro, timeout=12.0)
+                            sent_ok = True
+                            break
+                        except TypeError as te:
+                            last_type_err = te
+                            continue
+                    if sent_ok:
                         break
-                    except TypeError:
-                        continue
-                if inspect.isawaitable(coro):
-                    await asyncio.wait_for(coro, timeout=12.0)
+                if not sent_ok and last_type_err:
+                    raise last_type_err
                 return
             except Exception as ex:
                 w = getattr(ex, "seconds", None)
@@ -521,17 +548,18 @@ async def main(page: ft.Page):
         if not force and st["last_clock_min"] == now_min:
             return
         try:
-            await ensure_online(c)
-            if not clock_cfg.get("base_first"):
-                me = await asyncio.wait_for(c.get_me(), timeout=8.0)
-                clock_cfg["base_first"] = strip_clock(getattr(me, "first_name", "") or "")
-                clock_cfg["base_last"] = strip_clock(getattr(me, "last_name", "") or "")
-                save_json(CLOCK_CFG_FILE, clock_cfg)
-            clk = format_clock(clock_cfg.get("style", "bold"))
-            sep, bf, bl = clock_cfg.get("sep", "|"), clock_cfg.get("base_first", ""), clock_cfg.get("base_last", "")
-            nf, nl = (bf, f"{bl} {sep} {clk}".strip() if bl else clk) if clock_cfg.get("target_field") == "last" else (f"{bf} {sep} {clk}".strip() if bf else clk, bl)
-            await apply_profile_name(c, nf, nl)
-            st["last_clock_min"] = now_min
+            async with net_lock:
+                await ensure_online(c)
+                if not clock_cfg.get("base_first"):
+                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                    clock_cfg["base_first"] = strip_clock(getattr(me, "first_name", "") or "")
+                    clock_cfg["base_last"] = strip_clock(getattr(me, "last_name", "") or "")
+                    save_json(CLOCK_CFG_FILE, clock_cfg)
+                clk = format_clock(clock_cfg.get("style", "bold"))
+                sep, bf, bl = clock_cfg.get("sep", "|"), clock_cfg.get("base_first", ""), clock_cfg.get("base_last", "")
+                nf, nl = (bf, f"{bl} {sep} {clk}".strip() if bl else clk) if clock_cfg.get("target_field") == "last" else (f"{bf} {sep} {clk}".strip() if bf else clk, bl)
+                await apply_profile_name(c, nf, nl)
+                st["last_clock_min"] = now_min
             log(f"ساعت آپدیت شد: {nf} {nl}".strip(), RED_LIGHT)
         except Exception as ex:
             log(f"خطای ساعت: {ex}", RED_NEON)
@@ -542,56 +570,51 @@ async def main(page: ft.Page):
         txt = str(ar_cfg.get("text") or "").strip()
         if not txt and not seed_only:
             return
+        if net_lock.locked():
+            return
         try:
-            await ensure_online(c)
-            my_id = await get_my_id(c)
-            raw = await call_get_dialogs_raw(c, limit_count=15)
-            replied = set(str(x) for x in ar_cfg.get("replied_users", []))
+            async with net_lock:
+                await ensure_online(c)
+                my_id = await get_my_id(c)
+                raw = await call_get_dialogs_raw(c, limit_count=15)
+                replied = set(str(x) for x in ar_cfg.get("replied_users", []))
 
-            for d in raw:
-                ent = getattr(d, "entity", None)
-                cid = str(getattr(d, "id", None) or (getattr(ent, "id", "") if ent else "")).strip()
-                if not cid or cid == my_id:
-                    continue
-                is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
-                is_pv = (is_u is True or cid.startswith("u0") or (cid.lstrip("-").isdigit() and int(cid) > 0 and not is_g and not is_ch))
-                if not is_pv:
-                    continue
-                if ent and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
-                    continue
+                for d in raw:
+                    ent = getattr(d, "entity", None)
+                    cid = str(getattr(d, "id", None) or (getattr(ent, "id", "") if ent else "")).strip()
+                    if not cid or cid == my_id:
+                        continue
+                    is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
+                    is_pv = (is_u is True or cid.startswith("u0") or (cid.lstrip("-").isdigit() and int(cid) > 0 and not is_g and not is_ch))
+                    if not is_pv:
+                        continue
+                    if ent and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
+                        continue
 
-                top_msg = getattr(d, "message", None)
-                top_mid = getattr(top_msg, "id", None) if top_msg is not None else None
-                is_out = bool(getattr(top_msg, "out", False)) if top_msg is not None else False
+                    top_msg = getattr(d, "message", None)
+                    top_mid = getattr(top_msg, "id", None) if top_msg is not None else None
+                    is_out = bool(getattr(top_msg, "out", False)) if top_msg is not None else False
 
-                if top_mid is None:
-                    peer = await resolve_peer(c, cid)
-                    last_msgs = await call_get_messages_raw(c, peer, limit_count=1)
-                    if last_msgs:
-                        top_msg = last_msgs[0]
-                        top_mid = getattr(top_msg, "id", None)
-                        is_out = bool(getattr(top_msg, "out", False))
+                    if top_mid is None:
+                        continue
 
-                if top_mid is None:
-                    continue
+                    prev_mid = st["pv_baseline_ids"].get(cid)
+                    st["pv_baseline_ids"][cid] = top_mid
 
-                prev_mid = st["pv_baseline_ids"].get(cid)
-                st["pv_baseline_ids"][cid] = top_mid
+                    if seed_only or not st["pv_baseline_ready"]:
+                        continue
 
-                if seed_only or not st["pv_baseline_ready"]:
-                    continue
+                    if prev_mid != top_mid and not is_out and cid not in replied and ar_cfg.get("enabled"):
+                        peer = await resolve_peer(c, cid)
+                        await send_fast(c, peer, cid, txt)
+                        replied.add(cid)
+                        ar_cfg["replied_users"] = list(replied)
+                        save_json(AUTOREPLY_CFG_FILE, ar_cfg)
+                        title = getattr(d, "name", None) or getattr(d, "title", None) or cid
+                        log(f"🤖 پاسخ خودکار به «{title}» ارسال شد ✅", "#10B981")
 
-                if prev_mid != top_mid and not is_out and cid not in replied and ar_cfg.get("enabled"):
-                    peer = await resolve_peer(c, cid)
-                    await send_fast(c, peer, cid, txt)
-                    replied.add(cid)
-                    ar_cfg["replied_users"] = list(replied)
-                    save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                    title = getattr(d, "name", None) or getattr(d, "title", None) or cid
-                    log(f"🤖 پاسخ خودکار به «{title}» ارسال شد ✅", "#10B981")
-
-            if seed_only:
-                st["pv_baseline_ready"] = True
+                if seed_only:
+                    st["pv_baseline_ready"] = True
         except Exception:
             pass
 
@@ -619,8 +642,9 @@ async def main(page: ft.Page):
                     replied = set(str(x) for x in ar_cfg.get("replied_users", []))
                     if cid in replied:
                         return
-                    peer = await resolve_peer(c, cid)
-                    await send_fast(c, peer, cid, txt)
+                    async with net_lock:
+                        peer = await resolve_peer(c, cid)
+                        await send_fast(c, peer, cid, txt)
                     replied.add(cid)
                     ar_cfg["replied_users"] = list(replied)
                     save_json(AUTOREPLY_CFG_FILE, ar_cfg)
@@ -654,13 +678,14 @@ async def main(page: ft.Page):
                 await scan_pv_autoreply(c, seed_only=True)
             while st["client"] is not None:
                 try:
-                    if not c.is_connected():
-                        await ensure_online(c)
+                    if not c.is_connected() and not net_lock.locked():
+                        async with net_lock:
+                            await ensure_online(c)
                     if ar_cfg.get("enabled"):
                         await scan_pv_autoreply(c, seed_only=False)
                 except Exception:
                     pass
-                await asyncio.sleep(6.0)
+                await asyncio.sleep(8.0)
 
         asyncio.create_task(_clock_loop())
         asyncio.create_task(_keepalive_and_pv_loop())
@@ -687,6 +712,7 @@ async def main(page: ft.Page):
 
         dl_btn, _ = make_btn("🌐 ورود به سایت و دانلود نسخه جدید", open_dl, height=46)
         page.add(ft.Container(bgcolor=BG_CARD, padding=18, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.5, RED_NEON), content=ft.Column(spacing=12, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⚠️ این نسخه غیرفعال شده است", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(msg, size=13, color=TEXT_WHITE), url_box, dl_btn, stat])), footer_box())
+        safe_update()
 
     async def proceed_after_license():
         try:
@@ -736,6 +762,7 @@ async def main(page: ft.Page):
         btn, _ = make_btn("بررسی لایسنس و ورود", verify, height=46)
         copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color=RED_LIGHT, kind="outlined")
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(f"نسخه {APP_VERSION} | فعال‌سازی اشتراک", size=12, color=TEXT_MUTED), dev_box, copy_btn, key_box, btn, info])), footer_box())
+        safe_update()
 
     def show_phone(msg: str = ""):
         st["in_dashboard"] = False
@@ -782,6 +809,7 @@ async def main(page: ft.Page):
 
         btn, _ = make_btn("ارسال کد تایید", send_otp, height=46)
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("ورود به سروش‌پلاس", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), ph_box, btn, info])), footer_box())
+        safe_update()
 
     def show_otp():
         st["in_dashboard"] = False
@@ -826,6 +854,7 @@ async def main(page: ft.Page):
         btn, _ = make_btn("تایید و ورود", confirm, height=46)
         chg_btn, _ = make_btn("تغییر شماره", back_phone, color=TEXT_MUTED, kind="text")
         page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("تایید کد", size=19, weight=ft.FontWeight.BOLD, color=RED_NEON), code_box, pwd_box, btn, chg_btn, info])), footer_box())
+        safe_update()
 
     def show_dashboard():
         st["in_dashboard"] = True
@@ -840,8 +869,9 @@ async def main(page: ft.Page):
             st["dialogs_loading"] = True
             items = []
             try:
-                await ensure_online(c)
-                raw = await call_get_dialogs_raw(c, limit_count=limit_count)
+                async with net_lock:
+                    await ensure_online(c)
+                    raw = await call_get_dialogs_raw(c, limit_count=limit_count)
                 for d in raw:
                     ent = getattr(d, "entity", None)
                     cid = getattr(d, "id", None) or (getattr(ent, "id", None) if ent else None) or getattr(d, "chat_id", None)
@@ -852,9 +882,10 @@ async def main(page: ft.Page):
                     is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
                     is_bc = bool(getattr(ent, "broadcast", False)) if ent else False
                     is_mg = bool(getattr(ent, "megagroup", False)) if ent else False
-                    if is_u is True or cid_str.startswith("u0") or (isinstance(cid, int) and cid > 0 and not is_g and not is_ch):
+
+                    if is_u is True or cid_str.startswith("u0") or (cid_str.lstrip("-").isdigit() and int(cid_str) > 0 and not is_g and not is_ch):
                         kind = "pv"
-                    elif is_ch and (is_bc or not is_mg) and not is_g:
+                    elif cid_str.startswith("c0") or (is_ch and (is_bc or not is_mg) and not is_g):
                         kind = "channel"
                     else:
                         kind = "group"
@@ -873,9 +904,10 @@ async def main(page: ft.Page):
             if not tgt:
                 return msgs
             try:
-                await ensure_online(c)
-                peer = await resolve_peer(c, tgt)
-                raw = await call_get_messages_raw(c, peer, limit_count=limit_count)
+                async with net_lock:
+                    await ensure_online(c)
+                    peer = await resolve_peer(c, tgt)
+                    raw = await call_get_messages_raw(c, peer, limit_count=limit_count)
                 for m in raw:
                     mid = getattr(m, "id", None) or getattr(m, "message_id", None)
                     if mid is None:
@@ -1066,19 +1098,20 @@ async def main(page: ft.Page):
                     return
                 total, done = rounds * len(targets) * len(st["multi_messages"]), 0
                 try:
-                    await ensure_online(c)
-                    peers = {t: await resolve_peer(c, t) for t in targets}
-                    q = [(rt, peers[rt], msg, st["reply_to_id"] if st["reply_chat_id"] == rt else None) for _ in range(rounds) for rt in targets for msg in st["multi_messages"]]
-                    for i in range(0, len(q), 5 if dly == 0 else 1):
-                        if not st["multi_running"]:
-                            break
-                        chunk = q[i:i + (5 if dly == 0 else 1)]
-                        await asyncio.gather(*(send_fast(c, p, rt, tx, rp) for rt, p, tx, rp in chunk))
-                        done += len(chunk)
-                        stat.value, stat.color = f"ارسال شد: {done}/{total}", "#10B981"
-                        safe_update()
-                        if dly > 0 and done < total:
-                            await asyncio.sleep(dly)
+                    async with net_lock:
+                        await ensure_online(c)
+                        peers = {t: await resolve_peer(c, t) for t in targets}
+                        q = [(rt, peers[rt], msg, st["reply_to_id"] if st["reply_chat_id"] == rt else None) for _ in range(rounds) for rt in targets for msg in st["multi_messages"]]
+                        for i in range(0, len(q), 5 if dly == 0 else 1):
+                            if not st["multi_running"]:
+                                break
+                            chunk = q[i:i + (5 if dly == 0 else 1)]
+                            await asyncio.gather(*(send_fast(c, p, rt, tx, rp) for rt, p, tx, rp in chunk))
+                            done += len(chunk)
+                            stat.value, stat.color = f"ارسال شد: {done}/{total}", "#10B981"
+                            safe_update()
+                            if dly > 0 and done < total:
+                                await asyncio.sleep(dly)
                     log(f"پایان ارسال چندتایی ({done} پیام) ✅", "#10B981")
                 except Exception as ex:
                     log(f"خطا: {ex}", RED_NEON)
@@ -1130,16 +1163,17 @@ async def main(page: ft.Page):
                     total, dly = max(1, int(cnt_in.value or 10)), max(0.0, float(dly_in.value or 0))
                     raw_t, txt = (t_box.value or "").strip(), (msg_in.value or "").strip()
                     rep = st["reply_to_id"] if st["reply_chat_id"] == raw_t else None
-                    await ensure_online(c)
-                    peer = await resolve_peer(c, raw_t)
-                    while st["turbo_running"] and sent < total:
-                        batch = min(5 if dly == 0 else 1, total - sent)
-                        await asyncio.gather(*(send_fast(c, peer, raw_t, txt, rep) for _ in range(batch)))
-                        sent += batch
-                        stat.value, stat.color = f"ارسال شد: {sent}/{total}", "#10B981"
-                        safe_update()
-                        if dly > 0 and sent < total:
-                            await asyncio.sleep(dly)
+                    async with net_lock:
+                        await ensure_online(c)
+                        peer = await resolve_peer(c, raw_t)
+                        while st["turbo_running"] and sent < total:
+                            batch = min(5 if dly == 0 else 1, total - sent)
+                            await asyncio.gather(*(send_fast(c, peer, raw_t, txt, rep) for _ in range(batch)))
+                            sent += batch
+                            stat.value, stat.color = f"ارسال شد: {sent}/{total}", "#10B981"
+                            safe_update()
+                            if dly > 0 and sent < total:
+                                await asyncio.sleep(dly)
                     log(f"پایان توربو ({sent} پیام) ✅", "#10B981")
                 except Exception as ex:
                     log(f"خطای توربو: {ex}", RED_NEON)
@@ -1217,7 +1251,7 @@ async def main(page: ft.Page):
                     return
                 for it in lst:
                     cid, is_s = it["id"], st["fwd_source_chat"] == it["id"]
-                    badge = "📢 کانال" if it["kind"] == "channel" else "👤 پی‌وی"
+                    badge = "📢 کانال" if it["kind"] == "channel" else ("👤 پی‌وی" if it["kind"] == "pv" else "👥 گپ")
                     c_col.controls.append(ft.Container(
                         padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
                         bgcolor="#1C0A10" if is_s else BG_INPUT,
@@ -1243,42 +1277,46 @@ async def main(page: ft.Page):
                 while st["fwd_running"]:
                     rnd += 1
                     try:
-                        await ensure_online(c)
-                        my_id = await get_my_id(c)
-                        src_peer = await resolve_peer(c, src_raw)
                         dialogs = await fetch_dialogs(100)
                         groups = [d for d in dialogs if d["kind"] == "group"]
                         users, seen = [], set()
-                        for idx, g in enumerate(groups, 1):
-                            if not st["fwd_running"]:
-                                break
-                            f_stat.value = f"🔍 دور {rnd} | بررسی گپ ({idx}/{len(groups)}): {g['title']}"
-                            safe_update()
-                            try:
-                                gp = await resolve_peer(c, g["id"])
-                                gms = await call_get_messages_raw(c, gp, limit_count=200)
-                                for gm in gms:
-                                    so = getattr(gm, "sender", None)
-                                    if getattr(gm, "post", False) or (so and bool(getattr(so, "bot", False) or getattr(so, "is_bot", False))):
-                                        continue
-                                    uid = str(getattr(gm, "sender_id", None) or getattr(gm, "from_id", None) or (getattr(so, "id", "") if so else "")).strip()
-                                    if uid and uid != my_id and uid != g["id"] and not uid.startswith("-") and uid not in seen:
-                                        seen.add(uid)
-                                        users.append(uid)
-                            except Exception:
-                                continue
+                        async with net_lock:
+                            await ensure_online(c)
+                            my_id = await get_my_id(c)
+                            src_peer = await resolve_peer(c, src_raw)
+                            for idx, g in enumerate(groups, 1):
+                                if not st["fwd_running"]:
+                                    break
+                                f_stat.value = f"🔍 دور {rnd} | بررسی گپ ({idx}/{len(groups)}): {g['title']}"
+                                safe_update()
+                                try:
+                                    gp = await resolve_peer(c, g["id"])
+                                    gms = await call_get_messages_raw(c, gp, limit_count=200)
+                                    for gm in gms:
+                                        so = getattr(gm, "sender", None)
+                                        if getattr(gm, "post", False) or (so and bool(getattr(so, "bot", False) or getattr(so, "is_bot", False))):
+                                            continue
+                                        uid = str(getattr(gm, "sender_id", None) or getattr(gm, "from_id", None) or (getattr(so, "id", "") if so else "")).strip()
+                                        if uid and uid != my_id and uid != g["id"] and not uid.startswith("-") and not uid.startswith("g0") and not uid.startswith("c0") and uid not in seen:
+                                            seen.add(uid)
+                                            users.append(uid)
+                                except Exception:
+                                    continue
+
                         ok = 0
                         for ui, u in enumerate(users, 1):
                             if not st["fwd_running"]:
                                 break
                             try:
-                                tp = await resolve_peer(c, u)
-                                await forward_fast(c, tp, u, src_peer, mid)
+                                async with net_lock:
+                                    tp = await resolve_peer(c, u)
+                                    await forward_fast(c, tp, u, src_peer, mid)
                                 ok += 1
-                                f_stat.value = f"📨 دور {rnd} | ارسال ({ui}/{len(users)}) | موفق: {ok}"
+                                f_stat.value = f"📨 دور {rnd} | ارسال به پی‌وی ({ui}/{len(users)}) | موفق: {ok}"
                                 safe_update()
                                 await asyncio.sleep(1.5)
-                            except Exception:
+                            except Exception as fe:
+                                log(f"خطا در ارسال به {u}: {fe}", RED_NEON)
                                 await asyncio.sleep(0.5)
                         if not st["fwd_running"]:
                             break
@@ -1391,8 +1429,9 @@ async def main(page: ft.Page):
 
             async def fetch_my_name(e):
                 try:
-                    await ensure_online(c)
-                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                    async with net_lock:
+                        await ensure_online(c)
+                        me = await asyncio.wait_for(c.get_me(), timeout=8.0)
                     bf = strip_clock(getattr(me, "first_name", "") or "")
                     bl = strip_clock(getattr(me, "last_name", "") or "")
                     bf_in.value, bl_in.value = bf, bl
@@ -1407,7 +1446,8 @@ async def main(page: ft.Page):
                 bf, bl = strip_clock(bf_in.value or ""), strip_clock(bl_in.value or "")
                 if not bf and not bl:
                     try:
-                        me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                        async with net_lock:
+                            me = await asyncio.wait_for(c.get_me(), timeout=8.0)
                         bf, bl = strip_clock(getattr(me, "first_name", "") or ""), strip_clock(getattr(me, "last_name", "") or "")
                         bf_in.value, bl_in.value = bf, bl
                     except Exception:
@@ -1419,7 +1459,8 @@ async def main(page: ft.Page):
                 if clk_ref["val"]:
                     await sync_clock(c, force=True)
                 else:
-                    await apply_profile_name(c, bf or "User", bl)
+                    async with net_lock:
+                        await apply_profile_name(c, bf or "User", bl)
                     log("ساعت غیرفعال شد ✅", RED_LIGHT)
                 safe_update()
 
@@ -1496,6 +1537,7 @@ async def main(page: ft.Page):
             ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=4, controls=[ft.Text("📜 گزارش عملکرد", size=12, color=RED_LIGHT), logs])),
             footer_box(),
         )
+        safe_update()
         notify_android_service("start" if clock_cfg.get("bg_keep_alive", True) else "stop")
         asyncio.create_task(fetch_dialogs())
 
