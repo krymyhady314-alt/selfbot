@@ -5,9 +5,6 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -41,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "flet==0.25.2"
 
-      - name: Bundle splusthon & Low-End Android Optimizer
+      - name: Bundle splusthon & Fast Flet 0.25.2 Compatibility Shim
         run: |
           python - << 'EOF'
           import pathlib
@@ -178,15 +175,12 @@ jobs:
           indented_body = "\n".join(("    " + l if l.strip() else "") for l in body_lines)
 
           shim_code = (
-              "import gc as _v3x_gc, os as _v3x_os, sys as _v3x_sys, time as _v3x_time, threading as _v3x_threading, traceback as _v3x_tb, inspect as _v3x_inspect\n"
-              "# Aggressive GC threshold to prevent RAM spikes on low-end Android phones\n"
-              "_v3x_gc.set_threshold(400, 5, 5)\n\n"
+              "import os as _v3x_os, sys as _v3x_sys, traceback as _v3x_tb, inspect as _v3x_inspect\n"
               "_v3x_root = _v3x_os.path.dirname(_v3x_os.path.abspath(__file__))\n"
               "_v3x_vendor = _v3x_os.path.join(_v3x_root, '_vendor')\n"
               "if _v3x_os.path.isdir(_v3x_vendor) and _v3x_vendor not in _v3x_sys.path:\n"
               "    _v3x_sys.path.append(_v3x_vendor)\n\n"
               "import flet as _v3x_ft\n\n"
-              "# Direct constructors for Flet 1.x helper methods on Flet 0.25.2 classes\n"
               "_v3x_ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: _v3x_ft.Padding(left=left, top=top, right=right, bottom=bottom))\n"
               "_v3x_ft.Padding.all = staticmethod(lambda value: _v3x_ft.Padding(left=value, top=value, right=value, bottom=value))\n"
               "_v3x_ft.Padding.symmetric = staticmethod(lambda vertical=0, horizontal=0: _v3x_ft.Padding(left=horizontal, top=vertical, right=horizontal, bottom=vertical))\n"
@@ -223,7 +217,7 @@ jobs:
               "def _v3x_show_err(page: _v3x_ft.Page, title: str, err: str):\n"
               "    try:\n"
               "        page.clean()\n"
-              "        page.bgcolor = '#0D0D0D'\n"
+              "        page.bgcolor = '#030306'\n"
               "        page.scroll = _v3x_ft.ScrollMode.AUTO\n"
               "        page.padding = 16\n"
               "        page.add(\n"
@@ -233,12 +227,11 @@ jobs:
               "        page.update()\n"
               "    except Exception:\n"
               "        pass\n\n"
-              "def _v3x_optimize_page(page: _v3x_ft.Page):\n"
+              "def _v3x_patch_page(page: _v3x_ft.Page):\n"
               "    if not hasattr(page, 'show_dialog') and hasattr(page, 'open'):\n"
               "        page.show_dialog = page.open\n"
               "    if not hasattr(page, 'pop_dialog') and hasattr(page, 'close'):\n"
               "        page.pop_dialog = page.close\n"
-              "    # Disable heavy page transition animations on low-end Android devices\n"
               "    try:\n"
               "        if page.theme is None:\n"
               "            page.theme = _v3x_ft.Theme()\n"
@@ -247,45 +240,12 @@ jobs:
               "            ios=_v3x_ft.PageTransitionTheme.NONE,\n"
               "        )\n"
               "    except Exception:\n"
-              "        pass\n"
-              "    # Coalesce rapid burst updates so weak CPUs do not freeze\n"
-              "    _orig_upd = page.update\n"
-              "    _lock = _v3x_threading.Lock()\n"
-              "    _last = [0.0]\n"
-              "    _pending = [False]\n"
-              "    def _flush():\n"
-              "        with _lock:\n"
-              "            _pending[0] = False\n"
-              "            _last[0] = _v3x_time.monotonic()\n"
-              "        try:\n"
-              "            _orig_upd()\n"
-              "        except Exception:\n"
-              "            pass\n"
-              "    def _smart_upd(*u_args, **u_kwargs):\n"
-              "        if u_args or u_kwargs:\n"
-              "            return _orig_upd(*u_args, **u_kwargs)\n"
-              "        now = _v3x_time.monotonic()\n"
-              "        with _lock:\n"
-              "            if now - _last[0] >= 0.065:\n"
-              "                _last[0] = now\n"
-              "                _pending[0] = False\n"
-              "                do_now = True\n"
-              "            else:\n"
-              "                do_now = False\n"
-              "                if not _pending[0]:\n"
-              "                    _pending[0] = True\n"
-              "                    _t = _v3x_threading.Timer(0.065, _flush)\n"
-              "                    _t.daemon = True\n"
-              "                    _t.start()\n"
-              "        if do_now:\n"
-              "            return _orig_upd()\n"
-              "    page.update = _smart_upd\n\n"
+              "        pass\n\n"
               "def _v3x_safe_app(target, *args, **kwargs):\n"
               "    if _v3x_inspect.iscoroutinefunction(target):\n"
               "        async def _w_async(page: _v3x_ft.Page):\n"
-              "            _v3x_optimize_page(page)\n"
-              "            page.bgcolor = '#0D0D0D'\n"
-              "            page.update()\n"
+              "            _v3x_patch_page(page)\n"
+              "            page.bgcolor = '#030306'\n"
               "            try:\n"
               "                return await target(page)\n"
               "            except Exception:\n"
@@ -293,9 +253,8 @@ jobs:
               "        return _v3x_orig_app(_w_async, *args, **kwargs)\n"
               "    else:\n"
               "        def _w_sync(page: _v3x_ft.Page):\n"
-              "            _v3x_optimize_page(page)\n"
-              "            page.bgcolor = '#0D0D0D'\n"
-              "            page.update()\n"
+              "            _v3x_patch_page(page)\n"
+              "            page.bgcolor = '#030306'\n"
               "            try:\n"
               "                return target(page)\n"
               "            except Exception:\n"
@@ -320,7 +279,7 @@ jobs:
           pyproject = (
               '[project]\n'
               'name = "v3x-selfbot"\n'
-              'version = "2.2.0"\n'
+              'version = "2.2.2"\n'
               'description = "V3X Selfbot for SoroushPlus"\n'
               'requires-python = ">=3.9"\n'
               f'dependencies = [{deps_toml}]\n\n'
@@ -335,37 +294,381 @@ jobs:
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
 
-      - name: Build 64-bit APK (arm64-v8a)
+      - name: Bootstrap Flutter Android Project (64-bit)
         run: |
           rm -rf build
           flet build apk --arch arm64-v8a --verbose
-          mkdir -p release-apks
-          APK_64=$(find build/apk -name "*.apk" | head -n 1)
-          test -n "$APK_64"
-          cp "$APK_64" release-apks/V3X-Selfbot-64bit.apk
 
-      - name: Build 32-bit APK (armeabi-v7a)
+      - name: Inject Native Android Foreground Service & WakeLock
         run: |
-          rm -rf build
-          flet build apk --arch armeabi-v7a --verbose
-          APK_32=$(find build/apk -name "*.apk" | head -n 1)
-          test -n "$APK_32"
-          cp "$APK_32" release-apks/V3X-Selfbot-32bit.apk
+          python - << 'EOF'
+          import pathlib
+          import re
+          import textwrap
 
-      - name: Upload Both Android APKs
+          manifest_path = pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml")
+          if not manifest_path.exists():
+              raise FileNotFoundError("AndroidManifest.xml not found!")
+
+          manifest = manifest_path.read_text(encoding="utf-8")
+          perms = [
+              "android.permission.WAKE_LOCK",
+              "android.permission.FOREGROUND_SERVICE",
+              "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+              "android.permission.POST_NOTIFICATIONS",
+              "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+              "android.permission.RECEIVE_BOOT_COMPLETED",
+          ]
+          perm_xml = ""
+          for p in perms:
+              if p not in manifest:
+                  perm_xml += f'    <uses-permission android:name="{p}" />\n'
+
+          manifest = manifest.replace("<application", perm_xml + "    <application", 1)
+
+          service_block = textwrap.dedent("""\
+                  <service
+                      android:name=".V3XKeepAliveService"
+                      android:enabled="true"
+                      android:exported="false"
+                      android:stopWithTask="false"
+                      android:foregroundServiceType="dataSync" />
+                  <receiver
+                      android:name=".V3XBootReceiver"
+                      android:enabled="true"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED" />
+                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                      </intent-filter>
+                  </receiver>
+              </application>""")
+
+          if "V3XKeepAliveService" not in manifest:
+              manifest = manifest.replace("</application>", service_block, 1)
+
+          manifest_path.write_text(manifest, encoding="utf-8")
+
+          main_act_files = list(pathlib.Path("build/flutter/android/app/src/main").rglob("MainActivity.*"))
+          if not main_act_files:
+              raise FileNotFoundError("MainActivity file not found!")
+
+          main_act = main_act_files[0]
+          act_text = main_act.read_text(encoding="utf-8")
+          pkg_match = re.search(r"^\s*package\s+([a-zA-Z0-9_.]+)", act_text, re.M)
+          pkg_name = pkg_match.group(1) if pkg_match else "ir.v3xsys.v3x_selfbot"
+          pkg_dir = main_act.parent
+
+          if main_act.suffix == ".java":
+              main_act.unlink()
+              main_act = pkg_dir / "MainActivity.kt"
+
+          main_activity_kt = f"""package {pkg_name}
+
+          import android.content.Context
+          import android.content.Intent
+          import android.content.pm.PackageManager
+          import android.net.Uri
+          import android.os.Build
+          import android.os.Bundle
+          import android.os.Handler
+          import android.os.Looper
+          import android.os.PowerManager
+          import android.provider.Settings
+          import io.flutter.embedding.android.FlutterActivity
+          import java.net.InetAddress
+          import java.net.ServerSocket
+          import java.util.concurrent.atomic.AtomicBoolean
+
+          class MainActivity : FlutterActivity() {{
+              companion object {{
+                  private val bridgeStarted = AtomicBoolean(false)
+
+                  fun startKeepAliveService(ctx: Context) {{
+                      try {{
+                          val svcIntent = Intent(ctx, V3XKeepAliveService::class.java)
+                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
+                              ctx.startForegroundService(svcIntent)
+                          }} else {{
+                              ctx.startService(svcIntent)
+                          }}
+                      }} catch (_: Exception) {{}}
+                  }}
+
+                  fun stopKeepAliveService(ctx: Context) {{
+                      try {{
+                          ctx.stopService(Intent(ctx, V3XKeepAliveService::class.java))
+                      }} catch (_: Exception) {{}}
+                  }}
+              }}
+
+              override fun onCreate(savedInstanceState: Bundle?) {{
+                  super.onCreate(savedInstanceState)
+                  startLocalBridge()
+
+                  val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                  val keepAlive = prefs.getBoolean("bg_keep_alive", true)
+                  if (keepAlive) {{
+                      startKeepAliveService(this)
+                  }}
+
+                  if (Build.VERSION.SDK_INT >= 33) {{
+                      if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {{
+                          requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 101)
+                      }}
+                  }}
+
+                  if (intent?.getBooleanExtra("v3x_bg_boot", false) == true) {{
+                      Handler(Looper.getMainLooper()).postDelayed({{
+                          try {{
+                              moveTaskToBack(true)
+                          }} catch (_: Exception) {{}}
+                      }}, 1200L)
+                  }}
+              }}
+
+              private fun requestBatteryExemption() {{
+                  try {{
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
+                          val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                          if (!pm.isIgnoringBatteryOptimizations(packageName)) {{
+                              val i = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                              i.data = Uri.parse("package:$packageName")
+                              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                              startActivity(i)
+                          }}
+                      }}
+                  }} catch (_: Exception) {{}}
+              }}
+
+              private fun startLocalBridge() {{
+                  if (!bridgeStarted.compareAndSet(false, true)) return
+                  val appCtx = applicationContext
+                  Thread {{
+                      try {{
+                          val server = ServerSocket(48391, 8, InetAddress.getByName("127.0.0.1"))
+                          while (true) {{
+                              val sock = server.accept()
+                              try {{
+                                  val reader = sock.getInputStream().bufferedReader()
+                                  val reqLine = reader.readLine() ?: ""
+                                  val prefs = appCtx.getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                                  if (reqLine.contains("/start")) {{
+                                      prefs.edit().putBoolean("bg_keep_alive", true).apply()
+                                      startKeepAliveService(appCtx)
+                                  }} else if (reqLine.contains("/stop")) {{
+                                      prefs.edit().putBoolean("bg_keep_alive", false).apply()
+                                      stopKeepAliveService(appCtx)
+                                  }} else if (reqLine.contains("/battery")) {{
+                                      Handler(Looper.getMainLooper()).post {{ requestBatteryExemption() }}
+                                  }}
+                                  val resp = "HTTP/1.1 200 OK\\r\\nContent-Length: 2\\r\\nConnection: close\\r\\n\\r\\nOK"
+                                  sock.getOutputStream().write(resp.toByteArray())
+                                  sock.getOutputStream().flush()
+                              }} catch (_: Exception) {{
+                              }} finally {{
+                                  try {{ sock.close() }} catch (_: Exception) {{}}
+                              }}
+                          }}
+                      }} catch (_: Exception) {{}}
+                  }}.apply {{
+                      isDaemon = true
+                      start()
+                  }}
+              }}
+          }}
+          """
+
+          service_kt = f"""package {pkg_name}
+
+          import android.app.AlarmManager
+          import android.app.Notification
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.app.PendingIntent
+          import android.app.Service
+          import android.content.Context
+          import android.content.Intent
+          import android.content.pm.ServiceInfo
+          import android.os.Build
+          import android.os.IBinder
+          import android.os.PowerManager
+          import android.os.SystemClock
+
+          class V3XKeepAliveService : Service() {{
+              private var wakeLock: PowerManager.WakeLock? = null
+
+              override fun onCreate() {{
+                  super.onCreate()
+                  createNotificationChannel()
+                  val notif = buildNotification()
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {{
+                      startForeground(1001, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                  }} else {{
+                      startForeground(1001, notif)
+                  }}
+                  acquireWakeLock()
+              }}
+
+              override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {{
+                  acquireWakeLock()
+                  return START_STICKY
+              }}
+
+              override fun onTaskRemoved(rootIntent: Intent?) {{
+                  val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                  if (prefs.getBoolean("bg_keep_alive", true)) {{
+                      try {{
+                          val restartIntent = Intent(applicationContext, MainActivity::class.java).apply {{
+                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                              putExtra("v3x_bg_boot", true)
+                          }}
+                          val piFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
+                              PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                          }} else {{
+                              PendingIntent.FLAG_UPDATE_CURRENT
+                          }}
+                          val pi = PendingIntent.getActivity(applicationContext, 1002, restartIntent, piFlags)
+                          val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                          am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 1500L, pi)
+                      }} catch (_: Exception) {{}}
+                  }}
+                  super.onTaskRemoved(rootIntent)
+              }}
+
+              override fun onDestroy() {{
+                  try {{
+                      if (wakeLock?.isHeld == true) wakeLock?.release()
+                  }} catch (_: Exception) {{}}
+                  super.onDestroy()
+              }}
+
+              override fun onBind(intent: Intent?): IBinder? = null
+
+              private fun acquireWakeLock() {{
+                  try {{
+                      if (wakeLock == null) {{
+                          val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                          wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "V3XSelfbot:NativeWakeLock")
+                          wakeLock?.setReferenceCounted(false)
+                      }}
+                      if (wakeLock?.isHeld == false) {{
+                          wakeLock?.acquire()
+                      }}
+                  }} catch (_: Exception) {{}}
+              }}
+
+              private fun createNotificationChannel() {{
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
+                      val ch = NotificationChannel(
+                          "v3x_bg_channel",
+                          "V3X Selfbot Background Service",
+                          NotificationManager.IMPORTANCE_LOW
+                      ).apply {{
+                          description = "اجرای مداوم ساعت و پیام خودکار V3X در پس‌زمینه"
+                          setShowBadge(false)
+                      }}
+                      val nm = getSystemService(NotificationManager::class.java)
+                      nm?.createNotificationChannel(ch)
+                  }}
+              }}
+
+              private fun buildNotification(): Notification {{
+                  val openIntent = Intent(this, MainActivity::class.java).apply {{
+                      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                  }}
+                  val piFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {{
+                      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                  }} else {{
+                      PendingIntent.FLAG_UPDATE_CURRENT
+                  }}
+                  val pi = PendingIntent.getActivity(this, 1003, openIntent, piFlags)
+
+                  val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {{
+                      Notification.Builder(this, "v3x_bg_channel")
+                  }} else {{
+                      @Suppress("DEPRECATION")
+                      Notification.Builder(this)
+                  }}
+
+                  return builder
+                      .setContentTitle("⚡ V3X Selfbot فعال در پس‌زمینه")
+                      .setContentText("ساعت افق تهران و پاسخگوی خودکار پی‌وی در حال اجرا هستند")
+                      .setSmallIcon(android.R.drawable.ic_popup_sync)
+                      .setContentIntent(pi)
+                      .setOngoing(true)
+                      .build()
+              }}
+          }}
+          """
+
+          boot_receiver_kt = f"""package {pkg_name}
+
+          import android.content.BroadcastReceiver
+          import android.content.Context
+          import android.content.Intent
+
+          class V3XBootReceiver : BroadcastReceiver() {{
+              override fun onReceive(context: Context, intent: Intent) {{
+                  val prefs = context.getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                  if (prefs.getBoolean("bg_keep_alive", true)) {{
+                      try {{
+                          val launch = Intent(context, MainActivity::class.java).apply {{
+                              addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                              putExtra("v3x_bg_boot", true)
+                          }}
+                          context.startActivity(launch)
+                      }} catch (_: Exception) {{}}
+                  }}
+              }}
+          }}
+          """
+
+          main_act.write_text(textwrap.dedent(main_activity_kt), encoding="utf-8")
+          (pkg_dir / "V3XKeepAliveService.kt").write_text(textwrap.dedent(service_kt), encoding="utf-8")
+          (pkg_dir / "V3XBootReceiver.kt").write_text(textwrap.dedent(boot_receiver_kt), encoding="utf-8")
+          print("Injected Native Android Foreground Service into:", pkg_dir)
+          EOF
+
+      - name: Compile Final 64-bit & 32-bit APKs with Native Service
+        run: |
+          mkdir -p release-apks
+          cd build/flutter
+          flutter build apk --release --target-platform android-arm64
+          cp build/app/outputs/flutter-apk/app-release.apk ../../release-apks/V3X-Selfbot-64bit.apk
+          cd ../..
+
+          rm -rf build/apk
+          flet build apk --arch armeabi-v7a --verbose
+          python - << 'EOF'
+          import pathlib, re, textwrap
+          # Re-inject native service for 32-bit build
+          manifest_path = pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml")
+          manifest = manifest_path.read_text(encoding="utf-8")
+          for p in [
+              "android.permission.WAKE_LOCK",
+              "android.permission.FOREGROUND_SERVICE",
+              "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+              "android.permission.POST_NOTIFICATIONS",
+              "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+              "android.permission.RECEIVE_BOOT_COMPLETED",
+          ]:
+              if p not in manifest:
+                  manifest = manifest.replace("<application", f'    <uses-permission android:name="{p}" />\n    <application', 1)
+          if "V3XKeepAliveService" not in manifest:
+              manifest = manifest.replace("</application>", (
+                  '        <service android:name=".V3XKeepAliveService" android:enabled="true" android:exported="false" android:stopWithTask="false" android:foregroundServiceType="dataSync" />\n'
+                  '        <receiver android:name=".V3XBootReceiver" android:enabled="true" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter></receiver>\n'
+                  '    </application>'
+              ), 1)
+          manifest_path.write_text(manifest, encoding="utf-8")
+          EOF
+          cd build/flutter
+          flutter build apk --release --target-platform android-arm
+          cp build/app/outputs/flutter-apk/app-release.apk ../../release-apks/V3X-Selfbot-32bit.apk
+
+      - name: Upload Both Optimized Android APKs
         uses: actions/upload-artifact@v4
         with:
           name: V3X-Selfbot-Android-APKs
           path: release-apks/*.apk
-
-      - name: Publish Direct Download Links to Latest Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete latest --yes || true
-          git push origin :refs/tags/latest || true
-          gh release create latest \
-            release-apks/V3X-Selfbot-64bit.apk \
-            release-apks/V3X-Selfbot-32bit.apk \
-            --title "V3X Selfbot Android (Latest)" \
-            --notes "نسخه رسمی اندروید سلف‌بات V3X — شامل نسخه ۶۴ بیتی و ۳۲ بیتی بهینه‌سازی‌شده"
