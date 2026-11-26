@@ -30,6 +30,50 @@ jobs:
           flutter-version: '3.24.5'
           channel: 'stable'
 
+      - name: Cache Gradle & Configure Google Maven Mirror (Fix 429)
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat << 'EOF' > ~/.gradle/gradle.properties
+          org.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC
+          org.gradle.workers.max=2
+          org.gradle.daemon=false
+          systemProp.http.keepAlive=true
+          systemProp.https.keepAlive=true
+          EOF
+
+          cat << 'EOF' > ~/.gradle/init.d/mirror.gradle
+          def mirrorMaven = { RepositoryHandler repos ->
+              repos.withType(MavenArtifactRepository).configureEach { repo ->
+                  def u = repo.url.toString()
+                  if (u.contains('repo.maven.apache.org/maven2') || u.contains('repo1.maven.org/maven2')) {
+                      repo.setUrl('https://maven-central.storage-download.googleapis.com/maven2/')
+                  }
+              }
+          }
+          gradle.settingsEvaluated { settings ->
+              mirrorMaven(settings.pluginManagement.repositories)
+              if (settings.metaClass.respondsTo(settings, 'getDependencyResolutionManagement')) {
+                  mirrorMaven(settings.dependencyResolutionManagement.repositories)
+              }
+          }
+          gradle.projectsLoaded {
+              rootProject.allprojects {
+                  mirrorMaven(buildscript.repositories)
+                  mirrorMaven(repositories)
+              }
+          }
+          EOF
+
+      - name: Restore Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-v3x-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-v3x-
+
       - name: Accept Android Licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
@@ -281,7 +325,7 @@ jobs:
           pyproject = (
               '[project]\n'
               'name = "v3x-selfbot"\n'
-              'version = "2.2.5"\n'
+              'version = "2.4.0"\n'
               'description = "V3X Selfbot for SoroushPlus"\n'
               'requires-python = ">=3.9"\n'
               f'dependencies = [{deps_toml}]\n\n'
@@ -296,16 +340,24 @@ jobs:
           pathlib.Path("pyproject.toml").write_text(pyproject)
           EOF
 
-      - name: Setup Flutter Hook for Native Background Service
+      - name: Setup Flutter Hook for Anti-Sleep Android Background Service
         run: |
           cat << 'EOF' > /tmp/inject_v3x_service.py
           import pathlib
           import re
           import textwrap
 
-          manifest_path = pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml")
-          if not manifest_path.exists():
-              print("Manifest not ready yet, skipping injection.")
+          manifest_path = None
+          for cand in (
+              pathlib.Path("android/app/src/main/AndroidManifest.xml"),
+              pathlib.Path("build/flutter/android/app/src/main/AndroidManifest.xml"),
+          ):
+              if cand.exists():
+                  manifest_path = cand
+                  break
+
+          if manifest_path is None:
+              print("Manifest not found in cwd:", pathlib.Path.cwd())
               raise SystemExit(0)
 
           manifest = manifest_path.read_text(encoding="utf-8")
@@ -348,7 +400,8 @@ jobs:
 
           manifest_path.write_text(manifest, encoding="utf-8")
 
-          main_act_files = list(pathlib.Path("build/flutter/android/app/src/main").rglob("MainActivity.*"))
+          src_main = manifest_path.parent
+          main_act_files = list(src_main.rglob("MainActivity.*"))
           if not main_act_files:
               raise FileNotFoundError("MainActivity file not found!")
 
@@ -410,10 +463,17 @@ jobs:
                   }} catch (_: Throwable) {{}}
 
                   try {{
+                      val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                      if (prefs.getBoolean("bg_keep_alive", true)) {{
+                          Handler(Looper.getMainLooper()).postDelayed({{
+                              acquireSafeWakeLock()
+                              startKeepAliveService(applicationContext)
+                          }}, 800L)
+                      }}
                       if (intent?.getBooleanExtra("v3x_bg_boot", false) == true) {{
                           Handler(Looper.getMainLooper()).postDelayed({{
                               try {{ moveTaskToBack(true) }} catch (_: Throwable) {{}}
-                          }}, 1500L)
+                          }}, 1600L)
                       }}
                   }} catch (_: Throwable) {{}}
               }}
@@ -421,12 +481,28 @@ jobs:
               override fun onResume() {{
                   super.onResume()
                   try {{
+                      val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                      if (prefs.getBoolean("bg_keep_alive", true)) {{
+                          acquireSafeWakeLock()
+                          startKeepAliveService(applicationContext)
+                      }}
                       if (Build.VERSION.SDK_INT >= 33) {{
                           if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {{
                               requestPermissions(arrayOf("android.permission.POST_NOTIFICATIONS"), 101)
                           }}
                       }}
                   }} catch (_: Throwable) {{}}
+              }}
+
+              override fun onPause() {{
+                  try {{
+                      val prefs = getSharedPreferences("v3x_prefs", Context.MODE_PRIVATE)
+                      if (prefs.getBoolean("bg_keep_alive", true)) {{
+                          acquireSafeWakeLock()
+                          startKeepAliveService(applicationContext)
+                      }}
+                  }} catch (_: Throwable) {{}}
+                  super.onPause()
               }}
 
               private fun acquireSafeWakeLock() {{
@@ -524,13 +600,39 @@ jobs:
           import android.graphics.Color
           import android.graphics.Paint
           import android.graphics.drawable.Icon
+          import android.net.wifi.WifiManager
           import android.os.Build
+          import android.os.Handler
           import android.os.IBinder
+          import android.os.Looper
           import android.os.PowerManager
           import android.os.SystemClock
+          import java.net.HttpURLConnection
+          import java.net.URL
 
           class V3XKeepAliveService : Service() {{
               private var wakeLock: PowerManager.WakeLock? = null
+              private var wifiLock: WifiManager.WifiLock? = null
+              private val hbHandler = Handler(Looper.getMainLooper())
+              private val hbRunnable = object : Runnable {{
+                  override fun run() {{
+                      try {{
+                          acquireLocks()
+                          Thread {{
+                              try {{
+                                  val conn = (URL("http://127.0.0.1:48392/tick").openConnection() as HttpURLConnection).apply {{
+                                      connectTimeout = 800
+                                      readTimeout = 800
+                                      requestMethod = "GET"
+                                  }}
+                                  conn.inputStream.use {{ it.readBytes() }}
+                                  conn.disconnect()
+                              }} catch (_: Throwable) {{}}
+                          }}.start()
+                      }} catch (_: Throwable) {{}}
+                      hbHandler.postDelayed(this, 25000L)
+                  }}
+              }}
 
               override fun onCreate() {{
                   super.onCreate()
@@ -546,7 +648,9 @@ jobs:
                       }} else {{
                           startForeground(1001, notif)
                       }}
-                      acquireWakeLock()
+                      acquireLocks()
+                      hbHandler.removeCallbacks(hbRunnable)
+                      hbHandler.postDelayed(hbRunnable, 5000L)
                   }} catch (_: Throwable) {{
                       try {{ stopSelf() }} catch (_: Throwable) {{}}
                   }}
@@ -554,7 +658,7 @@ jobs:
 
               override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {{
                   try {{
-                      acquireWakeLock()
+                      acquireLocks()
                   }} catch (_: Throwable) {{}}
                   return START_STICKY
               }}
@@ -581,15 +685,19 @@ jobs:
               }}
 
               override fun onDestroy() {{
+                  try {{ hbHandler.removeCallbacks(hbRunnable) }} catch (_: Throwable) {{}}
                   try {{
                       if (wakeLock?.isHeld == true) wakeLock?.release()
+                  }} catch (_: Throwable) {{}}
+                  try {{
+                      if (wifiLock?.isHeld == true) wifiLock?.release()
                   }} catch (_: Throwable) {{}}
                   super.onDestroy()
               }}
 
               override fun onBind(intent: Intent?): IBinder? = null
 
-              private fun acquireWakeLock() {{
+              private fun acquireLocks() {{
                   try {{
                       if (wakeLock == null) {{
                           val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -598,6 +706,17 @@ jobs:
                       }}
                       if (wakeLock?.isHeld == false) {{
                           wakeLock?.acquire()
+                      }}
+                  }} catch (_: Throwable) {{}}
+                  try {{
+                      if (wifiLock == null) {{
+                          val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+                          @Suppress("DEPRECATION")
+                          wifiLock = wm?.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "V3XSelfbot:WifiLock")
+                          wifiLock?.setReferenceCounted(false)
+                      }}
+                      if (wifiLock?.isHeld == false) {{
+                          wifiLock?.acquire()
                       }}
                   }} catch (_: Throwable) {{}}
               }}
@@ -609,7 +728,7 @@ jobs:
                           "V3X Selfbot Background Service",
                           NotificationManager.IMPORTANCE_LOW
                       ).apply {{
-                          description = "اجرای مداوم ساعت و پیام خودکار V3X در پس‌زمینه"
+                          description = "اجرای مداوم ساعت V3X در پس‌زمینه"
                           setShowBadge(false)
                       }}
                       val nm = getSystemService(NotificationManager::class.java)
@@ -650,7 +769,7 @@ jobs:
 
                   return builder
                       .setContentTitle("⚡ V3X Selfbot فعال در پس‌زمینه")
-                      .setContentText("ساعت افق تهران و پاسخگوی خودکار پی‌وی در حال اجرا هستند")
+                      .setContentText("ساعت افق تهران در حال اجرا است")
                       .setContentIntent(pi)
                       .setOngoing(true)
                       .build()
@@ -683,7 +802,7 @@ jobs:
           main_act.write_text(textwrap.dedent(main_activity_kt), encoding="utf-8")
           (pkg_dir / "V3XKeepAliveService.kt").write_text(textwrap.dedent(service_kt), encoding="utf-8")
           (pkg_dir / "V3XBootReceiver.kt").write_text(textwrap.dedent(boot_receiver_kt), encoding="utf-8")
-          print("Injected Native Background Service successfully into:", pkg_dir)
+          print("Injected Anti-Sleep Native Background Service into:", pkg_dir)
           EOF
 
           REAL_FLUTTER=$(which flutter)
@@ -700,8 +819,14 @@ jobs:
 
       - name: Build 64-bit APK (arm64-v8a)
         run: |
-          rm -rf build
-          flet build apk --arch arm64-v8a --verbose
+          for i in 1 2 3; do
+            rm -rf build
+            if flet build apk --arch arm64-v8a --verbose; then
+              break
+            fi
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
           mkdir -p release-apks
           APK_64=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_64"
@@ -709,8 +834,15 @@ jobs:
 
       - name: Build 32-bit APK (armeabi-v7a)
         run: |
-          rm -rf build
-          flet build apk --arch armeabi-v7a --verbose
+          for i in 1 2 3; do
+            rm -rf build
+            if flet build apk --arch armeabi-v7a --verbose; then
+              break
+            fi
+            echo "Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
+          mkdir -p release-apks
           APK_32=$(find build/apk -name "*.apk" | head -n 1)
           test -n "$APK_32"
           cp "$APK_32" release-apks/V3X-Selfbot-32bit.apk
