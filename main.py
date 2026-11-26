@@ -2,7 +2,6 @@ import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platfo
 import flet as ft
 import httpx
 
-# لایه سازگاری کامل با Flet 0.25.2 و Flet 1.x (اجرای بدون خطا روی ویندوز و اندروید)
 if hasattr(ft, "Padding"):
     if not hasattr(ft.Padding, "only"):
         ft.Padding.only = staticmethod(lambda left=0, top=0, right=0, bottom=0: ft.Padding(left=left, top=top, right=right, bottom=bottom))
@@ -33,7 +32,7 @@ if hasattr(ft, "margin") and hasattr(ft, "Margin") and not hasattr(ft.margin, "a
 if hasattr(ft, "border_radius") and hasattr(ft, "BorderRadius") and not hasattr(ft.border_radius, "all"):
     ft.border_radius.all, ft.border_radius.only = ft.BorderRadius.all, ft.BorderRadius.only
 
-APP_VERSION = "2.3.1"
+APP_VERSION = "2.4.0"
 WEBSITE_URL = "https://v3xsys.pages.dev/"
 DEFAULT_UPDATE_URL = "https://v3xsys.pages.dev/"
 LICENSE_URL = "https://selfbot-license.krymyhady314.workers.dev"
@@ -52,8 +51,6 @@ LIC_FILE = os.path.join(STORAGE_DIR, "v3x_lic.json")
 SESSION_PATH = os.path.join(STORAGE_DIR, "v3x_splus")
 SAVED_MSGS_FILE = os.path.join(STORAGE_DIR, "v3x_saved_msgs.json")
 CLOCK_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_clock_cfg.json")
-AUTOREPLY_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_autoreply_cfg.json")
-FORWARD_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_forward_cfg.json")
 
 
 def bind_async(fn, *args):
@@ -205,13 +202,13 @@ async def apply_profile_name(c, first_name: str, last_name: str):
     if callable(fn):
         res = fn(first_name=first_name, last_name=last_name)
         if inspect.isawaitable(res):
-            await res
+            await asyncio.wait_for(res, timeout=8.0)
         return
     for mp in ("splusthon.tl.functions.account", "splusthon.functions.account"):
         try:
             req = getattr(importlib.import_module(mp), "UpdateProfileRequest", None)
             if req:
-                await c(req(first_name=first_name, last_name=last_name))
+                await asyncio.wait_for(c(req(first_name=first_name, last_name=last_name)), timeout=8.0)
                 return
         except Exception:
             pass
@@ -311,7 +308,7 @@ def parse_target(raw: str):
 
 
 async def main(page: ft.Page):
-    page.title = "V3X Selfbot"
+    page.title = "V3X Selfbot Pro"
     page.bgcolor = BG_GALAXY
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = ft.Padding.only(top=32, left=10, right=10, bottom=10)
@@ -320,24 +317,25 @@ async def main(page: ft.Page):
 
     did = get_device_id()
     clock_cfg = load_json(CLOCK_CFG_FILE, {"enabled": False, "base_first": "", "base_last": "", "style": "bold", "target_field": "first", "sep": "|", "bg_keep_alive": True})
-    ar_cfg = load_json(AUTOREPLY_CFG_FILE, {"enabled": False, "text": "سلام، در حال حاضر آفلاین هستم. به محض آنلاین شدن پاسخ می‌دهم.", "replied_users": []})
-    fwd_cfg = load_json(FORWARD_CFG_FILE, {"interval_min": 5})
 
-    net_lock = asyncio.Lock()
+    reconnect_lock = asyncio.Lock()
+    clock_lock = asyncio.Lock()
 
     st = {
-        "client": None, "me_id": None, "phone": "", "hash": None, "need_2fa": False,
-        "bg_started": False, "hook_attached": False, "last_clock_min": "", "in_dashboard": False,
+        "client": None, "phone": "", "hash": None, "need_2fa": False,
+        "bg_started": False, "last_clock_min": "", "last_clock_sync_str": "هنوز آپدیت نشده",
+        "last_net_ok": 0.0, "last_reconnect_ts": 0.0, "in_dashboard": False,
         "active_tab": "chats", "chat_filter": "all", "dialogs": [], "dialogs_loading": True,
         "selected_targets": {}, "active_target": "", "recent_messages": [],
         "reply_to_id": None, "reply_to_preview": "", "reply_chat_id": "",
         "multi_messages": load_json(SAVED_MSGS_FILE, ["سلام!", "چطوری؟", "پیام تست V3X"]),
-        "multi_running": False, "turbo_running": False, "entity_cache": {},
-        "fwd_source_chat": "", "fwd_messages": [], "fwd_selected_msg_id": None,
-        "fwd_selected_msg_preview": "", "fwd_running": False, "fwd_status": "آماده شروع فوروارد به کاربران ۲۰۰ پیام اخیر گپ‌ها",
-        "pv_baseline_ids": {}, "pv_baseline_ready": False,
+        "multi_rounds": "10", "multi_rate": "10", "multi_delay": "0",
+        "multi_running": False, "multi_status": "آماده ارسال چندتایی",
+        "turbo_count": "100", "turbo_rate": "15", "turbo_delay": "0",
+        "turbo_running": False, "turbo_status": "آماده ارسال توربو",
+        "entity_cache": {},
     }
-    logs = ft.Column(spacing=2, height=85, scroll=ft.ScrollMode.AUTO)
+    logs = ft.Column(spacing=2, height=80, scroll=ft.ScrollMode.AUTO)
     conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
 
     def safe_update():
@@ -346,47 +344,64 @@ async def main(page: ft.Page):
         except Exception:
             pass
 
+    def update_ctrl(ctrl):
+        try:
+            if getattr(ctrl, "page", None) is not None:
+                ctrl.update()
+        except Exception:
+            pass
+
     def log(txt: str, col: str = TEXT_MUTED):
         logs.controls.insert(0, ft.Text(f"[{time.strftime('%H:%M:%S')}] {txt}", size=11, color=col))
-        del logs.controls[15:]
-        safe_update()
+        del logs.controls[12:]
+        if getattr(logs, "page", None) is not None:
+            update_ctrl(logs)
+        else:
+            safe_update()
 
     def get_client():
         if st["client"] is None:
             st["client"] = create_splus_client()
         return st["client"]
 
-    async def get_my_id(c) -> str:
-        if st["me_id"]:
-            return st["me_id"]
-        try:
-            me = await asyncio.wait_for(c.get_me(), timeout=8.0)
-            uid = getattr(me, "id", None) or getattr(me, "user_id", None) or getattr(me, "guid", None)
-            if uid is not None:
-                st["me_id"] = str(uid)
-        except Exception:
-            pass
-        return st["me_id"] or ""
-
     async def ensure_online(c, reset: bool = False) -> bool:
-        try:
-            if reset:
-                try:
-                    await asyncio.wait_for(c.disconnect(), timeout=3.0)
-                except Exception:
-                    pass
-            if not c.is_connected():
-                conn_badge.value, conn_badge.color = "🟡 اتصال مجدد...", "#F59E0B"
-                safe_update()
-                await asyncio.wait_for(c.connect(), timeout=10.0)
-            if conn_badge.value != "🟢 متصل":
-                conn_badge.value, conn_badge.color = "🟢 متصل", "#10B981"
-                safe_update()
-            return True
-        except Exception:
-            conn_badge.value, conn_badge.color = "🔴 قطع اتصال", RED_NEON
-            safe_update()
-            return False
+        async with reconnect_lock:
+            now = time.monotonic()
+            if reset and (now - st["last_reconnect_ts"] < 2.0) and c.is_connected():
+                return True
+            try:
+                if reset:
+                    st["last_reconnect_ts"] = now
+                    try:
+                        await asyncio.wait_for(c.disconnect(), timeout=2.5)
+                    except Exception:
+                        pass
+                    await asyncio.sleep(0.35)
+                if not c.is_connected():
+                    conn_badge.value, conn_badge.color = "🟡 اتصال مجدد...", "#F59E0B"
+                    update_ctrl(conn_badge)
+                    await asyncio.wait_for(c.connect(), timeout=10.0)
+                    st["last_reconnect_ts"] = time.monotonic()
+                if conn_badge.value != "🟢 متصل":
+                    conn_badge.value, conn_badge.color = "🟢 متصل", "#10B981"
+                    update_ctrl(conn_badge)
+                st["last_net_ok"] = time.monotonic()
+                return True
+            except Exception:
+                conn_badge.value, conn_badge.color = "🔴 قطع اتصال", RED_NEON
+                update_ctrl(conn_badge)
+                return False
+
+    async def verify_socket_alive(c):
+        if not c.is_connected():
+            await ensure_online(c, reset=False)
+            return
+        if time.monotonic() - st["last_net_ok"] > 40.0:
+            try:
+                await asyncio.wait_for(c.get_me(), timeout=5.0)
+                st["last_net_ok"] = time.monotonic()
+            except Exception:
+                await ensure_online(c, reset=True)
 
     async def resolve_peer(c, raw: str):
         key = (raw or "").strip()
@@ -414,16 +429,15 @@ async def main(page: ft.Page):
                 continue
             try:
                 sig = inspect.signature(fn).parameters
-                if "limit" in sig:
-                    items = await resolve_async_items(fn(limit=limit_count), timeout=14.0)
-                else:
-                    items = await resolve_async_items(fn(), timeout=14.0)
+                items = await resolve_async_items(fn(limit=limit_count) if "limit" in sig else fn(), timeout=14.0)
                 if items:
+                    st["last_net_ok"] = time.monotonic()
                     return items
             except TypeError:
                 try:
                     items = await resolve_async_items(fn(), timeout=14.0)
                     if items:
+                        st["last_net_ok"] = time.monotonic()
                         return items
                 except Exception:
                     pass
@@ -431,23 +445,22 @@ async def main(page: ft.Page):
                 pass
         return []
 
-    async def call_get_messages_raw(c, peer, limit_count: int = 25) -> list:
+    async def call_get_messages_raw(c, peer, limit_count: int = 20) -> list:
         for m_name in ("get_messages", "iter_messages", "get_history"):
             fn = getattr(c, m_name, None)
             if not callable(fn):
                 continue
             try:
                 sig = inspect.signature(fn).parameters
-                if "limit" in sig:
-                    items = await resolve_async_items(fn(peer, limit=limit_count), timeout=14.0)
-                else:
-                    items = await resolve_async_items(fn(peer), timeout=14.0)
+                items = await resolve_async_items(fn(peer, limit=limit_count) if "limit" in sig else fn(peer), timeout=14.0)
                 if items:
+                    st["last_net_ok"] = time.monotonic()
                     return items
             except TypeError:
                 try:
                     items = await resolve_async_items(fn(peer), timeout=14.0)
                     if items:
+                        st["last_net_ok"] = time.monotonic()
                         return items
                 except Exception:
                     pass
@@ -455,91 +468,48 @@ async def main(page: ft.Page):
                 pass
         return []
 
-    async def send_fast(c, peer, raw_target: str, text: str, reply_id=None):
+    async def send_fast(c, peer, raw_target: str, text: str, reply_id=None, status_cb=None):
         send_fn = getattr(c, "send_message", None) or getattr(c, "send_text", None)
         if not callable(send_fn):
             raise RuntimeError("متد send_message در کلاینت یافت نشد.")
-        for attempt in range(1, 4):
+        for attempt in range(1, 6):
             try:
                 if reply_id is not None:
                     for kw in ("reply_to", "reply_to_msg_id", "reply_to_message_id"):
                         try:
                             res = send_fn(peer, text, **{kw: reply_id})
                             if inspect.isawaitable(res):
-                                await asyncio.wait_for(res, timeout=10.0)
-                            return
+                                await asyncio.wait_for(res, timeout=9.0)
+                            st["last_net_ok"] = time.monotonic()
+                            return True
                         except TypeError:
                             continue
                 res = send_fn(peer, text)
                 if inspect.isawaitable(res):
-                    await asyncio.wait_for(res, timeout=10.0)
-                return
+                    await asyncio.wait_for(res, timeout=9.0)
+                st["last_net_ok"] = time.monotonic()
+                return True
             except Exception as ex:
+                err_low = str(ex).lower()
                 w = getattr(ex, "seconds", None)
                 if w is None:
-                    m = re.search(r"wait of (\d+)", str(ex).lower())
+                    m = re.search(r"(?:wait of|flood_wait[_ ]?)(\d+)", err_low)
                     if m:
                         w = int(m.group(1))
                 if w:
-                    await asyncio.sleep(min(int(w) + 1, 20))
+                    sleep_s = min(int(w) + 1, 25)
+                    if callable(status_cb):
+                        status_cb(f"⏳ محدودیت سرعت سرور؛ مکث {sleep_s} ثانیه و ادامه خودکار...")
+                    await asyncio.sleep(sleep_s)
                     continue
-                if attempt < 3:
+                if attempt < 5:
                     await ensure_online(c, reset=True)
                     st["entity_cache"].pop((raw_target or "").strip(), None)
                     peer = await resolve_peer(c, raw_target)
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.25 * attempt)
                 else:
-                    raise ex
-
-    async def forward_fast(c, to_peer, raw_to: str, from_peer, msg_id):
-        fwd_fn = getattr(c, "forward_messages", None) or getattr(c, "forward", None) or getattr(c, "forward_message", None)
-        if not callable(fwd_fn):
-            raise RuntimeError("متد فوروارد در splusthon یافت نشد.")
-        params = list(inspect.signature(fwd_fn).parameters.keys())
-        for attempt in range(1, 3):
-            try:
-                sent_ok = False
-                last_type_err = None
-                for candidate_msg in (msg_id, [msg_id]):
-                    calls = []
-                    if "from_peer" in params:
-                        calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, cm, from_peer=from_peer))
-                    if "from_chat_id" in params:
-                        calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, from_peer, cm))
-                    calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, cm, from_peer))
-                    calls.append(lambda cm=candidate_msg: fwd_fn(to_peer, from_peer, cm))
-
-                    for make_coro in calls:
-                        try:
-                            coro = make_coro()
-                            if inspect.isawaitable(coro):
-                                await asyncio.wait_for(coro, timeout=12.0)
-                            sent_ok = True
-                            break
-                        except TypeError as te:
-                            last_type_err = te
-                            continue
-                    if sent_ok:
-                        break
-                if not sent_ok and last_type_err:
-                    raise last_type_err
-                return
-            except Exception as ex:
-                w = getattr(ex, "seconds", None)
-                if w is None:
-                    m = re.search(r"wait of (\d+)", str(ex).lower())
-                    if m:
-                        w = int(m.group(1))
-                if w:
-                    await asyncio.sleep(min(int(w) + 1, 25))
-                    continue
-                if attempt < 2:
-                    await ensure_online(c, reset=True)
-                    st["entity_cache"].pop((raw_to or "").strip(), None)
-                    to_peer = await resolve_peer(c, raw_to)
-                    await asyncio.sleep(0.3)
-                else:
-                    raise ex
+                    return False
+        return False
 
     async def sync_clock(c, force: bool = False):
         if not clock_cfg.get("enabled"):
@@ -547,121 +517,52 @@ async def main(page: ft.Page):
         now_min = datetime.datetime.now(TEHRAN_TZ).strftime("%H:%M")
         if not force and st["last_clock_min"] == now_min:
             return
-        try:
-            async with net_lock:
-                await ensure_online(c)
-                if not clock_cfg.get("base_first"):
-                    me = await asyncio.wait_for(c.get_me(), timeout=8.0)
-                    clock_cfg["base_first"] = strip_clock(getattr(me, "first_name", "") or "")
-                    clock_cfg["base_last"] = strip_clock(getattr(me, "last_name", "") or "")
-                    save_json(CLOCK_CFG_FILE, clock_cfg)
-                clk = format_clock(clock_cfg.get("style", "bold"))
-                sep, bf, bl = clock_cfg.get("sep", "|"), clock_cfg.get("base_first", ""), clock_cfg.get("base_last", "")
-                nf, nl = (bf, f"{bl} {sep} {clk}".strip() if bl else clk) if clock_cfg.get("target_field") == "last" else (f"{bf} {sep} {clk}".strip() if bf else clk, bl)
-                await apply_profile_name(c, nf, nl)
-                st["last_clock_min"] = now_min
-            log(f"ساعت آپدیت شد: {nf} {nl}".strip(), RED_LIGHT)
-        except Exception as ex:
-            log(f"خطای ساعت: {ex}", RED_NEON)
-
-    async def scan_pv_autoreply(c, seed_only: bool = False):
-        if not ar_cfg.get("enabled") and not seed_only:
+        if clock_lock.locked():
             return
-        txt = str(ar_cfg.get("text") or "").strip()
-        if not txt and not seed_only:
-            return
-        if net_lock.locked():
-            return
-        try:
-            async with net_lock:
-                await ensure_online(c)
-                my_id = await get_my_id(c)
-                raw = await call_get_dialogs_raw(c, limit_count=15)
-                replied = set(str(x) for x in ar_cfg.get("replied_users", []))
-
-                for d in raw:
-                    ent = getattr(d, "entity", None)
-                    cid = str(getattr(d, "id", None) or (getattr(ent, "id", "") if ent else "")).strip()
-                    if not cid or cid == my_id:
-                        continue
-                    is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
-                    is_pv = (is_u is True or cid.startswith("u0") or (cid.lstrip("-").isdigit() and int(cid) > 0 and not is_g and not is_ch))
-                    if not is_pv:
-                        continue
-                    if ent and bool(getattr(ent, "bot", False) or getattr(ent, "is_bot", False)):
-                        continue
-
-                    top_msg = getattr(d, "message", None)
-                    top_mid = getattr(top_msg, "id", None) if top_msg is not None else None
-                    is_out = bool(getattr(top_msg, "out", False)) if top_msg is not None else False
-
-                    if top_mid is None:
-                        continue
-
-                    prev_mid = st["pv_baseline_ids"].get(cid)
-                    st["pv_baseline_ids"][cid] = top_mid
-
-                    if seed_only or not st["pv_baseline_ready"]:
-                        continue
-
-                    if prev_mid != top_mid and not is_out and cid not in replied and ar_cfg.get("enabled"):
-                        peer = await resolve_peer(c, cid)
-                        await send_fast(c, peer, cid, txt)
-                        replied.add(cid)
-                        ar_cfg["replied_users"] = list(replied)
-                        save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                        title = getattr(d, "name", None) or getattr(d, "title", None) or cid
-                        log(f"🤖 پاسخ خودکار به «{title}» ارسال شد ✅", "#10B981")
-
-                if seed_only:
-                    st["pv_baseline_ready"] = True
-        except Exception:
-            pass
-
-    def attach_pv_hook(c):
-        if st["hook_attached"] or not callable(getattr(c, "add_event_handler", None)):
-            return
-        try:
-            NewMessage = getattr(importlib.import_module("splusthon.events"), "NewMessage", None)
-            if not NewMessage:
-                return
-
-            async def _on_pv(event):
+        async with clock_lock:
+            for attempt in (1, 2):
                 try:
-                    if not ar_cfg.get("enabled") or not getattr(event, "is_private", False) or getattr(event, "out", False):
-                        return
-                    txt = str(ar_cfg.get("text") or "").strip()
-                    if not txt:
-                        return
-                    sender = await event.get_sender()
-                    if sender and bool(getattr(sender, "bot", False) or getattr(sender, "is_bot", False)):
-                        return
-                    cid = str(getattr(event, "chat_id", None) or getattr(event, "sender_id", None) or "")
-                    if not cid or cid == await get_my_id(c):
-                        return
-                    replied = set(str(x) for x in ar_cfg.get("replied_users", []))
-                    if cid in replied:
-                        return
-                    async with net_lock:
-                        peer = await resolve_peer(c, cid)
-                        await send_fast(c, peer, cid, txt)
-                    replied.add(cid)
-                    ar_cfg["replied_users"] = list(replied)
-                    save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                    log(f"🤖 پاسخ خودکار به «{getattr(sender, 'first_name', cid)}» ارسال شد ✅", "#10B981")
-                except Exception:
-                    pass
-
-            c.add_event_handler(_on_pv, NewMessage(incoming=True))
-            st["hook_attached"] = True
-        except Exception:
-            pass
+                    await verify_socket_alive(c)
+                    if not clock_cfg.get("base_first"):
+                        me = await asyncio.wait_for(c.get_me(), timeout=7.0)
+                        clock_cfg["base_first"] = strip_clock(getattr(me, "first_name", "") or "")
+                        clock_cfg["base_last"] = strip_clock(getattr(me, "last_name", "") or "")
+                        save_json(CLOCK_CFG_FILE, clock_cfg)
+                    clk = format_clock(clock_cfg.get("style", "bold"))
+                    sep, bf, bl = clock_cfg.get("sep", "|"), clock_cfg.get("base_first", ""), clock_cfg.get("base_last", "")
+                    nf, nl = (bf, f"{bl} {sep} {clk}".strip() if bl else clk) if clock_cfg.get("target_field") == "last" else (f"{bf} {sep} {clk}".strip() if bf else clk, bl)
+                    await apply_profile_name(c, nf, nl)
+                    st["last_clock_min"] = now_min
+                    st["last_clock_sync_str"] = datetime.datetime.now(TEHRAN_TZ).strftime("%H:%M:%S")
+                    st["last_net_ok"] = time.monotonic()
+                    log(f"⏰ ساعت آپدیت شد: {nf} {nl}".strip(), RED_LIGHT)
+                    return
+                except Exception as ex:
+                    if attempt == 1:
+                        await ensure_online(c, reset=True)
+                    else:
+                        log(f"خطای ساعت: {ex}", RED_NEON)
 
     async def start_bg_engine(c):
-        attach_pv_hook(c)
         if st["bg_started"]:
             return
         st["bg_started"] = True
+
+        async def _handle_native_tick(reader, writer):
+            try:
+                await asyncio.wait_for(reader.read(256), timeout=1.0)
+                writer.write(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK")
+                await writer.drain()
+                writer.close()
+            except Exception:
+                pass
+            if clock_cfg.get("enabled"):
+                asyncio.create_task(sync_clock(c, force=False))
+
+        try:
+            await asyncio.start_server(_handle_native_tick, "127.0.0.1", 48392)
+        except Exception:
+            pass
 
         async def _clock_loop():
             while st["client"] is not None:
@@ -671,24 +572,9 @@ async def main(page: ft.Page):
                 except Exception:
                     pass
                 sec = datetime.datetime.now(TEHRAN_TZ).second
-                await asyncio.sleep(max(2.0, 60.5 - sec) if clock_cfg.get("enabled") else 10.0)
-
-        async def _keepalive_and_pv_loop():
-            if ar_cfg.get("enabled"):
-                await scan_pv_autoreply(c, seed_only=True)
-            while st["client"] is not None:
-                try:
-                    if not c.is_connected() and not net_lock.locked():
-                        async with net_lock:
-                            await ensure_online(c)
-                    if ar_cfg.get("enabled"):
-                        await scan_pv_autoreply(c, seed_only=False)
-                except Exception:
-                    pass
-                await asyncio.sleep(8.0)
+                await asyncio.sleep(max(1.5, 60.2 - sec) if clock_cfg.get("enabled") else 5.0)
 
         asyncio.create_task(_clock_loop())
-        asyncio.create_task(_keepalive_and_pv_loop())
 
     def show_update_required(msg: str, update_url: str):
         st["in_dashboard"] = False
@@ -718,6 +604,7 @@ async def main(page: ft.Page):
         try:
             c = get_client()
             await c.connect()
+            st["last_net_ok"] = time.monotonic()
             if await c.is_user_authorized():
                 await start_bg_engine(c)
                 show_dashboard()
@@ -761,7 +648,7 @@ async def main(page: ft.Page):
 
         btn, _ = make_btn("بررسی لایسنس و ورود", verify, height=46)
         copy_btn, _ = make_btn("📋 کپی شناسه دستگاه", copy_id, color=RED_LIGHT, kind="outlined")
-        page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("V3X SELFBOT", size=22, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(f"نسخه {APP_VERSION} | فعال‌سازی اشتراک", size=12, color=TEXT_MUTED), dev_box, copy_btn, key_box, btn, info])), footer_box())
+        page.add(ft.Container(bgcolor=BG_CARD, padding=16, border_radius=ft.BorderRadius.all(14), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("V3X SELFBOT PRO", size=22, weight=ft.FontWeight.BOLD, color=RED_NEON), ft.Text(f"نسخه {APP_VERSION} | فعال‌سازی اشتراک پرو", size=12, color=TEXT_MUTED), dev_box, copy_btn, key_box, btn, info])), footer_box())
         safe_update()
 
     def show_phone(msg: str = ""):
@@ -860,7 +747,7 @@ async def main(page: ft.Page):
         st["in_dashboard"] = True
         page.controls.clear()
         c = get_client()
-        log("سلف‌بات با موفقیت متصل شد ✅", "#10B981")
+        log("سلف‌بات پرو با موفقیت متصل شد ✅", "#10B981")
 
         body_host = ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH)
         on_dialogs_cb = None
@@ -869,9 +756,8 @@ async def main(page: ft.Page):
             st["dialogs_loading"] = True
             items = []
             try:
-                async with net_lock:
-                    await ensure_online(c)
-                    raw = await call_get_dialogs_raw(c, limit_count=limit_count)
+                await ensure_online(c)
+                raw = await call_get_dialogs_raw(c, limit_count=limit_count)
                 for d in raw:
                     ent = getattr(d, "entity", None)
                     cid = getattr(d, "id", None) or (getattr(ent, "id", None) if ent else None) or getattr(d, "chat_id", None)
@@ -882,7 +768,6 @@ async def main(page: ft.Page):
                     is_u, is_g, is_ch = getattr(d, "is_user", None), getattr(d, "is_group", None), getattr(d, "is_channel", None)
                     is_bc = bool(getattr(ent, "broadcast", False)) if ent else False
                     is_mg = bool(getattr(ent, "megagroup", False)) if ent else False
-
                     if is_u is True or cid_str.startswith("u0") or (cid_str.lstrip("-").isdigit() and int(cid_str) > 0 and not is_g and not is_ch):
                         kind = "pv"
                     elif cid_str.startswith("c0") or (is_ch and (is_bc or not is_mg) and not is_g):
@@ -898,16 +783,15 @@ async def main(page: ft.Page):
                 on_dialogs_cb()
             return items
 
-        async def fetch_msgs(raw_target: str, limit_count: int = 25) -> list[dict]:
+        async def fetch_msgs(raw_target: str, limit_count: int = 20) -> list[dict]:
             msgs = []
             tgt = (raw_target or "").strip()
             if not tgt:
                 return msgs
             try:
-                async with net_lock:
-                    await ensure_online(c)
-                    peer = await resolve_peer(c, tgt)
-                    raw = await call_get_messages_raw(c, peer, limit_count=limit_count)
+                await ensure_online(c)
+                peer = await resolve_peer(c, tgt)
+                raw = await call_get_messages_raw(c, peer, limit_count=limit_count)
                 for m in raw:
                     mid = getattr(m, "id", None) or getattr(m, "message_id", None)
                     if mid is None:
@@ -1059,7 +943,7 @@ async def main(page: ft.Page):
             ])
 
         # ==========================================
-        # تب ۲: ارسال چندتایی
+        # تب ۲: ارسال چندتایی ضدلگ با تنظیم نرخ ارسال در ثانیه
         # ==========================================
         def build_multi():
             async def on_multi_t(v: bool):
@@ -1068,15 +952,46 @@ async def main(page: ft.Page):
             t_box = ft.TextField(label="مقصد ارسال", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_target(e.control.value or ""))
             m_card, m_ref = make_toggle_card("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, on_multi_t)
             new_in = ft.TextField(label="متن پیام جدید", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
-            rnd_in = ft.TextField(label="تعداد دور", value="1", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
-            dly_in = ft.TextField(label="تاخیر (0 = توربو)", value="0", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
-            stat = ft.Text("آماده ارسال چندتایی", size=12, color=TEXT_MUTED)
+
+            summary_lbl = ft.Text("", size=12, color="#F59E0B", weight=ft.FontWeight.W_600)
+
+            def calc_multi_summary():
+                try:
+                    r_val = max(1, int(rnd_in.value or 1))
+                except ValueError:
+                    r_val = 1
+                try:
+                    rt_val = max(1, min(30, int(rate_in.value or 10)))
+                except ValueError:
+                    rt_val = 10
+                try:
+                    dl_val = max(0.0, float(dly_in.value or 0))
+                except ValueError:
+                    dl_val = 0.0
+                t_cnt = len(st["selected_targets"]) if (m_ref["val"] and st["selected_targets"]) else 1
+                tot = r_val * t_cnt * len(st["multi_messages"])
+                spd_txt = f"هر {dl_val:g} ثانیه، {rt_val} پیام" if dl_val > 0 else f"حداکثر سرعت ({rt_val} پیام همزمان)"
+                summary_lbl.value = f"📊 مجموع ارسال: {tot} پیام  |  {spd_txt}"
+
+            def on_multi_cfg_change(e):
+                st["multi_rounds"] = rnd_in.value or "10"
+                st["multi_rate"] = rate_in.value or "10"
+                st["multi_delay"] = dly_in.value or "0"
+                calc_multi_summary()
+                update_ctrl(summary_lbl)
+
+            rnd_in = ft.TextField(label="تعداد دور لیست", value=st["multi_rounds"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True, on_change=on_multi_cfg_change)
+            rate_in = ft.TextField(label="پیام در هر ثانیه", value=st["multi_rate"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE, expand=True, on_change=on_multi_cfg_change)
+            dly_in = ft.TextField(label="تاخیر (0 = فوری)", value=st["multi_delay"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True, on_change=on_multi_cfg_change)
+
+            stat = ft.Text(st["multi_status"], size=12, color="#10B981" if st["multi_running"] else TEXT_MUTED)
             items_col = ft.Column(spacing=5)
 
             async def del_m_item(e, i: int):
                 if 0 <= i < len(st["multi_messages"]):
                     st["multi_messages"].pop(i)
                     draw_items()
+                    calc_multi_summary()
                     safe_update()
 
             def draw_items():
@@ -1085,48 +1000,123 @@ async def main(page: ft.Page):
                     db, _ = make_btn("حذف", bind_async(del_m_item, idx), color=RED_NEON, kind="text")
                     items_col.controls.append(ft.Container(padding=ft.Padding.symmetric(horizontal=8, vertical=4), border_radius=ft.BorderRadius.all(8), bgcolor=BG_INPUT, border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Text(f"{idx+1}. {txt}", size=12, expand=True), db])))
 
+            def set_m_stat(msg_txt: str, col: str = "#10B981"):
+                st["multi_status"] = msg_txt
+                stat.value = msg_txt
+                stat.color = col
+                update_ctrl(stat)
+
             async def run_m():
                 try:
-                    rounds, dly = max(1, int(rnd_in.value or 1)), max(0.0, float(dly_in.value or 0))
+                    rounds = max(1, int(st["multi_rounds"] or 1))
                 except ValueError:
-                    rounds, dly = 1, 0.0
+                    rounds = 1
+                try:
+                    rate = max(1, min(30, int(st["multi_rate"] or 10)))
+                except ValueError:
+                    rate = 10
+                try:
+                    dly = max(0.0, float(st["multi_delay"] or 0.0))
+                except ValueError:
+                    dly = 0.0
+
                 targets = list(st["selected_targets"].keys()) if (m_ref["val"] and st["selected_targets"]) else ([(t_box.value or "").strip()] if (t_box.value or "").strip() else [])
-                if not targets or not st["multi_messages"]:
+                msgs_snapshot = list(st["multi_messages"])
+                if not targets or not msgs_snapshot:
                     st["multi_running"] = False
                     m_lbl.value, m_btn.bgcolor = "🚀 شروع ارسال چندتایی", RED_PRIMARY
+                    update_ctrl(m_btn)
                     log("مقصد و لیست پیام را کامل کنید.", RED_NEON)
                     return
-                total, done = rounds * len(targets) * len(st["multi_messages"]), 0
+
+                total = rounds * len(targets) * len(msgs_snapshot)
+                done = 0
+                failed = 0
+                last_ui = 0.0
+                t_start = time.monotonic()
+
                 try:
-                    async with net_lock:
-                        await ensure_online(c)
-                        peers = {t: await resolve_peer(c, t) for t in targets}
-                        q = [(rt, peers[rt], msg, st["reply_to_id"] if st["reply_chat_id"] == rt else None) for _ in range(rounds) for rt in targets for msg in st["multi_messages"]]
-                        for i in range(0, len(q), 5 if dly == 0 else 1):
-                            if not st["multi_running"]:
-                                break
-                            chunk = q[i:i + (5 if dly == 0 else 1)]
-                            await asyncio.gather(*(send_fast(c, p, rt, tx, rp) for rt, p, tx, rp in chunk))
-                            done += len(chunk)
-                            stat.value, stat.color = f"ارسال شد: {done}/{total}", "#10B981"
-                            safe_update()
-                            if dly > 0 and done < total:
-                                await asyncio.sleep(dly)
-                    log(f"پایان ارسال چندتایی ({done} پیام) ✅", "#10B981")
+                    await ensure_online(c)
+                    peers = {t: await resolve_peer(c, t) for t in targets}
+
+                    def op_stream():
+                        for _ in range(rounds):
+                            for rt in targets:
+                                rep = st["reply_to_id"] if st["reply_chat_id"] == rt else None
+                                p = peers[rt]
+                                for msg in msgs_snapshot:
+                                    yield (rt, p, msg, rep)
+
+                    batch = []
+                    for item in op_stream():
+                        if not st["multi_running"]:
+                            break
+                        batch.append(item)
+                        if len(batch) < rate:
+                            continue
+
+                        wave_t0 = time.monotonic()
+                        results = await asyncio.gather(
+                            *(send_fast(c, p, rt, tx, rp, status_cb=lambda s: set_m_stat(s, "#F59E0B")) for rt, p, tx, rp in batch),
+                            return_exceptions=True,
+                        )
+                        for r in results:
+                            if r is True:
+                                done += 1
+                            else:
+                                failed += 1
+                        batch.clear()
+
+                        now = time.monotonic()
+                        if now - last_ui >= 0.4 or (done + failed) >= total:
+                            last_ui = now
+                            elapsed = max(0.1, now - t_start)
+                            real_rps = done / elapsed
+                            set_m_stat(f"ارسال شد: {done}/{total}  |  سرعت: {real_rps:.1f} پیام/ثانیه", "#10B981")
+
+                        if dly > 0:
+                            rem_wait = dly - (time.monotonic() - wave_t0)
+                            if rem_wait > 0:
+                                await asyncio.sleep(rem_wait)
+                        else:
+                            await asyncio.sleep(0.01)
+
+                    if batch and st["multi_running"]:
+                        results = await asyncio.gather(
+                            *(send_fast(c, p, rt, tx, rp, status_cb=lambda s: set_m_stat(s, "#F59E0B")) for rt, p, tx, rp in batch),
+                            return_exceptions=True,
+                        )
+                        for r in results:
+                            if r is True:
+                                done += 1
+                            else:
+                                failed += 1
+
+                    if st["multi_running"]:
+                        set_m_stat(f"✅ پایان ارسال چندتایی: {done} موفق از {total}", "#10B981")
+                        log(f"پایان ارسال چندتایی ({done} پیام) ✅", "#10B981")
+                    else:
+                        set_m_stat(f"⛔ متوقف شد ({done} از {total} ارسال شد)", "#F59E0B")
+                        log(f"ارسال چندتایی متوقف شد ({done}/{total}).", "#F59E0B")
                 except Exception as ex:
+                    set_m_stat(f"❌ خطا در {done}/{total}: {ex}", RED_NEON)
                     log(f"خطا: {ex}", RED_NEON)
                 finally:
                     st["multi_running"] = False
                     m_lbl.value, m_btn.bgcolor = "🚀 شروع ارسال چندتایی", RED_PRIMARY
-                    safe_update()
+                    update_ctrl(m_btn)
 
             async def toggle_m(e):
                 if st["multi_running"]:
                     st["multi_running"] = False
+                    set_m_stat("⏳ در حال توقف فوری...", "#F59E0B")
                     return
+                st["multi_rounds"] = rnd_in.value or "10"
+                st["multi_rate"] = rate_in.value or "10"
+                st["multi_delay"] = dly_in.value or "0"
                 st["multi_running"] = True
                 m_lbl.value, m_btn.bgcolor = "⛔ توقف ارسال", RED_DARK
-                safe_update()
+                update_ctrl(m_btn)
                 asyncio.create_task(run_m())
 
             async def add_m_item(e):
@@ -1135,6 +1125,7 @@ async def main(page: ft.Page):
                     st["multi_messages"].append(val)
                     new_in.value = ""
                     draw_items()
+                    calc_multi_summary()
                     safe_update()
 
             async def sav_m_items(e):
@@ -1143,272 +1134,115 @@ async def main(page: ft.Page):
 
             add_b, _ = make_btn("➕ افزودن", add_m_item, height=38, expand=True)
             sav_b, _ = make_btn("💾 ذخیره پیش‌فرض", sav_m_items, bgcolor=RED_DARK, height=38, expand=True)
-            m_btn, m_lbl = make_btn("🚀 شروع ارسال چندتایی", toggle_m, height=44)
+            m_btn, m_lbl = make_btn("⛔ توقف ارسال" if st["multi_running"] else "🚀 شروع ارسال چندتایی", toggle_m, bgcolor=RED_DARK if st["multi_running"] else RED_PRIMARY, height=44)
             draw_items()
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, m_card, new_in, ft.Row(spacing=6, controls=[add_b, sav_b]), items_col, ft.Row(spacing=6, controls=[rnd_in, dly_in]), m_btn, stat]))
+            calc_multi_summary()
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, m_card, new_in, ft.Row(spacing=6, controls=[add_b, sav_b]), items_col, ft.Row(spacing=5, controls=[rnd_in, rate_in, dly_in]), summary_lbl, m_btn, stat]))
 
         # ==========================================
-        # تب ۳: ارسال توربو
+        # تب ۳: ارسال توربو ضدهنگ با تنظیم پیام در ثانیه
         # ==========================================
         def build_turbo():
             t_box = ft.TextField(label="آیدی یا شناسه مقصد", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_target(e.control.value or ""))
             msg_in = ft.TextField(label="متن پیام توربو", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
-            cnt_in = ft.TextField(label="تعداد", value="20", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
-            dly_in = ft.TextField(label="تاخیر (0 = حداکثر سرعت)", value="0", keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True)
-            stat = ft.Text("آماده", size=12, color=TEXT_MUTED)
+
+            def on_turbo_cfg_change(e):
+                st["turbo_count"] = cnt_in.value or "100"
+                st["turbo_rate"] = t_rate_in.value or "15"
+                st["turbo_delay"] = dly_in.value or "0"
+
+            cnt_in = ft.TextField(label="تعداد کل", value=st["turbo_count"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True, on_change=on_turbo_cfg_change)
+            t_rate_in = ft.TextField(label="پیام در ثانیه", value=st["turbo_rate"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE, expand=True, on_change=on_turbo_cfg_change)
+            dly_in = ft.TextField(label="تاخیر (0 = فوری)", value=st["turbo_delay"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True, on_change=on_turbo_cfg_change)
+            stat = ft.Text(st["turbo_status"], size=12, color="#10B981" if st["turbo_running"] else TEXT_MUTED)
+
+            def set_t_stat(msg_txt: str, col: str = "#10B981"):
+                st["turbo_status"] = msg_txt
+                stat.value = msg_txt
+                stat.color = col
+                update_ctrl(stat)
 
             async def run_t():
                 sent = 0
+                failed = 0
                 try:
-                    total, dly = max(1, int(cnt_in.value or 10)), max(0.0, float(dly_in.value or 0))
+                    total = max(1, int(st["turbo_count"] or 100))
+                    rate = max(1, min(30, int(st["turbo_rate"] or 15)))
+                    dly = max(0.0, float(st["turbo_delay"] or 0.0))
                     raw_t, txt = (t_box.value or "").strip(), (msg_in.value or "").strip()
                     rep = st["reply_to_id"] if st["reply_chat_id"] == raw_t else None
-                    async with net_lock:
-                        await ensure_online(c)
-                        peer = await resolve_peer(c, raw_t)
-                        while st["turbo_running"] and sent < total:
-                            batch = min(5 if dly == 0 else 1, total - sent)
-                            await asyncio.gather(*(send_fast(c, peer, raw_t, txt, rep) for _ in range(batch)))
-                            sent += batch
-                            stat.value, stat.color = f"ارسال شد: {sent}/{total}", "#10B981"
-                            safe_update()
-                            if dly > 0 and sent < total:
-                                await asyncio.sleep(dly)
-                    log(f"پایان توربو ({sent} پیام) ✅", "#10B981")
+
+                    await ensure_online(c)
+                    peer = await resolve_peer(c, raw_t)
+                    last_ui = 0.0
+                    t_start = time.monotonic()
+
+                    while st["turbo_running"] and (sent + failed) < total:
+                        wave_t0 = time.monotonic()
+                        cur_batch = min(rate, total - (sent + failed))
+                        results = await asyncio.gather(
+                            *(send_fast(c, peer, raw_t, txt, rep, status_cb=lambda s: set_t_stat(s, "#F59E0B")) for _ in range(cur_batch)),
+                            return_exceptions=True,
+                        )
+                        for r in results:
+                            if r is True:
+                                sent += 1
+                            else:
+                                failed += 1
+
+                        now = time.monotonic()
+                        if now - last_ui >= 0.4 or (sent + failed) >= total:
+                            last_ui = now
+                            elapsed = max(0.1, now - t_start)
+                            real_rps = sent / elapsed
+                            set_t_stat(f"ارسال شد: {sent}/{total}  |  سرعت: {real_rps:.1f} پیام/ثانیه", "#10B981")
+
+                        if dly > 0 and (sent + failed) < total:
+                            rem_wait = dly - (time.monotonic() - wave_t0)
+                            if rem_wait > 0:
+                                await asyncio.sleep(rem_wait)
+                        else:
+                            await asyncio.sleep(0.01)
+
+                    if st["turbo_running"]:
+                        set_t_stat(f"✅ پایان ارسال توربو: {sent} موفق از {total}", "#10B981")
+                        log(f"پایان توربو ({sent} پیام) ✅", "#10B981")
+                    else:
+                        set_t_stat(f"⛔ متوقف شد ({sent} از {total} ارسال شد)", "#F59E0B")
+                        log(f"ارسال توربو متوقف شد ({sent}/{total}).", "#F59E0B")
                 except Exception as ex:
+                    set_t_stat(f"❌ خطا در {sent}/{total}: {ex}", RED_NEON)
                     log(f"خطای توربو: {ex}", RED_NEON)
                 finally:
                     st["turbo_running"] = False
                     t_lbl.value, t_btn.bgcolor = "🚀 شروع توربو", RED_PRIMARY
-                    safe_update()
+                    update_ctrl(t_btn)
 
             async def toggle_t(e):
                 if st["turbo_running"]:
                     st["turbo_running"] = False
+                    set_t_stat("⏳ در حال توقف فوری...", "#F59E0B")
                     return
                 if not (t_box.value or "").strip() or not (msg_in.value or "").strip():
                     log("مقصد و متن را وارد کنید.", RED_NEON)
                     return
+                st["turbo_count"] = cnt_in.value or "100"
+                st["turbo_rate"] = t_rate_in.value or "15"
+                st["turbo_delay"] = dly_in.value or "0"
                 st["turbo_running"] = True
                 t_lbl.value, t_btn.bgcolor = "⛔ توقف توربو", RED_DARK
-                safe_update()
+                update_ctrl(t_btn)
                 asyncio.create_task(run_t())
 
-            t_btn, t_lbl = make_btn("🚀 شروع توربو", toggle_t, height=44)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, msg_in, ft.Row(spacing=6, controls=[cnt_in, dly_in]), t_btn, stat]))
+            t_btn, t_lbl = make_btn("⛔ توقف توربو" if st["turbo_running"] else "🚀 شروع توربو", toggle_t, bgcolor=RED_DARK if st["turbo_running"] else RED_PRIMARY, height=44)
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, msg_in, ft.Row(spacing=5, controls=[cnt_in, t_rate_in, dly_in]), t_btn, stat]))
 
         # ==========================================
-        # تب ۴: فوروارد هوشمند به کاربران ۲۰۰ پیام اخیر گپ‌ها
-        # ==========================================
-        def build_forward():
-            src_box = ft.TextField(label="شناسه کانال یا پی‌وی مبدأ", value=st["fwd_source_chat"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: st.update({"fwd_source_chat": (e.control.value or "").strip()}))
-            c_col = ft.Column(spacing=5, height=130, scroll=ft.ScrollMode.AUTO)
-            m_col = ft.Column(spacing=5, height=150, scroll=ft.ScrollMode.AUTO)
-            sel_lbl = ft.Text(f"✅ پیام انتخاب‌شده (#{st['fwd_selected_msg_id']}): {st['fwd_selected_msg_preview']}" if st["fwd_selected_msg_id"] else "⚠️ پیامی انتخاب نشده است", size=12, color="#10B981" if st["fwd_selected_msg_id"] else "#F59E0B")
-            int_box = ft.TextField(label="تایمر تکرار فوروارد (دقیقه)", value=str(fwd_cfg.get("interval_min", 5)), keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE)
-            f_stat = ft.Text(st["fwd_status"], size=12, color=TEXT_MUTED)
-
-            async def pick_f_msg(e, i, p: str):
-                st.update({"fwd_selected_msg_id": i, "fwd_selected_msg_preview": p})
-                sel_lbl.value, sel_lbl.color = f"✅ پیام #{i}: {p}", "#10B981"
-                draw_f_msgs()
-                safe_update()
-
-            def draw_f_msgs():
-                m_col.controls.clear()
-                if not st["fwd_messages"]:
-                    m_col.controls.append(ft.Text("پیامی بارگذاری نشده است.", size=12, color=TEXT_MUTED))
-                    return
-                for m in st["fwd_messages"]:
-                    mid, is_s, prev = m["id"], st["fwd_selected_msg_id"] == m["id"], m["text"][:50]
-                    m_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
-                        bgcolor="#1C0A10" if is_s else BG_INPUT,
-                        border=ft.Border.all(1.5 if is_s else 1, RED_NEON if is_s else BORDER_CRIMSON),
-                        on_click=bind_async(pick_f_msg, mid, prev),
-                        content=ft.Text(f"#{mid} | {prev}", size=12, color=TEXT_WHITE),
-                    ))
-
-            async def pick_src(e, cid: str):
-                cid_clean = (cid or "").strip()
-                if not cid_clean:
-                    log("ابتدا کانال یا پی‌وی را انتخاب کنید.", RED_NEON)
-                    return
-                st.update({"fwd_source_chat": cid_clean, "fwd_selected_msg_id": None, "fwd_selected_msg_preview": ""})
-                src_box.value, sel_lbl.value, sel_lbl.color = cid_clean, "⏳ در حال دریافت پیام‌های اخیر...", "#F59E0B"
-                draw_f_chats()
-                safe_update()
-                st["fwd_messages"] = await fetch_msgs(cid_clean, 25)
-                sel_lbl.value = "⚠️ پیام را از لیست پایین انتخاب کنید" if st["fwd_messages"] else "⚠️ پیامی یافت نشد"
-                draw_f_msgs()
-                safe_update()
-
-            def draw_f_chats():
-                c_col.controls.clear()
-                lst = [x for x in st["dialogs"] if x["kind"] in ("pv", "channel")] or st["dialogs"]
-                if not lst:
-                    c_col.controls.append(ft.Text("کانال یا پی‌وی یافت نشد. دکمه بروزرسانی را بزنید.", size=12, color=TEXT_MUTED))
-                    return
-                for it in lst:
-                    cid, is_s = it["id"], st["fwd_source_chat"] == it["id"]
-                    badge = "📢 کانال" if it["kind"] == "channel" else ("👤 پی‌وی" if it["kind"] == "pv" else "👥 گپ")
-                    c_col.controls.append(ft.Container(
-                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(8), ink=True,
-                        bgcolor="#1C0A10" if is_s else BG_INPUT,
-                        border=ft.Border.all(1.5 if is_s else 1, RED_NEON if is_s else BORDER_CRIMSON),
-                        on_click=bind_async(pick_src, cid),
-                        content=ft.Text(f"{badge} | {it['title']} ({cid})", size=12, color=TEXT_WHITE),
-                    ))
-
-            async def reload_f_chats(e):
-                f_stat.value = "⏳ در حال دریافت لیست کانال‌ها و پی‌وی‌ها..."
-                safe_update()
-                res = await fetch_dialogs(80)
-                draw_f_chats()
-                f_stat.value = f"✅ {len(res)} چت بارگذاری شد."
-                safe_update()
-
-            async def load_f_src_msgs(e):
-                await pick_src(e, src_box.value)
-
-            async def fwd_loop():
-                rnd = 0
-                src_raw, mid = st["fwd_source_chat"], st["fwd_selected_msg_id"]
-                while st["fwd_running"]:
-                    rnd += 1
-                    try:
-                        dialogs = await fetch_dialogs(100)
-                        groups = [d for d in dialogs if d["kind"] == "group"]
-                        users, seen = [], set()
-                        async with net_lock:
-                            await ensure_online(c)
-                            my_id = await get_my_id(c)
-                            src_peer = await resolve_peer(c, src_raw)
-                            for idx, g in enumerate(groups, 1):
-                                if not st["fwd_running"]:
-                                    break
-                                f_stat.value = f"🔍 دور {rnd} | بررسی گپ ({idx}/{len(groups)}): {g['title']}"
-                                safe_update()
-                                try:
-                                    gp = await resolve_peer(c, g["id"])
-                                    gms = await call_get_messages_raw(c, gp, limit_count=200)
-                                    for gm in gms:
-                                        so = getattr(gm, "sender", None)
-                                        if getattr(gm, "post", False) or (so and bool(getattr(so, "bot", False) or getattr(so, "is_bot", False))):
-                                            continue
-                                        uid = str(getattr(gm, "sender_id", None) or getattr(gm, "from_id", None) or (getattr(so, "id", "") if so else "")).strip()
-                                        if uid and uid != my_id and uid != g["id"] and not uid.startswith("-") and not uid.startswith("g0") and not uid.startswith("c0") and uid not in seen:
-                                            seen.add(uid)
-                                            users.append(uid)
-                                except Exception:
-                                    continue
-
-                        ok = 0
-                        for ui, u in enumerate(users, 1):
-                            if not st["fwd_running"]:
-                                break
-                            try:
-                                async with net_lock:
-                                    tp = await resolve_peer(c, u)
-                                    await forward_fast(c, tp, u, src_peer, mid)
-                                ok += 1
-                                f_stat.value = f"📨 دور {rnd} | ارسال به پی‌وی ({ui}/{len(users)}) | موفق: {ok}"
-                                safe_update()
-                                await asyncio.sleep(1.5)
-                            except Exception as fe:
-                                log(f"خطا در ارسال به {u}: {fe}", RED_NEON)
-                                await asyncio.sleep(0.5)
-                        if not st["fwd_running"]:
-                            break
-                        mins = max(1, int(int_box.value or 5)) if (int_box.value or "").isdigit() else 5
-                        save_json(FORWARD_CFG_FILE, {"interval_min": mins})
-                        log(f"دور {rnd} فوروارد تمام شد ({ok} ارسال) ✅", "#10B981")
-                        for rem in range(mins * 60, 0, -1):
-                            if not st["fwd_running"]:
-                                break
-                            if rem % 5 == 0 or rem <= 10:
-                                f_stat.value = f"✅ دور {rnd} تمام شد ({ok} ارسال). دور بعدی تا {rem} ثانیه..."
-                                safe_update()
-                            await asyncio.sleep(1.0)
-                    except Exception as ex:
-                        f_stat.value = f"⚠️ خطا: {ex}"
-                        safe_update()
-                        await asyncio.sleep(15.0)
-                st["fwd_running"] = False
-                fb_lbl.value, f_btn.bgcolor = "🚀 شروع فوروارد خودکار", RED_PRIMARY
-                safe_update()
-
-            async def toggle_f(e):
-                if st["fwd_running"]:
-                    st["fwd_running"] = False
-                    return
-                if not st["fwd_source_chat"] or st["fwd_selected_msg_id"] is None:
-                    log("کانال/پی‌وی و پیام مبدأ را انتخاب کنید!", RED_NEON)
-                    return
-                st["fwd_running"] = True
-                fb_lbl.value, f_btn.bgcolor = "⛔ توقف فوروارد", RED_DARK
-                safe_update()
-                asyncio.create_task(fwd_loop())
-
-            rb, _ = make_btn("🔄 بروزرسانی کانال‌ها و پی‌وی‌ها", reload_f_chats, height=38, expand=True)
-            lb, _ = make_btn("📜 پیام‌ها", load_f_src_msgs, bgcolor=RED_DARK, height=38, expand=True)
-            f_btn, fb_lbl = make_btn("⛔ توقف فوروارد" if st["fwd_running"] else "🚀 شروع فوروارد خودکار", toggle_f, bgcolor=RED_DARK if st["fwd_running"] else RED_PRIMARY, height=44)
-            draw_f_chats()
-            draw_f_msgs()
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📢 فوروارد هوشمند به کاربران فعال گپ‌ها", size=15, weight=ft.FontWeight.BOLD), src_box, ft.Row(spacing=6, controls=[rb, lb]), c_col, m_col, sel_lbl, int_box, f_btn, f_stat]))
-
-        # ==========================================
-        # تب ۵: پیام خودکار پی‌وی در حالت آفلاین
-        # ==========================================
-        def build_autoreply():
-            async def on_ar_toggle(v: bool):
-                ar_cfg["enabled"] = v
-                ar_cfg["text"] = (ar_in.value or "").strip()
-                save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                if v:
-                    attach_pv_hook(c)
-                    await scan_pv_autoreply(c, seed_only=True)
-                    log("پیام خودکار پی‌وی روشن شد ✅", "#10B981")
-                else:
-                    log("پیام خودکار پی‌وی خاموش شد.", RED_LIGHT)
-                safe_update()
-
-            async def on_bg_toggle(v: bool):
-                clock_cfg["bg_keep_alive"] = v
-                save_json(CLOCK_CFG_FILE, clock_cfg)
-                notify_android_service("start" if v else "stop")
-                safe_update()
-
-            ar_card, ar_ref = make_toggle_card("🤖 ارسال پیام خودکار در پی‌وی (حالت آفلاین)", "لمس کنید تا روشن یا خاموش شود", bool(ar_cfg.get("enabled", False)), on_ar_toggle)
-            ar_in = ft.TextField(label="متن پیام خودکار (فقط یک بار برای هر نفر)", value=ar_cfg.get("text", ""), multiline=True, min_lines=3, max_lines=4, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
-            bg_card, bg_ref = make_toggle_card("🔒 سرویس پس‌زمینه اندروید (خروج و بستن برنامه)", "فعال نگه داشتن ساعت و پیام خودکار", bool(clock_cfg.get("bg_keep_alive", True)), on_bg_toggle)
-            rep_lbl = ft.Text(f"تعداد افراد دریافت‌کننده: {len(ar_cfg.get('replied_users', []))} نفر", size=12, color="#10B981")
-
-            async def sav_ar(e):
-                ar_cfg.update({"enabled": ar_ref["val"], "text": (ar_in.value or "").strip()})
-                save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                if ar_ref["val"]:
-                    await scan_pv_autoreply(c, seed_only=True)
-                log("متن پاسخ خودکار ذخیره شد ✅", "#10B981")
-
-            async def rst_ar(e):
-                ar_cfg.update({"replied_users": []})
-                save_json(AUTOREPLY_CFG_FILE, ar_cfg)
-                rep_lbl.value = "تعداد افراد دریافت‌کننده: 0 نفر"
-                safe_update()
-
-            async def bat_ex(e):
-                notify_android_service("battery")
-
-            sav_b, _ = make_btn("💾 ذخیره متن", sav_ar, height=40, expand=True)
-            rst_b, _ = make_btn("🗑️ ریست افراد", rst_ar, bgcolor=RED_DARK, height=40, expand=True)
-            bat_b, _ = make_btn("🔋 حذف محدودیت باتری گوشی", bat_ex, bgcolor=BG_INPUT, color="#F59E0B", height=36)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🤖 پیام خودکار پی‌وی (حالت آفلاین)", size=15, weight=ft.FontWeight.BOLD), ar_card, ar_in, bg_card, bat_b, rep_lbl, ft.Row(spacing=6, controls=[sav_b, rst_b])]))
-
-        # ==========================================
-        # تب ۶: ساعت افق تهران کنار اسم
+        # تب ۴: ساعت افق تهران کنار اسم
         # ==========================================
         def build_clock():
+            last_sync_lbl = ft.Text(f"🕒 آخرین همگام‌سازی ساعت: {st['last_clock_sync_str']}", size=12, color="#10B981")
+
             async def on_clk_t(v: bool):
                 clock_cfg["enabled"] = v
                 save_json(CLOCK_CFG_FILE, clock_cfg)
@@ -1421,7 +1255,7 @@ async def main(page: ft.Page):
                 safe_update()
 
             clk_card, clk_ref = make_toggle_card("⏰ ساعت افق تهران کنار اسم پروفایل", "لمس کنید تا روشن یا خاموش شود", bool(clock_cfg.get("enabled", False)), on_clk_t)
-            bg_card, bg_ref = make_toggle_card("🔒 سرویس پس‌زمینه اندروید (خروج و بستن برنامه)", "فعال نگه داشتن ساعت و پیام خودکار", bool(clock_cfg.get("bg_keep_alive", True)), on_bg_t)
+            bg_card, bg_ref = make_toggle_card("🔒 سرویس ضدخواب اندروید (خروج و قفل صفحه)", "فعال نگه داشتن ساعت در پس‌زمینه و هنگام خاموشی صفحه", bool(clock_cfg.get("bg_keep_alive", True)), on_bg_t)
             bf_in = ft.TextField(label="نام اصلی (بدون ساعت)", value=clock_cfg.get("base_first", ""), bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
             bl_in = ft.TextField(label="نام خانوادگی (اختیاری)", value=clock_cfg.get("base_last", ""), bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
             sep_in = ft.TextField(label="جداکننده", value=clock_cfg.get("sep", "|"), bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
@@ -1429,9 +1263,9 @@ async def main(page: ft.Page):
 
             async def fetch_my_name(e):
                 try:
-                    async with net_lock:
+                    async with clock_lock:
                         await ensure_online(c)
-                        me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                        me = await asyncio.wait_for(c.get_me(), timeout=7.0)
                     bf = strip_clock(getattr(me, "first_name", "") or "")
                     bl = strip_clock(getattr(me, "last_name", "") or "")
                     bf_in.value, bl_in.value = bf, bl
@@ -1446,8 +1280,8 @@ async def main(page: ft.Page):
                 bf, bl = strip_clock(bf_in.value or ""), strip_clock(bl_in.value or "")
                 if not bf and not bl:
                     try:
-                        async with net_lock:
-                            me = await asyncio.wait_for(c.get_me(), timeout=8.0)
+                        async with clock_lock:
+                            me = await asyncio.wait_for(c.get_me(), timeout=7.0)
                         bf, bl = strip_clock(getattr(me, "first_name", "") or ""), strip_clock(getattr(me, "last_name", "") or "")
                         bf_in.value, bl_in.value = bf, bl
                     except Exception:
@@ -1458,8 +1292,9 @@ async def main(page: ft.Page):
                 st["last_clock_min"] = ""
                 if clk_ref["val"]:
                     await sync_clock(c, force=True)
+                    last_sync_lbl.value = f"🕒 آخرین همگام‌سازی ساعت: {st['last_clock_sync_str']}"
                 else:
-                    async with net_lock:
+                    async with clock_lock:
                         await apply_profile_name(c, bf or "User", bl)
                     log("ساعت غیرفعال شد ✅", RED_LIGHT)
                 safe_update()
@@ -1487,13 +1322,13 @@ async def main(page: ft.Page):
             pl, _ = make_btn("کنار فامیل", bind_async(set_pos, "last"), bgcolor=RED_PRIMARY if sty["p"] == "last" else BG_INPUT, height=34, expand=True)
             gn_b, _ = make_btn("📥 خواندن اسم فعلی من", fetch_my_name, bgcolor=RED_DARK, height=36)
             ap_b, _ = make_btn("💾 ذخیره و اعمال ساعت", apply_clk, height=44)
-            bat_b, _ = make_btn("🔋 حذف محدودیت باتری گوشی", bat_ex, bgcolor=BG_INPUT, color="#F59E0B", height=36)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⏰ ساعت افق تهران کنار اسم", size=15, weight=ft.FontWeight.BOLD), clk_card, bg_card, bat_b, gn_b, bf_in, bl_in, sep_in, ft.Row(spacing=5, controls=[sn, sb, sm]), ft.Row(spacing=5, controls=[pf, pl]), ap_b]))
+            bat_b, _ = make_btn("🔋 حذف محدودیت باتری گوشی (ضدخواب)", bat_ex, bgcolor=BG_INPUT, color="#F59E0B", height=36)
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("⏰ ساعت افق تهران کنار اسم", size=15, weight=ft.FontWeight.BOLD), last_sync_lbl, clk_card, bg_card, bat_b, gn_b, bf_in, bl_in, sep_in, ft.Row(spacing=5, controls=[sn, sb, sm]), ft.Row(spacing=5, controls=[pf, pl]), ap_b]))
 
         def render_tab():
             body_host.controls.clear()
             t = st["active_tab"]
-            body_host.controls.append({"chats": build_chats, "multi": build_multi, "turbo": build_turbo, "forward": build_forward, "autoreply": build_autoreply, "clock": build_clock}[t]())
+            body_host.controls.append({"chats": build_chats, "multi": build_multi, "turbo": build_turbo, "clock": build_clock}[t]())
 
         async def switch_tab(e, name: str):
             if st["active_tab"] != name:
@@ -1504,7 +1339,7 @@ async def main(page: ft.Page):
                 safe_update()
 
         async def logout(e):
-            st.update({"in_dashboard": False, "turbo_running": False, "multi_running": False, "fwd_running": False})
+            st.update({"in_dashboard": False, "turbo_running": False, "multi_running": False})
             notify_android_service("stop")
             try:
                 await c.log_out()
@@ -1523,16 +1358,14 @@ async def main(page: ft.Page):
         b1, _ = make_btn("💬 چت‌ها", bind_async(switch_tab, "chats"), bgcolor=RED_PRIMARY, height=38, expand=True)
         b2, _ = make_btn("📨 چندتایی", bind_async(switch_tab, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
         b3, _ = make_btn("🚀 توربو", bind_async(switch_tab, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
-        b4, _ = make_btn("📢 فوروارد", bind_async(switch_tab, "forward"), bgcolor=BG_INPUT, height=38, expand=True)
-        b5, _ = make_btn("🤖 پی‌وی خودکار", bind_async(switch_tab, "autoreply"), bgcolor=BG_INPUT, height=38, expand=True)
-        b6, _ = make_btn("⏰ ساعت", bind_async(switch_tab, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
-        nav = {"chats": b1, "multi": b2, "turbo": b3, "forward": b4, "autoreply": b5, "clock": b6}
+        b4, _ = make_btn("⏰ ساعت", bind_async(switch_tab, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
+        nav = {"chats": b1, "multi": b2, "turbo": b3, "clock": b4}
         render_tab()
 
         page.add(
-            ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Row(spacing=8, controls=[ft.Text("⚡ V3X Selfbot", size=17, weight=ft.FontWeight.BOLD, color=RED_NEON), conn_badge]), out_b])),
-            ft.Row(spacing=5, controls=[b1, b2, b3]),
-            ft.Row(spacing=5, controls=[b4, b5, b6]),
+            ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Row(spacing=8, controls=[ft.Text("⚡ V3X Pro", size=17, weight=ft.FontWeight.BOLD, color=RED_NEON), conn_badge]), out_b])),
+            ft.Row(spacing=5, controls=[b1, b2]),
+            ft.Row(spacing=5, controls=[b3, b4]),
             body_host,
             ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=4, controls=[ft.Text("📜 گزارش عملکرد", size=12, color=RED_LIGHT), logs])),
             footer_box(),
