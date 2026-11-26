@@ -1,4 +1,4 @@
-import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platform, re, subprocess, tempfile, time, urllib.request
+import asyncio, datetime, hashlib, importlib, inspect, json, os, pkgutil, platform, random, re, subprocess, tempfile, time, urllib.request
 import flet as ft
 import httpx
 
@@ -43,6 +43,7 @@ RED_PRIMARY, RED_DARK, RED_NEON, RED_LIGHT = "#DC2626", "#991B1B", "#FF1E42", "#
 BORDER_CRIMSON, BORDER_ACTIVE = "#450A0A", "#EF4444"
 TEXT_WHITE, TEXT_MUTED = "#FFFFFF", "#CBD5E1"
 TEHRAN_TZ = datetime.timezone(datetime.timedelta(hours=3, minutes=30))
+ZERO_WIDTH_POOL = ("\u200b", "\u200c", "\u200d")
 
 STORAGE_DIR = os.getenv("FLET_APP_STORAGE_DATA") or tempfile.gettempdir()
 os.makedirs(STORAGE_DIR, exist_ok=True)
@@ -57,6 +58,41 @@ def bind_async(fn, *args):
     async def _handler(e):
         await fn(e, *args)
     return _handler
+
+
+def make_anti_spam_text(text: str, enabled: bool = True) -> str:
+    if not enabled or not text:
+        return text
+    salt = "".join(random.choice(ZERO_WIDTH_POOL) for _ in range(random.randint(3, 6)))
+    return f"{text}{salt}"
+
+
+class AntiFloodGovernor:
+    """تنظیم هوشمند نرخ ارسال برای جلوگیری از محدودیت سرور سروش‌پلاس."""
+    def __init__(self, target_rate: int, enabled: bool = True):
+        self.target_rate = max(1, target_rate)
+        self.enabled = enabled
+        self.cur_rate = self.target_rate
+        self.extra_gap = 0.0
+        self.clean_streak = 0
+
+    def on_success(self):
+        if not self.enabled:
+            return
+        self.clean_streak += 1
+        if self.clean_streak >= 8:
+            self.clean_streak = 0
+            if self.cur_rate < self.target_rate:
+                self.cur_rate += 1
+            if self.extra_gap > 0.0:
+                self.extra_gap = max(0.0, round(self.extra_gap - 0.05, 2))
+
+    def on_flood_wait(self):
+        if not self.enabled:
+            return
+        self.clean_streak = 0
+        self.cur_rate = max(1, self.cur_rate // 2)
+        self.extra_gap = min(0.8, round(self.extra_gap + 0.15, 2))
 
 
 def load_json(path: str, default):
@@ -333,6 +369,7 @@ async def main(page: ft.Page):
         "multi_running": False, "multi_status": "آماده ارسال چندتایی",
         "turbo_count": "100", "turbo_rate": "15", "turbo_delay": "0",
         "turbo_running": False, "turbo_status": "آماده ارسال توربو",
+        "anti_limit": True,
         "entity_cache": {},
     }
     logs = ft.Column(spacing=2, height=80, scroll=ft.ScrollMode.AUTO)
@@ -422,6 +459,16 @@ async def main(page: ft.Page):
                     pass
         return parsed
 
+    async def send_typing_pulse(c, peer):
+        try:
+            act = getattr(c, "action", None)
+            if callable(act):
+                res = act(peer, "typing")
+                if inspect.isawaitable(res):
+                    await asyncio.wait_for(res, timeout=2.0)
+        except Exception:
+            pass
+
     async def call_get_dialogs_raw(c, limit_count: int = 80) -> list:
         for m_name in ("get_dialogs", "iter_dialogs", "get_chats"):
             fn = getattr(c, m_name, None)
@@ -468,26 +515,33 @@ async def main(page: ft.Page):
                 pass
         return []
 
-    async def send_fast(c, peer, raw_target: str, text: str, reply_id=None, status_cb=None):
+    async def send_fast(c, peer, raw_target: str, text: str, reply_id=None, status_cb=None, stagger: float = 0.0, anti_limit: bool = True, governor: AntiFloodGovernor | None = None):
+        if stagger > 0:
+            await asyncio.sleep(stagger)
         send_fn = getattr(c, "send_message", None) or getattr(c, "send_text", None)
         if not callable(send_fn):
             raise RuntimeError("متد send_message در کلاینت یافت نشد.")
         for attempt in range(1, 6):
+            out_text = make_anti_spam_text(text, enabled=anti_limit)
             try:
                 if reply_id is not None:
                     for kw in ("reply_to", "reply_to_msg_id", "reply_to_message_id"):
                         try:
-                            res = send_fn(peer, text, **{kw: reply_id})
+                            res = send_fn(peer, out_text, **{kw: reply_id})
                             if inspect.isawaitable(res):
                                 await asyncio.wait_for(res, timeout=9.0)
                             st["last_net_ok"] = time.monotonic()
+                            if governor is not None:
+                                governor.on_success()
                             return True
                         except TypeError:
                             continue
-                res = send_fn(peer, text)
+                res = send_fn(peer, out_text)
                 if inspect.isawaitable(res):
                     await asyncio.wait_for(res, timeout=9.0)
                 st["last_net_ok"] = time.monotonic()
+                if governor is not None:
+                    governor.on_success()
                 return True
             except Exception as ex:
                 err_low = str(ex).lower()
@@ -497,9 +551,11 @@ async def main(page: ft.Page):
                     if m:
                         w = int(m.group(1))
                 if w:
+                    if governor is not None:
+                        governor.on_flood_wait()
                     sleep_s = min(int(w) + 1, 25)
                     if callable(status_cb):
-                        status_cb(f"⏳ محدودیت سرعت سرور؛ مکث {sleep_s} ثانیه و ادامه خودکار...")
+                        status_cb(f"🛡️ محدودیت سرور؛ مکث {sleep_s} ثانیه و تعدیل هوشمند سرعت...")
                     await asyncio.sleep(sleep_s)
                     continue
                 if attempt < 5:
@@ -943,14 +999,19 @@ async def main(page: ft.Page):
             ])
 
         # ==========================================
-        # تب ۲: ارسال چندتایی ضدلگ با تنظیم نرخ ارسال در ثانیه
+        # تب ۲: ارسال چندتایی ضدهنگ با موتور ضد‌محدودیت
         # ==========================================
         def build_multi():
             async def on_multi_t(v: bool):
                 safe_update()
 
+            async def on_al_t(v: bool):
+                st["anti_limit"] = v
+                safe_update()
+
             t_box = ft.TextField(label="مقصد ارسال", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_target(e.control.value or ""))
             m_card, m_ref = make_toggle_card("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, on_multi_t)
+            al_card, al_ref = make_toggle_card("🛡️ حالت ضد‌محدودیت هوشمند (Anti-Limit)", "تغییر امضای نامرئی پیام، پخش میکروثانیه‌ای و تعدیل فشار سرور", st["anti_limit"], on_al_t)
             new_in = ft.TextField(label="متن پیام جدید", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
 
             summary_lbl = ft.Text("", size=12, color="#F59E0B", weight=ft.FontWeight.W_600)
@@ -970,7 +1031,7 @@ async def main(page: ft.Page):
                     dl_val = 0.0
                 t_cnt = len(st["selected_targets"]) if (m_ref["val"] and st["selected_targets"]) else 1
                 tot = r_val * t_cnt * len(st["multi_messages"])
-                spd_txt = f"هر {dl_val:g} ثانیه، {rt_val} پیام" if dl_val > 0 else f"حداکثر سرعت ({rt_val} پیام همزمان)"
+                spd_txt = f"هر {dl_val:g} ثانیه، {rt_val} پیام" if dl_val > 0 else f"حداکثر سرعت ({rt_val} پیام/موج)"
                 summary_lbl.value = f"📊 مجموع ارسال: {tot} پیام  |  {spd_txt}"
 
             def on_multi_cfg_change(e):
@@ -1020,6 +1081,9 @@ async def main(page: ft.Page):
                 except ValueError:
                     dly = 0.0
 
+                use_al = bool(al_ref["val"])
+                gov = AntiFloodGovernor(target_rate=rate, enabled=use_al)
+
                 targets = list(st["selected_targets"].keys()) if (m_ref["val"] and st["selected_targets"]) else ([(t_box.value or "").strip()] if (t_box.value or "").strip() else [])
                 msgs_snapshot = list(st["multi_messages"])
                 if not targets or not msgs_snapshot:
@@ -1038,6 +1102,9 @@ async def main(page: ft.Page):
                 try:
                     await ensure_online(c)
                     peers = {t: await resolve_peer(c, t) for t in targets}
+                    if use_al:
+                        for p in peers.values():
+                            await send_typing_pulse(c, p)
 
                     def op_stream():
                         for _ in range(rounds):
@@ -1052,12 +1119,22 @@ async def main(page: ft.Page):
                         if not st["multi_running"]:
                             break
                         batch.append(item)
-                        if len(batch) < rate:
+                        if len(batch) < gov.cur_rate:
                             continue
 
                         wave_t0 = time.monotonic()
+                        step_jitter = min(0.07, 0.65 / max(1, len(batch))) if use_al else 0.0
                         results = await asyncio.gather(
-                            *(send_fast(c, p, rt, tx, rp, status_cb=lambda s: set_m_stat(s, "#F59E0B")) for rt, p, tx, rp in batch),
+                            *(
+                                send_fast(
+                                    c, p, rt, tx, rp,
+                                    status_cb=lambda s: set_m_stat(s, "#F59E0B"),
+                                    stagger=(idx * step_jitter),
+                                    anti_limit=use_al,
+                                    governor=gov,
+                                )
+                                for idx, (rt, p, tx, rp) in enumerate(batch)
+                            ),
                             return_exceptions=True,
                         )
                         for r in results:
@@ -1078,12 +1155,24 @@ async def main(page: ft.Page):
                             rem_wait = dly - (time.monotonic() - wave_t0)
                             if rem_wait > 0:
                                 await asyncio.sleep(rem_wait)
+                        elif gov.extra_gap > 0:
+                            await asyncio.sleep(gov.extra_gap)
                         else:
-                            await asyncio.sleep(0.01)
+                            await asyncio.sleep(0.015)
 
                     if batch and st["multi_running"]:
+                        step_jitter = min(0.07, 0.65 / max(1, len(batch))) if use_al else 0.0
                         results = await asyncio.gather(
-                            *(send_fast(c, p, rt, tx, rp, status_cb=lambda s: set_m_stat(s, "#F59E0B")) for rt, p, tx, rp in batch),
+                            *(
+                                send_fast(
+                                    c, p, rt, tx, rp,
+                                    status_cb=lambda s: set_m_stat(s, "#F59E0B"),
+                                    stagger=(idx * step_jitter),
+                                    anti_limit=use_al,
+                                    governor=gov,
+                                )
+                                for idx, (rt, p, tx, rp) in enumerate(batch)
+                            ),
                             return_exceptions=True,
                         )
                         for r in results:
@@ -1137,14 +1226,19 @@ async def main(page: ft.Page):
             m_btn, m_lbl = make_btn("⛔ توقف ارسال" if st["multi_running"] else "🚀 شروع ارسال چندتایی", toggle_m, bgcolor=RED_DARK if st["multi_running"] else RED_PRIMARY, height=44)
             draw_items()
             calc_multi_summary()
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, m_card, new_in, ft.Row(spacing=6, controls=[add_b, sav_b]), items_col, ft.Row(spacing=5, controls=[rnd_in, rate_in, dly_in]), summary_lbl, m_btn, stat]))
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, m_card, new_in, ft.Row(spacing=6, controls=[add_b, sav_b]), items_col, ft.Row(spacing=5, controls=[rnd_in, rate_in, dly_in]), summary_lbl, al_card, m_btn, stat]))
 
         # ==========================================
-        # تب ۳: ارسال توربو ضدهنگ با تنظیم پیام در ثانیه
+        # تب ۳: ارسال توربو ضدهنگ با موتور ضد‌محدودیت
         # ==========================================
         def build_turbo():
+            async def on_al_t(v: bool):
+                st["anti_limit"] = v
+                safe_update()
+
             t_box = ft.TextField(label="آیدی یا شناسه مقصد", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_target(e.control.value or ""))
             msg_in = ft.TextField(label="متن پیام توربو", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
+            al_card, al_ref = make_toggle_card("🛡️ حالت ضد‌محدودیت هوشمند (Anti-Limit)", "تغییر امضای نامرئی پیام، پخش میکروثانیه‌ای و تعدیل فشار سرور", st["anti_limit"], on_al_t)
 
             def on_turbo_cfg_change(e):
                 st["turbo_count"] = cnt_in.value or "100"
@@ -1169,19 +1263,35 @@ async def main(page: ft.Page):
                     total = max(1, int(st["turbo_count"] or 100))
                     rate = max(1, min(30, int(st["turbo_rate"] or 15)))
                     dly = max(0.0, float(st["turbo_delay"] or 0.0))
+                    use_al = bool(al_ref["val"])
+                    gov = AntiFloodGovernor(target_rate=rate, enabled=use_al)
+
                     raw_t, txt = (t_box.value or "").strip(), (msg_in.value or "").strip()
                     rep = st["reply_to_id"] if st["reply_chat_id"] == raw_t else None
 
                     await ensure_online(c)
                     peer = await resolve_peer(c, raw_t)
+                    if use_al:
+                        await send_typing_pulse(c, peer)
+
                     last_ui = 0.0
                     t_start = time.monotonic()
 
                     while st["turbo_running"] and (sent + failed) < total:
                         wave_t0 = time.monotonic()
-                        cur_batch = min(rate, total - (sent + failed))
+                        cur_batch = min(gov.cur_rate, total - (sent + failed))
+                        step_jitter = min(0.07, 0.65 / max(1, cur_batch)) if use_al else 0.0
                         results = await asyncio.gather(
-                            *(send_fast(c, peer, raw_t, txt, rep, status_cb=lambda s: set_t_stat(s, "#F59E0B")) for _ in range(cur_batch)),
+                            *(
+                                send_fast(
+                                    c, peer, raw_t, txt, rep,
+                                    status_cb=lambda s: set_t_stat(s, "#F59E0B"),
+                                    stagger=(idx * step_jitter),
+                                    anti_limit=use_al,
+                                    governor=gov,
+                                )
+                                for idx in range(cur_batch)
+                            ),
                             return_exceptions=True,
                         )
                         for r in results:
@@ -1201,8 +1311,10 @@ async def main(page: ft.Page):
                             rem_wait = dly - (time.monotonic() - wave_t0)
                             if rem_wait > 0:
                                 await asyncio.sleep(rem_wait)
+                        elif gov.extra_gap > 0 and (sent + failed) < total:
+                            await asyncio.sleep(gov.extra_gap)
                         else:
-                            await asyncio.sleep(0.01)
+                            await asyncio.sleep(0.015)
 
                     if st["turbo_running"]:
                         set_t_stat(f"✅ پایان ارسال توربو: {sent} موفق از {total}", "#10B981")
@@ -1235,7 +1347,7 @@ async def main(page: ft.Page):
                 asyncio.create_task(run_t())
 
             t_btn, t_lbl = make_btn("⛔ توقف توربو" if st["turbo_running"] else "🚀 شروع توربو", toggle_t, bgcolor=RED_DARK if st["turbo_running"] else RED_PRIMARY, height=44)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, msg_in, ft.Row(spacing=5, controls=[cnt_in, t_rate_in, dly_in]), t_btn, stat]))
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع (ضدهنگ)", size=15, weight=ft.FontWeight.BOLD), reply_banner(), t_box, msg_in, ft.Row(spacing=5, controls=[cnt_in, t_rate_in, dly_in]), al_card, t_btn, stat]))
 
         # ==========================================
         # تب ۴: ساعت افق تهران کنار اسم
