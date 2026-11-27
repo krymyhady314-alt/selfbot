@@ -18,26 +18,11 @@ for _cls, _attrs in (
                 if hasattr(_obj, _k):
                     setattr(_low, _k, getattr(_obj, _k))
 
-APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.7.0", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
+APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.7.1", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
 BG_GALAXY, BG_CARD, BG_INPUT = "#030306", "#0A0A12", "#12121D"
 RED_PRIMARY, RED_DARK, RED_NEON, RED_LIGHT = "#DC2626", "#991B1B", "#FF1E42", "#EF4444"
 BORDER_CRIMSON, BORDER_ACTIVE, TEXT_WHITE, TEXT_MUTED = "#450A0A", "#EF4444", "#FFFFFF", "#CBD5E1"
 TEHRAN_TZ = datetime.timezone(datetime.timedelta(hours=3, minutes=30))
-
-JOINERS_FA = set("بپتثجچحخسشصضطظعغفقکگلمنهیئ")
-LETTERS_FA = JOINERS_FA | set("اآدذرزژوؤأإةء")
-MORPH_MAP = {"ک": "ك", "ی": "ي", "ك": "ک", "ي": "ی"}
-SUFFIXES = ("", ".", "..", "!", " ⚡", " 🔥", " •", " ✨", " 💫", " ،")
-THIN_SPACES = (" ", "\u2009", "\u202f")
-WEAVE_FRAMES = (
-    lambda s: s,
-    lambda s: f"« {s} »",
-    lambda s: f"┃ {s}",
-    lambda s: f"【 {s} 】",
-    lambda s: f"❝ {s} ❞",
-    lambda s: f"◈ {s}",
-    lambda s: f"{s}\n\u2009",
-)
 
 STORAGE_DIR = os.getenv("FLET_APP_STORAGE_DATA") or tempfile.gettempdir()
 os.makedirs(STORAGE_DIR, exist_ok=True)
@@ -47,29 +32,6 @@ SAVED_MSGS_FILE, CLOCK_CFG_FILE = os.path.join(STORAGE_DIR, "v3x_saved_msgs.json
 def bind_async(fn, *args):
     async def _h(e): await fn(e, *args)
     return _h
-
-def quantum_polymorph(text: str, enabled: bool = True) -> str:
-    clean = (text or "").strip()
-    if not enabled or not clean: return clean
-    chars = list(clean)
-    m_slots = [i for i, ch in enumerate(chars) if ch in MORPH_MAP]
-    if m_slots:
-        for i in random.sample(m_slots, k=min(len(m_slots), random.randint(1, 2))):
-            chars[i] = MORPH_MAP[chars[i]]
-    j_slots = [i for i in range(len(chars) - 1) if chars[i] in JOINERS_FA and chars[i + 1] in LETTERS_FA]
-    if j_slots:
-        for i in sorted(random.sample(j_slots, k=min(len(j_slots), random.randint(1, 2))), reverse=True):
-            chars.insert(i + 1, "ـ" * random.randint(1, 2))
-    out = "".join(chars) + random.choice(SUFFIXES)
-    return f"• {out}" if random.random() < 0.35 else out
-
-def format_weaver(text: str, enabled: bool = True) -> str:
-    clean = (text or "").strip()
-    if not enabled or not clean: return clean
-    words = clean.split(" ")
-    if len(words) > 1:
-        clean = random.choice(THIN_SPACES).join(words)
-    return random.choice(WEAVE_FRAMES)(clean)
 
 def load_json(path: str, default):
     try:
@@ -224,7 +186,7 @@ async def main(page: ft.Page):
         "multi_messages": load_json(SAVED_MSGS_FILE, ["سلام!", "چطوری؟", "خوبی؟", "چه خبر؟", "پیام تست V3X"]),
         "multi_rounds": "10", "multi_rate": "10", "multi_delay": "0", "multi_running": False, "multi_status": "آماده ارسال چندتایی",
         "turbo_count": "100", "turbo_rate": "10", "turbo_delay": "0", "turbo_running": False, "turbo_status": "آماده ارسال توربو",
-        "poly_morph": True, "format_weaver": True, "entity_cache": {},
+        "smart_pacing": True, "reply_hop": True, "entity_cache": {},
     }
     logs = ft.Column(spacing=2, height=80, scroll=ft.ScrollMode.AUTO)
     conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
@@ -327,15 +289,17 @@ async def main(page: ft.Page):
         r = fn(peer, txt)
         return await asyncio.wait_for(r, timeout=9.0) if inspect.isawaitable(r) else r
 
-    async def send_god_fast(c, peer, raw_t: str, text: str, rep=None, status_cb=None, stagger: float = 0.0, poly: bool = True, weave: bool = True, rpool: list | None = None) -> bool:
+    async def send_clean_fast(c, peer, raw_t: str, text: str, rep=None, status_cb=None, stagger: float = 0.0, rpool: list | None = None) -> bool:
+        """ارسال دقیق متن اصلی کاربر بدون هیچ‌گونه تغییر در فونت، حروف یا کاراکترهای متن."""
         if stagger > 0: await asyncio.sleep(stagger)
         sfn = getattr(c, "send_message", None) or getattr(c, "send_text", None)
         if not callable(sfn): raise RuntimeError("متد send_message یافت نشد.")
-        eff_rep = random.choice(rpool) if (rep is None and poly and rpool and random.random() < 0.45) else rep
+        exact_text = (text or "").strip()
+        if not exact_text: return False
+        eff_rep = random.choice(rpool) if (rep is None and rpool and random.random() < 0.5) else rep
         for att in range(1, 5):
-            ftxt = format_weaver(quantum_polymorph(text, enabled=poly), enabled=weave)
             try:
-                await _call_send(sfn, peer, ftxt, eff_rep)
+                await _call_send(sfn, peer, exact_text, eff_rep)
                 st["last_net_ok"] = time.monotonic()
                 return True
             except Exception as ex:
@@ -589,8 +553,8 @@ async def main(page: ft.Page):
         def build_multi():
             tb = ft.TextField(label="مقصد ارسال", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_tgt(e.control.value or ""))
             mc, mr = make_toggle("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, lambda v: safe_up())
-            pc, pr = make_toggle("🧬 پلی‌مورف کوانتومی (تغییر بایت حروف + کشیده + پرش ریپلای)", "تغییر ساختار بایت و حروف فارسی در هر بسته بدون کاهش سرعت", st["poly_morph"], lambda v: (st.update({"poly_morph": v}), safe_up()))
-            wc, wr = make_toggle("🌀 بافنده ساختار پویا (تغییر قالب و فاصله‌های یونیکد)", "تغییر قاب پیام، فاصله‌های باریک و طول بسته در هر ارسال", st["format_weaver"], lambda v: (st.update({"format_weaver": v}), safe_up()))
+            sp_c, sp_r = make_toggle("🛡️ ارسال هوشمند ضد‌محدودیت (بدون تغییر در متن)", "پخش میکروثانیه‌ای بسته‌ها + سیگنال تایپ (متن کاملاً دست‌نخورده می‌ماند)", st["smart_pacing"], lambda v: (st.update({"smart_pacing": v}), safe_up()))
+            rh_c, rh_r = make_toggle("↩️ پرش خودکار ریپلای روی پیام‌های گپ", "ارسال به عنوان پاسخ روی پیام‌های اخیر گپ بدون تغییر در متن", st["reply_hop"], lambda v: (st.update({"reply_hop": v}), safe_up()))
             ni, sl = ft.TextField(label="متن پیام جدید", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON), ft.Text("", size=12, color="#F59E0B", weight=ft.FontWeight.W_600)
 
             def calc_sum():
@@ -624,8 +588,8 @@ async def main(page: ft.Page):
                 rate = max(1, min(30, int(st["multi_rate"] or 10))) if (st["multi_rate"] or "").isdigit() else 10
                 try: dly = max(0.0, float(st["multi_delay"] or 0.0))
                 except ValueError: dly = 0.0
-                poly, weave = bool(pr["val"]), bool(wr["val"])
-                rpool = [m["id"] for m in st["recent_messages"][:10] if m.get("id") is not None]
+                use_sp, use_rh = bool(sp_r["val"]), bool(rh_r["val"])
+                rpool = [m["id"] for m in st["recent_messages"][:10] if m.get("id") is not None] if use_rh else None
                 tgts = list(st["selected_targets"].keys()) if (mr["val"] and st["selected_targets"]) else ([(tb.value or "").strip()] if (tb.value or "").strip() else [])
                 msgs = list(st["multi_messages"])
                 if not tgts or not msgs:
@@ -634,28 +598,28 @@ async def main(page: ft.Page):
                 try:
                     await ensure_online(c)
                     peers = {t: await resolve_peer(c, t) for t in tgts}
-                    if poly:
+                    if use_sp:
                         for p in peers.values(): await human_pulse(c, p)
                     def stream():
                         for _ in range(rounds):
                             for rt in tgts:
                                 rp, p, cm = (st["reply_to_id"] if st["reply_chat_id"] == rt else None), peers[rt], list(msgs)
-                                if poly and len(cm) > 1: random.shuffle(cm)
+                                if use_sp and len(cm) > 1: random.shuffle(cm)
                                 for m in cm: yield (rt, p, m, rp)
                     batch = []
                     for it in stream():
                         if not st["multi_running"]: break
                         batch.append(it)
                         if len(batch) < rate: continue
-                        wt, step = time.monotonic(), (min(0.05, 0.5 / max(1, len(batch))) if poly else 0.0)
-                        res = await asyncio.gather(*(send_god_fast(c, p, rt, tx, rp, lambda s: set_ms(s, "#F59E0B"), i * step, poly, weave, rpool if len(tgts) == 1 else None) for i, (rt, p, tx, rp) in enumerate(batch)), return_exceptions=True)
+                        wt, step = time.monotonic(), (min(0.05, 0.5 / max(1, len(batch))) if use_sp else 0.0)
+                        res = await asyncio.gather(*(send_clean_fast(c, p, rt, tx, rp, lambda s: set_ms(s, "#F59E0B"), i * step, rpool if len(tgts) == 1 else None) for i, (rt, p, tx, rp) in enumerate(batch)), return_exceptions=True)
                         for r in res: done += (1 if r is True else 0); fail += (0 if r is True else 1)
                         batch.clear(); now = time.monotonic()
                         if now - lui >= 0.4 or (done + fail) >= total:
                             lui = now; set_ms(f"⚡ ارسال: {done}/{total} | سرعت: {done / max(0.1, now - t0):.1f}/ث", "#10B981")
                         await asyncio.sleep(max(0.01, dly - (time.monotonic() - wt)) if dly > 0 else 0.01)
                     if batch and st["multi_running"]:
-                        res = await asyncio.gather(*(send_god_fast(c, p, rt, tx, rp, lambda s: set_ms(s, "#F59E0B"), 0.0, poly, weave, rpool if len(tgts) == 1 else None) for rt, p, tx, rp in batch), return_exceptions=True)
+                        res = await asyncio.gather(*(send_clean_fast(c, p, rt, tx, rp, lambda s: set_ms(s, "#F59E0B"), 0.0, rpool if len(tgts) == 1 else None) for rt, p, tx, rp in batch), return_exceptions=True)
                         for r in res: done += (1 if r is True else 0)
                     set_ms(f"✅ پایان: {done}/{total}" if st["multi_running"] else f"⛔ متوقف شد: {done}/{total}", "#10B981" if st["multi_running"] else "#F59E0B")
                 except Exception as ex: set_ms(f"❌ خطا: {ex}", RED_NEON)
@@ -673,13 +637,13 @@ async def main(page: ft.Page):
             ab, _ = make_btn("➕ افزودن", _add, height=38, expand=True); sb, _ = make_btn("💾 ذخیره", _sav, bgcolor=RED_DARK, height=38, expand=True)
             mb, ml = make_btn("⛔ توقف ارسال" if st["multi_running"] else "🚀 شروع ارسال چندتایی", _tog, bgcolor=RED_DARK if st["multi_running"] else RED_PRIMARY, height=44)
             draw_it(); calc_sum()
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mc, ni, ft.Row(spacing=6, controls=[ab, sb]), icol, ft.Row(spacing=5, controls=[ri, rti, di]), sl, pc, wc, mb, stat]))
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mc, ni, ft.Row(spacing=6, controls=[ab, sb]), icol, ft.Row(spacing=5, controls=[ri, rti, di]), sl, sp_c, rh_c, mb, stat]))
 
         def build_turbo():
             tb = ft.TextField(label="آیدی یا شناسه مقصد", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_tgt(e.control.value or ""))
             mi = ft.TextField(label="متن پیام توربو", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
-            pc, pr = make_toggle("🧬 پلی‌مورف کوانتومی (تغییر بایت حروف + کشیده + پرش ریپلای)", "تغییر ساختار بایت و حروف فارسی در هر بسته بدون کاهش سرعت", st["poly_morph"], lambda v: (st.update({"poly_morph": v}), safe_up()))
-            wc, wr = make_toggle("🌀 بافنده ساختار پویا (تغییر قالب و فاصله‌های یونیکد)", "تغییر قاب پیام، فاصله‌های باریک و طول بسته در هر ارسال", st["format_weaver"], lambda v: (st.update({"format_weaver": v}), safe_up()))
+            sp_c, sp_r = make_toggle("🛡️ ارسال هوشمند ضد‌محدودیت (بدون تغییر در متن)", "پخش میکروثانیه‌ای بسته‌ها + سیگنال تایپ (متن کاملاً دست‌نخورده می‌ماند)", st["smart_pacing"], lambda v: (st.update({"smart_pacing": v}), safe_up()))
+            rh_c, rh_r = make_toggle("↩️ پرش خودکار ریپلای روی پیام‌های گپ", "ارسال به عنوان پاسخ روی پیام‌های اخیر گپ بدون تغییر در متن", st["reply_hop"], lambda v: (st.update({"reply_hop": v}), safe_up()))
             def _cfg(e): st.update({"turbo_count": ci.value or "100", "turbo_rate": tri.value or "10", "turbo_delay": di.value or "0"})
             ci = ft.TextField(label="تعداد کل", value=st["turbo_count"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, expand=True, on_change=_cfg)
             tri = ft.TextField(label="پیام در ثانیه", value=st["turbo_rate"], keyboard_type=ft.KeyboardType.NUMBER, text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_ACTIVE, expand=True, on_change=_cfg)
@@ -694,17 +658,17 @@ async def main(page: ft.Page):
                     rate = max(1, min(30, int(st["turbo_rate"] or 10))) if (st["turbo_rate"] or "").isdigit() else 10
                     try: dly = max(0.0, float(st["turbo_delay"] or 0.0))
                     except ValueError: dly = 0.0
-                    poly, weave = bool(pr["val"]), bool(wr["val"])
-                    rpool = [m["id"] for m in st["recent_messages"][:10] if m.get("id") is not None]
+                    use_sp, use_rh = bool(sp_r["val"]), bool(rh_r["val"])
+                    rpool = [m["id"] for m in st["recent_messages"][:10] if m.get("id") is not None] if use_rh else None
                     raw_t, txt = (tb.value or "").strip(), (mi.value or "").strip()
                     rep = st["reply_to_id"] if st["reply_chat_id"] == raw_t else None
                     await ensure_online(c); peer = await resolve_peer(c, raw_t)
-                    if poly: await human_pulse(c, peer)
+                    if use_sp: await human_pulse(c, peer)
                     lui, t0 = 0.0, time.monotonic()
                     while st["turbo_running"] and (sent + fail) < total:
                         wt, cb = time.monotonic(), min(rate, total - (sent + fail))
-                        step = min(0.05, 0.5 / max(1, cb)) if poly else 0.0
-                        res = await asyncio.gather(*(send_god_fast(c, peer, raw_t, txt, rep, lambda s: set_ts(s, "#F59E0B"), i * step, poly, weave, rpool) for i in range(cb)), return_exceptions=True)
+                        step = min(0.05, 0.5 / max(1, cb)) if use_sp else 0.0
+                        res = await asyncio.gather(*(send_clean_fast(c, peer, raw_t, txt, rep, lambda s: set_ts(s, "#F59E0B"), i * step, rpool) for i in range(cb)), return_exceptions=True)
                         for r in res: sent += (1 if r is True else 0); fail += (0 if r is True else 1)
                         now = time.monotonic()
                         if now - lui >= 0.4 or (sent + fail) >= total:
@@ -721,7 +685,7 @@ async def main(page: ft.Page):
                 tl.value, tbtn.bgcolor = "⛔ توقف توربو", RED_DARK; up_ctrl(tbtn); asyncio.create_task(run_t())
 
             tbtn, tl = make_btn("⛔ توقف توربو" if st["turbo_running"] else "🚀 شروع توربو", _tog, bgcolor=RED_DARK if st["turbo_running"] else RED_PRIMARY, height=44)
-            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mi, ft.Row(spacing=5, controls=[ci, tri, di]), pc, wc, tbtn, stat]))
+            return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mi, ft.Row(spacing=5, controls=[ci, tri, di]), sp_c, rh_c, tbtn, stat]))
 
         def build_clock():
             lsl = ft.Text(f"🕒 آخرین همگام‌سازی: {st['last_clock_sync_str']}", size=12, color="#10B981")
