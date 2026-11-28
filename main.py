@@ -18,7 +18,7 @@ for _cls, _attrs in (
                 if hasattr(_obj, _k):
                     setattr(_low, _k, getattr(_obj, _k))
 
-APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.8.0", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
+APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.9.0", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
 BG_GALAXY, BG_CARD, BG_INPUT = "#030306", "#0A0A12", "#12121D"
 RED_PRIMARY, RED_DARK, RED_NEON, RED_LIGHT = "#DC2626", "#991B1B", "#FF1E42", "#EF4444"
 BORDER_CRIMSON, BORDER_ACTIVE, TEXT_WHITE, TEXT_MUTED = "#450A0A", "#EF4444", "#FFFFFF", "#CBD5E1"
@@ -34,7 +34,6 @@ def bind_async(fn, *args):
     return _h
 
 def boost_sqlite_session(client=None):
-    """جلوگیری از قفل شدن حافظه گوشی هنگام دریافت سیل پیام‌های اسپم در پی‌وی."""
     try:
         conn = getattr(getattr(client, "session", None), "_conn", None)
         if conn is not None:
@@ -158,18 +157,22 @@ async def apply_profile_name(c, first: str, last: str):
         except Exception: pass
     raise RuntimeError("متد تغییر نام پروفایل یافت نشد.")
 
-async def to_list(res, timeout: float = 12.0) -> list:
+async def to_list(res, timeout: float = 14.0) -> list:
     if res is None: return []
     if hasattr(res, "__aiter__"): return [x async for x in res]
     if inspect.isawaitable(res): res = await asyncio.wait_for(res, timeout=timeout)
     if res is None: return []
     if hasattr(res, "__aiter__"): return [x async for x in res]
     if isinstance(res, list): return res
-    for a in ("dialogs", "chats", "messages", "items", "results"):
+    for a in ("dialogs", "chats", "messages", "users", "participants", "members", "items", "results"):
         v = getattr(res, a, None) if not isinstance(res, dict) else res.get(a)
         if isinstance(v, list): return v
     try: return list(res)
     except Exception: return []
+
+def is_perm_denied(err_str: str) -> bool:
+    low = (err_str or "").lower()
+    return any(k in low for k in ("admin", "right", "forbidden", "403", "permission", "not enough", "دسترسی", "مجاز", "ادمین"))
 
 def make_btn(label: str, on_click, bgcolor: str = RED_PRIMARY, color: str = TEXT_WHITE, height: int = 40, kind: str = "filled", expand: bool = False):
     lbl = ft.Text(label, color=color, weight=ft.FontWeight.W_600, size=12)
@@ -204,7 +207,7 @@ async def main(page: ft.Page):
     rec_lock, clk_lock = asyncio.Lock(), asyncio.Lock()
 
     st = {
-        "client": None, "phone": "", "hash": None, "need_2fa": False, "bg_started": False,
+        "client": None, "me_id": None, "phone": "", "hash": None, "need_2fa": False, "bg_started": False,
         "last_clock_min": "", "last_clock_sync_str": "هنوز آپدیت نشده", "last_net_ok": 0.0, "last_rec_ts": 0.0,
         "active_tab": "chats", "chat_filter": "all", "dialogs": [], "dialogs_loading": True,
         "selected_targets": {}, "active_target": "", "recent_messages": [], "reply_to_id": None, "reply_to_preview": "", "reply_chat_id": "",
@@ -212,6 +215,8 @@ async def main(page: ft.Page):
         "multi_rounds": "10", "multi_rate": "10", "multi_delay": "0", "multi_running": False, "multi_status": "آماده ارسال چندتایی",
         "turbo_count": "100", "turbo_rate": "10", "turbo_delay": "0", "turbo_running": False, "turbo_status": "آماده ارسال توربو",
         "anti_lag": True, "reply_hop": False, "entity_cache": {},
+        "kick_target_id": "", "kick_target_title": "", "kick_has_perm": None, "kick_members_count": 0,
+        "kick_running": False, "kick_status": "یک گپ را از لیست زیر انتخاب کنید",
     }
     logs = ft.Column(spacing=2, height=75, scroll=ft.ScrollMode.AUTO)
     conn_badge = ft.Text("🟢 متصل", size=12, color="#10B981", weight=ft.FontWeight.W_600)
@@ -234,6 +239,15 @@ async def main(page: ft.Page):
     def get_client():
         if st["client"] is None: st["client"] = create_splus_client()
         return st["client"]
+
+    async def get_my_id(c) -> str:
+        if st["me_id"]: return st["me_id"]
+        try:
+            me = await asyncio.wait_for(c.get_me(), timeout=7.0)
+            uid = getattr(me, "id", None) or getattr(me, "user_id", None) or getattr(me, "guid", None)
+            if uid is not None: st["me_id"] = str(uid)
+        except Exception: pass
+        return st["me_id"] or ""
 
     async def ensure_online(c, reset: bool = False) -> bool:
         async with rec_lock:
@@ -258,7 +272,7 @@ async def main(page: ft.Page):
                 return False
 
     async def verify_alive(c):
-        if st["turbo_running"] or st["multi_running"]: return
+        if st["turbo_running"] or st["multi_running"] or st["kick_running"]: return
         if not c.is_connected(): await ensure_online(c, False); return
         if time.monotonic() - st["last_net_ok"] > 45.0:
             try: await asyncio.wait_for(c.get_me(), timeout=5.0); st["last_net_ok"] = time.monotonic()
@@ -278,7 +292,7 @@ async def main(page: ft.Page):
                 except Exception: pass
         return p
 
-    async def get_dialogs_list(c, lim: int = 70) -> list:
+    async def get_dialogs_list(c, lim: int = 80) -> list:
         for mn in ("get_dialogs", "iter_dialogs", "get_chats"):
             fn = getattr(c, mn, None)
             if callable(fn):
@@ -298,6 +312,96 @@ async def main(page: ft.Page):
                 except Exception: pass
         return []
 
+    async def get_group_members(c, peer, my_id: str) -> list:
+        raw_users = []
+        for mn in ("get_participants", "iter_participants", "get_members", "iter_members", "get_chat_members"):
+            fn = getattr(c, mn, None)
+            if not callable(fn): continue
+            try:
+                sig = inspect.signature(fn).parameters
+                res = fn(peer, limit=5000) if "limit" in sig else fn(peer)
+                raw_users = await to_list(res, timeout=20.0)
+                if raw_users: break
+            except TypeError:
+                try:
+                    raw_users = await to_list(fn(peer), timeout=20.0)
+                    if raw_users: break
+                except Exception: pass
+            except Exception as ex:
+                if is_perm_denied(str(ex)): raise ex
+
+        members, seen = [], set()
+        for u in raw_users:
+            user_obj = getattr(u, "user", None) or u
+            uid = getattr(user_obj, "id", None) or getattr(user_obj, "user_id", None) or getattr(user_obj, "guid", None)
+            if uid is None: continue
+            uid_str = str(uid).strip()
+            if not uid_str or uid_str == my_id or uid_str in seen: continue
+            part = getattr(u, "participant", None)
+            if part and (getattr(part, "is_creator", False) or "creator" in type(part).__name__.lower()):
+                continue
+            seen.add(uid_str)
+            members.append(user_obj)
+        return members
+
+    async def check_group_admin_perm(c, peer) -> bool | None:
+        gp = getattr(c, "get_permissions", None)
+        if callable(gp):
+            try:
+                p = await asyncio.wait_for(gp(peer), timeout=7.0)
+                if p is not None:
+                    if getattr(p, "is_creator", False) or getattr(p, "is_admin", False) or getattr(p, "ban_users", False):
+                        return True
+                    return False
+            except Exception as ex:
+                if is_perm_denied(str(ex)): return False
+        ge = getattr(c, "get_entity", None)
+        if callable(ge):
+            try:
+                ent = await asyncio.wait_for(ge(peer), timeout=7.0)
+                if getattr(ent, "creator", False) or getattr(ent, "admin_rights", None):
+                    return True
+            except Exception: pass
+        return None
+
+    async def kick_one_member(c, peer, user_obj, method_box: dict) -> str:
+        """حذف یک ممبر از گپ؛ خروجی: 'OK' | 'NO_PERM' | 'ERR'"""
+        uid = getattr(user_obj, "id", None) or getattr(user_obj, "user_id", None) or user_obj
+        candidates = []
+
+        if callable(getattr(c, "kick_participant", None)):
+            candidates.append(("kick_participant", lambda: c.kick_participant(peer, user_obj)))
+        if callable(getattr(c, "edit_permissions", None)):
+            candidates.append(("edit_permissions", lambda: c.edit_permissions(peer, user_obj, view_messages=False)))
+        for mn in ("kick_user", "remove_user", "ban_user", "delete_chat_user", "remove_chat_member"):
+            fn = getattr(c, mn, None)
+            if callable(fn):
+                candidates.append((mn, lambda f=fn: f(peer, uid)))
+
+        if method_box.get("name"):
+            candidates.sort(key=lambda x: 0 if x[0] == method_box["name"] else 1)
+
+        for att in range(1, 3):
+            for name, caller in candidates:
+                try:
+                    r = caller()
+                    if inspect.isawaitable(r): await asyncio.wait_for(r, timeout=8.0)
+                    method_box["name"] = name
+                    st["last_net_ok"] = time.monotonic()
+                    return "OK"
+                except TypeError:
+                    continue
+                except Exception as ex:
+                    es = str(ex)
+                    if is_perm_denied(es):
+                        return "NO_PERM"
+                    w = getattr(ex, "seconds", None) or (int(m.group(1)) if (m := re.search(r"(?:wait of|flood_wait[_ ]?)(\d+)", es.lower())) else None)
+                    if w:
+                        await asyncio.sleep(min(int(w) + 1, 15))
+                        break
+            await asyncio.sleep(0.15)
+        return "ERR"
+
     async def _call_send(fn, peer, txt: str, rep=None):
         if rep is not None:
             for kw in ("reply_to", "reply_to_msg_id", "reply_to_message_id"):
@@ -309,7 +413,6 @@ async def main(page: ft.Page):
         return await asyncio.wait_for(r, timeout=4.5) if inspect.isawaitable(r) else r
 
     async def send_pipeline_msg(c, peer, raw_t: str, text: str, rep=None, rpool: list | None = None, flood_box: list | None = None) -> bool:
-        """ارسال سریع غیرمسدودکننده بدون ریست کردن سوکت هنگام اسپم سنگین طرف مقابل."""
         sfn = getattr(c, "send_message", None) or getattr(c, "send_text", None)
         if not callable(sfn): return False
         exact_text = (text or "").strip()
@@ -355,7 +458,7 @@ async def main(page: ft.Page):
                     st["last_clock_min"], st["last_clock_sync_str"], st["last_net_ok"] = now_m, datetime.datetime.now(TEHRAN_TZ).strftime("%H:%M:%S"), time.monotonic()
                     log(f"⏰ ساعت آپدیت شد: {nf} {nl}".strip(), RED_LIGHT); return
                 except Exception as ex:
-                    if att == 1 and not (st["turbo_running"] or st["multi_running"]): await ensure_online(c, True)
+                    if att == 1 and not (st["turbo_running"] or st["multi_running"] or st["kick_running"]): await ensure_online(c, True)
                     else: log(f"خطای ساعت: {ex}", RED_NEON)
 
     async def start_bg(c):
@@ -470,7 +573,7 @@ async def main(page: ft.Page):
         page.controls.clear(); c = get_client(); log("سلف‌بات پرو با موفقیت متصل شد ✅", "#10B981")
         body_host, on_dlg_cb = ft.Column(spacing=10, horizontal_alignment=ft.CrossAxisAlignment.STRETCH), None
 
-        async def fetch_dialogs(lim: int = 70) -> list[dict]:
+        async def fetch_dialogs(lim: int = 80) -> list[dict]:
             st["dialogs_loading"] = True; items = []
             try:
                 await ensure_online(c)
@@ -517,6 +620,9 @@ async def main(page: ft.Page):
             cb, _ = make_btn("✖️", _clr, color=RED_NEON, kind="text")
             return ft.Container(padding=ft.Padding.symmetric(horizontal=10, vertical=5), border_radius=ft.BorderRadius.all(8), bgcolor=BG_INPUT, border=ft.Border.all(1, RED_LIGHT), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Text(f"↩️ ریپلای #{st['reply_to_id']}: {st['reply_to_preview'][:35]}", size=12, color=RED_LIGHT, expand=True), cb]))
 
+        # ==========================================
+        # تب ۱: چت‌ها
+        # ==========================================
         def build_chats():
             nonlocal on_dlg_cb
             tb = ft.TextField(label="آیدی یا شناسه چت", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_tgt(e.control.value or ""))
@@ -555,7 +661,7 @@ async def main(page: ft.Page):
                 st["chat_filter"] = m
                 fa.bgcolor, fp.bgcolor, fg.bgcolor = (RED_PRIMARY if m == "all" else BG_INPUT), (RED_PRIMARY if m == "pv" else BG_INPUT), (RED_PRIMARY if m == "group" else BG_INPUT)
                 draw_c(); safe_up()
-            async def _rel(e): log("در حال دریافت چت‌ها...", RED_LIGHT); r = await fetch_dialogs(70); draw_c(); log(f"{len(r)} چت بارگذاری شد ✅", "#10B981")
+            async def _rel(e): log("در حال دریافت چت‌ها...", RED_LIGHT); r = await fetch_dialogs(80); draw_c(); log(f"{len(r)} چت بارگذاری شد ✅", "#10B981")
             async def _lm(e):
                 t = (tb.value or st["active_target"] or "").strip()
                 if not t: log("ابتدا چت را انتخاب کنید.", RED_NEON); return
@@ -574,6 +680,9 @@ async def main(page: ft.Page):
                 ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=6, controls=[ft.Text("📜 پیام‌های اخیر (برای ریپلای لمس کنید)", size=13, color=RED_LIGHT), rh, mc])),
             ])
 
+        # ==========================================
+        # تب ۲: ارسال چندتایی
+        # ==========================================
         def build_multi():
             tb = ft.TextField(label="مقصد ارسال", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_tgt(e.control.value or ""))
             mc, mr = make_toggle("ارسال همزمان به چت‌های تیک‌خورده", f"انتخاب‌شده: {len(st['selected_targets'])} چت", len(st["selected_targets"]) > 1, lambda v: safe_up())
@@ -684,6 +793,9 @@ async def main(page: ft.Page):
             draw_it(); calc_sum()
             return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("📨 ارسال چندتایی پرسرعت", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mc, ni, ft.Row(spacing=6, controls=[ab, sb]), icol, ft.Row(spacing=5, controls=[ri, rti, di]), sl, al_c, rh_c, mb, stat]))
 
+        # ==========================================
+        # تب ۳: ارسال توربو
+        # ==========================================
         def build_turbo():
             tb = ft.TextField(label="آیدی یا شناسه مقصد", value=st["active_target"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: set_tgt(e.control.value or ""))
             mi = ft.TextField(label="متن پیام توربو", bgcolor=BG_INPUT, border_color=BORDER_CRIMSON)
@@ -759,6 +871,189 @@ async def main(page: ft.Page):
             tbtn, tl = make_btn("⛔ توقف توربو" if st["turbo_running"] else "🚀 شروع توربو", _tog, bgcolor=RED_DARK if st["turbo_running"] else RED_PRIMARY, height=44)
             return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mi, ft.Row(spacing=5, controls=[ci, tri, di]), al_c, rh_c, tbtn, stat]))
 
+        # ==========================================
+        # تب ۴: ریم کامل ممبرهای گپ (با بررسی دسترسی)
+        # ==========================================
+        def build_kick_all():
+            nonlocal on_dlg_cb
+            gid_in = ft.TextField(label="شناسه یا آیدی گپ انتخاب‌شده", value=st["kick_target_id"], text_align=ft.TextAlign.LEFT, bgcolor=BG_INPUT, border_color=BORDER_CRIMSON, on_change=lambda e: st.update({"kick_target_id": (e.control.value or "").strip(), "kick_has_perm": None}))
+            g_col = ft.Column(spacing=6, height=185, scroll=ft.ScrollMode.AUTO)
+            sel_info = ft.Text(
+                f"🎯 گپ انتخاب‌شده: {st['kick_target_title']} ({st['kick_target_id']})" if st["kick_target_id"] else "⚠️ هنوز گپی انتخاب نشده است",
+                size=12, color="#10B981" if st["kick_target_id"] else "#F59E0B", weight=ft.FontWeight.W_600
+            )
+            k_stat = ft.Text(st["kick_status"], size=12, color=RED_NEON if st["kick_has_perm"] is False else ("#10B981" if st["kick_has_perm"] is True else TEXT_MUTED))
+
+            def set_ks(t: str, col: str = TEXT_MUTED):
+                st["kick_status"] = t; k_stat.value, k_stat.color = t, col; up_ctrl(k_stat)
+
+            async def inspect_group(cid: str, title: str):
+                st.update({"kick_target_id": cid, "kick_target_title": title, "kick_has_perm": None, "kick_members_count": 0})
+                gid_in.value = cid
+                sel_info.value, sel_info.color = f"🎯 گپ انتخاب‌شده: {title} ({cid})", "#10B981"
+                draw_groups()
+                set_ks(f"⏳ در حال بررسی دسترسی ادمین و لیست ممبرهای «{title}»...", "#F59E0B")
+                safe_up()
+                try:
+                    await ensure_online(c, False)
+                    peer = await resolve_peer(c, cid)
+                    my_id = await get_my_id(c)
+                    perm = await check_group_admin_perm(c, peer)
+                    if perm is False:
+                        st["kick_has_perm"] = False
+                        set_ks(f"❌ دسترسی ندارید! شما در گپ «{title}» ادمین نیستید.", RED_NEON)
+                        return
+                    members = await get_group_members(c, peer, my_id)
+                    st["kick_has_perm"] = True
+                    st["kick_members_count"] = len(members)
+                    set_ks(f"✅ دسترسی تایید شد | ممبرهای قابل ریم در «{title}»: {len(members)} نفر", "#10B981")
+                except Exception as ex:
+                    if is_perm_denied(str(ex)):
+                        st["kick_has_perm"] = False
+                        set_ks(f"❌ دسترسی ادمین برای ریم ممبر در «{title}» ندارید!", RED_NEON)
+                    else:
+                        set_ks(f"⚠️ آماده اجرا (خطای بررسی: {ex})", "#F59E0B")
+
+            def draw_groups():
+                g_col.controls.clear()
+                groups = [x for x in st["dialogs"] if x["kind"] == "group"]
+                if not groups:
+                    msg = "⏳ در حال دریافت لیست گپ‌ها..." if st["dialogs_loading"] else "گپی یافت نشد. دکمه بروزرسانی لیست گپ‌ها را بزنید."
+                    g_col.controls.append(ft.Text(msg, size=12, color=TEXT_MUTED))
+                    return
+                for it in groups:
+                    cid, title = it["id"], it["title"]
+                    sel = st["kick_target_id"] == cid
+                    g_col.controls.append(ft.Container(
+                        padding=ft.Padding.all(8), border_radius=ft.BorderRadius.all(9), ink=True,
+                        bgcolor="#1C0A10" if sel else BG_INPUT,
+                        border=ft.Border.all(1.5 if sel else 1, RED_NEON if sel else BORDER_CRIMSON),
+                        on_click=bind_async(lambda e, i=cid, t=title: inspect_group(i, t)),
+                        content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
+                            ft.Column(spacing=1, expand=True, controls=[
+                                ft.Text(f"👥 {title}", size=13, weight=ft.FontWeight.W_600, color=TEXT_WHITE),
+                                ft.Text(f"شناسه: {cid}", size=11, color=TEXT_MUTED),
+                            ]),
+                            ft.Text("✅ انتخاب‌شده" if sel else "انتخاب گپ", size=12, color=RED_NEON if sel else "#64748B"),
+                        ]),
+                    ))
+
+            async def _rel_groups(e):
+                set_ks("⏳ در حال دریافت لیست گپ‌ها...", "#F59E0B")
+                await fetch_dialogs(80)
+                draw_groups()
+                g_cnt = sum(1 for x in st["dialogs"] if x["kind"] == "group")
+                set_ks(f"✅ {g_cnt} گپ بارگذاری شد. روی گپ مورد نظر بزنید.", "#10B981")
+
+            async def run_kick_all():
+                cid = (gid_in.value or st["kick_target_id"] or "").strip()
+                title = st["kick_target_title"] or cid
+                if not cid:
+                    st["kick_running"] = False; kl.value, kbtn.bgcolor = "🗑️ ریم کامل کل ممبرهای گپ", RED_PRIMARY; up_ctrl(kbtn)
+                    set_ks("❌ ابتدا یک گپ را انتخاب کنید!", RED_NEON); return
+
+                box = {"idx": 0, "kicked": 0, "fail": 0, "no_perm": False}
+                method_box = {"name": None}
+                try:
+                    await ensure_online(c, False)
+                    peer = await resolve_peer(c, cid)
+                    my_id = await get_my_id(c)
+                    perm = await check_group_admin_perm(c, peer)
+                    if perm is False:
+                        st["kick_has_perm"] = False
+                        set_ks(f"❌ دسترسی ندارید! در «{title}» ادمین نیستید.", RED_NEON)
+                        return
+
+                    set_ks(f"⏳ در حال دریافت لیست کامل ممبرهای «{title}»...", "#F59E0B")
+                    members = await get_group_members(c, peer, my_id)
+                    total = len(members)
+                    if total == 0:
+                        set_ks("⚠️ ممبری برای ریم یافت نشد یا دسترسی ادمین ندارید.", "#F59E0B")
+                        return
+
+                    async def _ui_ticker():
+                        while st["kick_running"]:
+                            await asyncio.sleep(0.5)
+                            if not st["kick_running"]: break
+                            set_ks(f"🔥 در حال ریم کامل ممبرها: {box['kicked']}/{total} نفر...", "#F59E0B")
+
+                    async def _kick_worker():
+                        while st["kick_running"] and not box["no_perm"]:
+                            i = box["idx"]
+                            if i >= total: break
+                            box["idx"] = i + 1
+                            res = await kick_one_member(c, peer, members[i], method_box)
+                            if res == "OK":
+                                box["kicked"] += 1
+                            elif res == "NO_PERM":
+                                box["no_perm"] = True
+                                st["kick_running"] = False
+                                break
+                            else:
+                                box["fail"] += 1
+                            await asyncio.sleep(0.05)
+
+                    tk = asyncio.create_task(_ui_ticker())
+                    await asyncio.gather(*(_kick_worker() for _ in range(min(4, total))))
+                    was_running = st["kick_running"]
+                    st["kick_running"] = False
+                    tk.cancel()
+
+                    if box["no_perm"]:
+                        st["kick_has_perm"] = False
+                        set_ks(f"❌ دسترسی ندارید! ریم متوقف شد ({box['kicked']} انجام شد).", RED_NEON)
+                    elif was_running:
+                        set_ks(f"✅ ریم کامل انجام شد! {box['kicked']} از {total} ممبر حذف شدند.", "#10B981")
+                        log(f"🗑️ ریم کامل گپ «{title}» انجام شد ({box['kicked']} ممبر) ✅", "#10B981")
+                    else:
+                        set_ks(f"⛔ ریم متوقف شد ({box['kicked']} از {total} ممبر حذف شدند).", "#F59E0B")
+                except Exception as ex:
+                    if is_perm_denied(str(ex)):
+                        st["kick_has_perm"] = False
+                        set_ks(f"❌ دسترسی ادمین در «{title}» ندارید!", RED_NEON)
+                    else:
+                        set_ks(f"❌ خطا در ریم ممبرها: {ex}", RED_NEON)
+                finally:
+                    st["kick_running"] = False; kl.value, kbtn.bgcolor = "🗑️ ریم کامل کل ممبرهای گپ", RED_PRIMARY; up_ctrl(kbtn)
+
+            async def _tog_kick(e):
+                if st["kick_running"]:
+                    st["kick_running"] = False
+                    set_ks("⏳ در حال توقف فوری ریم...", "#F59E0B")
+                    return
+                cid = (gid_in.value or st["kick_target_id"] or "").strip()
+                if not cid:
+                    set_ks("❌ ابتدا یک گپ را از لیست زیر انتخاب کنید!", RED_NEON)
+                    return
+                if st["kick_has_perm"] is False:
+                    set_ks("❌ در این گپ دسترسی ادمین برای ریم ممبر ندارید!", RED_NEON)
+                    return
+                st["kick_running"] = True
+                kl.value, kbtn.bgcolor = "⛔ توقف ریم ممبرها", RED_DARK
+                up_ctrl(kbtn)
+                asyncio.create_task(run_kick_all())
+
+            on_dlg_cb = lambda: (draw_groups(), safe_up())
+            rg_btn, _ = make_btn("🔄 بروزرسانی لیست گپ‌ها", _rel_groups, height=38, expand=True)
+            chk_btn, _ = make_btn("🔍 بررسی دسترسی گپ", lambda e: inspect_group((gid_in.value or st["kick_target_id"] or "").strip(), st["kick_target_title"] or (gid_in.value or "").strip()), bgcolor=RED_DARK, height=38, expand=True)
+            kbtn, kl = make_btn("⛔ توقف ریم ممبرها" if st["kick_running"] else "🗑️ ریم کامل کل ممبرهای گپ", _tog_kick, bgcolor=RED_DARK if st["kick_running"] else RED_PRIMARY, height=46)
+            draw_groups()
+            return ft.Container(
+                bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1.2, BORDER_ACTIVE),
+                content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[
+                    ft.Text("🗑️ ریم کامل ممبرهای گپ (نیازمند ادمین)", size=15, weight=ft.FontWeight.BOLD, color=RED_NEON),
+                    gid_in,
+                    ft.Row(spacing=6, controls=[rg_btn, chk_btn]),
+                    sel_info,
+                    g_col,
+                    kbtn,
+                    k_stat,
+                ]),
+            )
+
+        # ==========================================
+        # تب ۵: ساعت افق تهران کنار اسم
+        # ==========================================
         def build_clock():
             lsl = ft.Text(f"🕒 آخرین همگام‌سازی: {st['last_clock_sync_str']}", size=12, color="#10B981")
             cc, cr = make_toggle("⏰ ساعت افق تهران کنار اسم", "لمس کنید تا روشن یا خاموش شود", bool(clock_cfg.get("enabled", False)), lambda v: (clock_cfg.update({"enabled": v}), save_json(CLOCK_CFG_FILE, clock_cfg), safe_up()))
@@ -806,7 +1101,7 @@ async def main(page: ft.Page):
 
         def render_tab():
             body_host.controls.clear()
-            body_host.controls.append({"chats": build_chats, "multi": build_multi, "turbo": build_turbo, "clock": build_clock}[st["active_tab"]]())
+            body_host.controls.append({"chats": build_chats, "multi": build_multi, "turbo": build_turbo, "kick": build_kick_all, "clock": build_clock}[st["active_tab"]]())
 
         async def _sw(e, nm: str):
             if st["active_tab"] != nm:
@@ -815,7 +1110,7 @@ async def main(page: ft.Page):
                 render_tab(); safe_up()
 
         async def _out(e):
-            st.update({"turbo_running": False, "multi_running": False}); notify_android("stop")
+            st.update({"turbo_running": False, "multi_running": False, "kick_running": False}); notify_android("stop")
             try: await c.log_out()
             except Exception: pass
             st["client"] = None
@@ -830,11 +1125,15 @@ async def main(page: ft.Page):
         b2, _ = make_btn("📨 چندتایی", bind_async(_sw, "multi"), bgcolor=BG_INPUT, height=38, expand=True)
         b3, _ = make_btn("🚀 توربو", bind_async(_sw, "turbo"), bgcolor=BG_INPUT, height=38, expand=True)
         b4, _ = make_btn("⏰ ساعت", bind_async(_sw, "clock"), bgcolor=BG_INPUT, height=38, expand=True)
-        nav = {"chats": b1, "multi": b2, "turbo": b3, "clock": b4}; render_tab()
+        b5, _ = make_btn("🗑️ ریم کامل ممبرهای گپ", bind_async(_sw, "kick"), bgcolor=BG_INPUT, height=38, expand=True)
+        nav = {"chats": b1, "multi": b2, "turbo": b3, "clock": b4, "kick": b5}; render_tab()
 
         page.add(
             ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1.2, BORDER_ACTIVE), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[ft.Row(spacing=8, controls=[ft.Text("⚡ V3X Pro", size=17, weight=ft.FontWeight.BOLD, color=RED_NEON), conn_badge]), ob])),
-            ft.Row(spacing=5, controls=[b1, b2]), ft.Row(spacing=5, controls=[b3, b4]), body_host,
+            ft.Row(spacing=5, controls=[b1, b2]),
+            ft.Row(spacing=5, controls=[b3, b4]),
+            ft.Row(spacing=5, controls=[b5]),
+            body_host,
             ft.Container(bgcolor=BG_CARD, padding=10, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=4, controls=[ft.Text("📜 گزارش عملکرد", size=12, color=RED_LIGHT), logs])),
             footer_box(),
         )
