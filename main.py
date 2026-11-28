@@ -18,7 +18,7 @@ for _cls, _attrs in (
                 if hasattr(_obj, _k):
                     setattr(_low, _k, getattr(_obj, _k))
 
-APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.9.0", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
+APP_VERSION, WEBSITE_URL, LICENSE_URL, CREATOR_ID = "2.9.1", "https://v3xsys.pages.dev/", "https://selfbot-license.krymyhady314.workers.dev", "@V3XSYS"
 BG_GALAXY, BG_CARD, BG_INPUT = "#030306", "#0A0A12", "#12121D"
 RED_PRIMARY, RED_DARK, RED_NEON, RED_LIGHT = "#DC2626", "#991B1B", "#FF1E42", "#EF4444"
 BORDER_CRIMSON, BORDER_ACTIVE, TEXT_WHITE, TEXT_MUTED = "#450A0A", "#EF4444", "#FFFFFF", "#CBD5E1"
@@ -37,23 +37,15 @@ def boost_sqlite_session(client=None):
     try:
         conn = getattr(getattr(client, "session", None), "_conn", None)
         if conn is not None:
-            conn.execute("PRAGMA journal_mode=WAL;")
-            conn.execute("PRAGMA synchronous=OFF;")
-            conn.execute("PRAGMA temp_store=MEMORY;")
-            conn.execute("PRAGMA cache_size=-8000;")
-            return
-    except Exception:
-        pass
+            conn.execute("PRAGMA journal_mode=WAL;"); conn.execute("PRAGMA synchronous=OFF;")
+            conn.execute("PRAGMA temp_store=MEMORY;"); conn.execute("PRAGMA cache_size=-8000;"); return
+    except Exception: pass
     for fn in os.listdir(STORAGE_DIR):
         if fn.startswith("v3x_splus") and not fn.endswith(("-wal", "-shm")):
-            p = os.path.join(STORAGE_DIR, fn)
             try:
-                con = sqlite3.connect(p, timeout=1.0)
-                con.execute("PRAGMA journal_mode=WAL;")
-                con.execute("PRAGMA synchronous=OFF;")
-                con.close()
-            except Exception:
-                pass
+                con = sqlite3.connect(os.path.join(STORAGE_DIR, fn), timeout=1.0)
+                con.execute("PRAGMA journal_mode=WAL;"); con.execute("PRAGMA synchronous=OFF;"); con.close()
+            except Exception: pass
 
 def load_json(path: str, default):
     try:
@@ -164,11 +156,42 @@ async def to_list(res, timeout: float = 14.0) -> list:
     if res is None: return []
     if hasattr(res, "__aiter__"): return [x async for x in res]
     if isinstance(res, list): return res
-    for a in ("dialogs", "chats", "messages", "users", "participants", "members", "items", "results"):
+    for a in ("dialogs", "chats", "messages", "users", "participants", "members", "in_chat_members", "group_members", "items", "results"):
         v = getattr(res, a, None) if not isinstance(res, dict) else res.get(a)
         if isinstance(v, list): return v
+    if isinstance(res, dict):
+        for k in ("data", "result", "chat", "group", "full_chat"):
+            sub = res.get(k)
+            if isinstance(sub, dict):
+                for a in ("participants", "members", "in_chat_members", "group_members", "users", "items"):
+                    if isinstance(sub.get(a), list): return sub[a]
+            elif isinstance(sub, list):
+                return sub
+        return []
     try: return list(res)
     except Exception: return []
+
+def extract_uid(obj) -> str:
+    if obj is None: return ""
+    if isinstance(obj, (int, str)):
+        s = str(obj).strip()
+        return s if s and not s.startswith(("-", "g0", "c0")) else ""
+    if isinstance(obj, dict):
+        for k in ("member_guid", "user_guid", "user_id", "id", "guid", "peer_id"):
+            if obj.get(k): return str(obj[k]).strip()
+        if isinstance(obj.get("user"), (dict, object)):
+            return extract_uid(obj["user"])
+        return ""
+    u = getattr(obj, "user", None)
+    if u is not None:
+        r = extract_uid(u)
+        if r: return r
+    for k in ("member_guid", "user_guid", "user_id", "id", "guid"):
+        v = getattr(obj, k, None)
+        if v is not None:
+            s = str(v).strip()
+            if s and not s.startswith(("-", "g0", "c0")): return s
+    return ""
 
 def is_perm_denied(err_str: str) -> bool:
     low = (err_str or "").lower()
@@ -312,36 +335,91 @@ async def main(page: ft.Page):
                 except Exception: pass
         return []
 
-    async def get_group_members(c, peer, my_id: str) -> list:
+    async def get_group_members(c, peer, raw_cid: str, my_id: str) -> list:
+        """استخراج ممبرهای گپ از تمام متدهای کلاینت و پیام‌های اخیر گپ."""
         raw_users = []
-        for mn in ("get_participants", "iter_participants", "get_members", "iter_members", "get_chat_members"):
+        base_methods = [
+            "get_participants", "iter_participants", "get_members", "iter_members",
+            "get_chat_members", "get_group_members", "get_channel_members",
+            "get_chat_participants", "get_group_info", "get_chat_info", "get_full_chat",
+        ]
+        dyn_methods = [
+            m for m in dir(c)
+            if not m.startswith("_") and m not in base_methods
+            and any(w in m.lower() for w in ("participant", "member"))
+            and any(w in m.lower() for w in ("get", "iter", "list", "fetch"))
+        ]
+
+        for mn in base_methods + dyn_methods:
             fn = getattr(c, mn, None)
             if not callable(fn): continue
-            try:
-                sig = inspect.signature(fn).parameters
-                res = fn(peer, limit=5000) if "limit" in sig else fn(peer)
-                raw_users = await to_list(res, timeout=20.0)
-                if raw_users: break
-            except TypeError:
+            for arg in (peer, raw_cid):
                 try:
-                    raw_users = await to_list(fn(peer), timeout=20.0)
+                    sig = inspect.signature(fn).parameters
+                    res = fn(arg, limit=5000) if "limit" in sig else fn(arg)
+                    items = await to_list(res, timeout=15.0)
+                    if items:
+                        raw_users.extend(items)
+                        break
+                except TypeError:
+                    try:
+                        items = await to_list(fn(arg), timeout=15.0)
+                        if items:
+                            raw_users.extend(items)
+                            break
+                    except Exception: pass
+                except Exception as ex:
+                    if is_perm_denied(str(ex)): raise ex
+            if raw_users: break
+
+        # تلاش از طریق TL Request در صورت پشتیبانی
+        if not raw_users and callable(c):
+            for mp, rname in (
+                ("splusthon.tl.functions.channels", "GetParticipantsRequest"),
+                ("splusthon.tl.functions.messages", "GetFullChatRequest"),
+                ("splusthon.tl.functions.channels", "GetFullChannelRequest"),
+            ):
+                try:
+                    req_cls = getattr(importlib.import_module(mp), rname, None)
+                    if not req_cls: continue
+                    if rname == "GetParticipantsRequest":
+                        flt_cls = getattr(importlib.import_module("splusthon.tl.types"), "ChannelParticipantsRecent", None)
+                        if flt_cls:
+                            res = await asyncio.wait_for(c(req_cls(peer, flt_cls(), 0, 5000, 0)), timeout=12.0)
+                            raw_users = await to_list(res)
+                    elif rname == "GetFullChatRequest" and str(raw_cid).lstrip("-").isdigit():
+                        res = await asyncio.wait_for(c(req_cls(abs(int(raw_cid)))), timeout=12.0)
+                        raw_users = await to_list(getattr(res, "full_chat", res))
+                    else:
+                        res = await asyncio.wait_for(c(req_cls(peer)), timeout=12.0)
+                        raw_users = await to_list(getattr(res, "full_chat", res))
                     if raw_users: break
-                except Exception: pass
-            except Exception as ex:
-                if is_perm_denied(str(ex)): raise ex
+                except Exception as ex:
+                    if is_perm_denied(str(ex)): raise ex
 
         members, seen = [], set()
         for u in raw_users:
-            user_obj = getattr(u, "user", None) or u
-            uid = getattr(user_obj, "id", None) or getattr(user_obj, "user_id", None) or getattr(user_obj, "guid", None)
-            if uid is None: continue
-            uid_str = str(uid).strip()
-            if not uid_str or uid_str == my_id or uid_str in seen: continue
-            part = getattr(u, "participant", None)
+            uid_str = extract_uid(u)
+            if not uid_str or uid_str == my_id or uid_str == raw_cid or uid_str in seen: continue
+            part = getattr(u, "participant", None) if not isinstance(u, dict) else None
             if part and (getattr(part, "is_creator", False) or "creator" in type(part).__name__.lower()):
                 continue
             seen.add(uid_str)
+            user_obj = (getattr(u, "user", None) or u) if not isinstance(u, dict) else u
             members.append(user_obj)
+
+        # پشتیبان قطعی: استخراج ممبرهای فعال از ۳۰۰ پیام اخیر گپ اگر لیست مستقیم خالی بود
+        if not members:
+            recent = await get_msgs_list(c, peer, 300)
+            for m in recent:
+                if getattr(m, "post", False): continue
+                snd = getattr(m, "sender", None)
+                if snd and (getattr(snd, "bot", False) or getattr(snd, "is_bot", False)): continue
+                uid_str = extract_uid(snd) or extract_uid(getattr(m, "sender_id", None)) or extract_uid(getattr(m, "from_id", None))
+                if not uid_str or uid_str == my_id or uid_str == raw_cid or uid_str in seen: continue
+                seen.add(uid_str)
+                members.append(snd if snd is not None else (int(uid_str) if uid_str.isdigit() else uid_str))
+
         return members
 
     async def check_group_admin_perm(c, peer) -> bool | None:
@@ -365,18 +443,25 @@ async def main(page: ft.Page):
         return None
 
     async def kick_one_member(c, peer, user_obj, method_box: dict) -> str:
-        """حذف یک ممبر از گپ؛ خروجی: 'OK' | 'NO_PERM' | 'ERR'"""
-        uid = getattr(user_obj, "id", None) or getattr(user_obj, "user_id", None) or user_obj
+        uid_str = extract_uid(user_obj)
+        uid_val = int(uid_str) if uid_str.isdigit() else (uid_str or user_obj)
         candidates = []
 
         if callable(getattr(c, "kick_participant", None)):
-            candidates.append(("kick_participant", lambda: c.kick_participant(peer, user_obj)))
+            candidates.append(("kick_1", lambda: c.kick_participant(peer, user_obj)))
+            candidates.append(("kick_2", lambda: c.kick_participant(peer, uid_val)))
         if callable(getattr(c, "edit_permissions", None)):
-            candidates.append(("edit_permissions", lambda: c.edit_permissions(peer, user_obj, view_messages=False)))
-        for mn in ("kick_user", "remove_user", "ban_user", "delete_chat_user", "remove_chat_member"):
-            fn = getattr(c, mn, None)
-            if callable(fn):
-                candidates.append((mn, lambda f=fn: f(peer, uid)))
+            candidates.append(("perm_1", lambda: c.edit_permissions(peer, user_obj, view_messages=False)))
+            candidates.append(("perm_2", lambda: c.edit_permissions(peer, uid_val, view_messages=False)))
+
+        for mn in dir(c):
+            if mn.startswith("_"): continue
+            low = mn.lower()
+            if any(w in low for w in ("kick", "ban", "remove")) and any(w in low for w in ("user", "member", "participant")):
+                fn = getattr(c, mn, None)
+                if callable(fn):
+                    candidates.append((f"{mn}_id", lambda f=fn: f(peer, uid_val)))
+                    candidates.append((f"{mn}_obj", lambda f=fn: f(peer, user_obj)))
 
         if method_box.get("name"):
             candidates.sort(key=lambda x: 0 if x[0] == method_box["name"] else 1)
@@ -872,7 +957,7 @@ async def main(page: ft.Page):
             return ft.Container(bgcolor=BG_CARD, padding=12, border_radius=ft.BorderRadius.all(12), border=ft.Border.all(1, BORDER_CRIMSON), content=ft.Column(spacing=8, horizontal_alignment=ft.CrossAxisAlignment.STRETCH, controls=[ft.Text("🚀 ارسال توربو فوق‌سریع", size=15, weight=ft.FontWeight.BOLD), rep_banner(), tb, mi, ft.Row(spacing=5, controls=[ci, tri, di]), al_c, rh_c, tbtn, stat]))
 
         # ==========================================
-        # تب ۴: ریم کامل ممبرهای گپ (با بررسی دسترسی)
+        # تب ۴: ریم کامل ممبرهای گپ
         # ==========================================
         def build_kick_all():
             nonlocal on_dlg_cb
@@ -892,7 +977,7 @@ async def main(page: ft.Page):
                 gid_in.value = cid
                 sel_info.value, sel_info.color = f"🎯 گپ انتخاب‌شده: {title} ({cid})", "#10B981"
                 draw_groups()
-                set_ks(f"⏳ در حال بررسی دسترسی ادمین و لیست ممبرهای «{title}»...", "#F59E0B")
+                set_ks(f"⏳ در حال اسکن کامل ممبرهای «{title}»...", "#F59E0B")
                 safe_up()
                 try:
                     await ensure_online(c, False)
@@ -903,16 +988,19 @@ async def main(page: ft.Page):
                         st["kick_has_perm"] = False
                         set_ks(f"❌ دسترسی ندارید! شما در گپ «{title}» ادمین نیستید.", RED_NEON)
                         return
-                    members = await get_group_members(c, peer, my_id)
+                    members = await get_group_members(c, peer, cid, my_id)
                     st["kick_has_perm"] = True
                     st["kick_members_count"] = len(members)
-                    set_ks(f"✅ دسترسی تایید شد | ممبرهای قابل ریم در «{title}»: {len(members)} نفر", "#10B981")
+                    if len(members) > 0:
+                        set_ks(f"✅ آماده ریم | ممبرهای شناسایی‌شده در «{title}»: {len(members)} نفر", "#10B981")
+                    else:
+                        set_ks(f"⚠️ ممبر قابل حذفی در «{title}» یافت نشد (یا دسترسی لیست بسته است).", "#F59E0B")
                 except Exception as ex:
                     if is_perm_denied(str(ex)):
                         st["kick_has_perm"] = False
                         set_ks(f"❌ دسترسی ادمین برای ریم ممبر در «{title}» ندارید!", RED_NEON)
                     else:
-                        set_ks(f"⚠️ آماده اجرا (خطای بررسی: {ex})", "#F59E0B")
+                        set_ks(f"⚠️ خطای بررسی: {ex}", "#F59E0B")
 
             def draw_groups():
                 g_col.controls.clear()
@@ -964,8 +1052,8 @@ async def main(page: ft.Page):
                         set_ks(f"❌ دسترسی ندارید! در «{title}» ادمین نیستید.", RED_NEON)
                         return
 
-                    set_ks(f"⏳ در حال دریافت لیست کامل ممبرهای «{title}»...", "#F59E0B")
-                    members = await get_group_members(c, peer, my_id)
+                    set_ks(f"⏳ در حال دریافت لیست ممبرهای «{title}»...", "#F59E0B")
+                    members = await get_group_members(c, peer, cid, my_id)
                     total = len(members)
                     if total == 0:
                         set_ks("⚠️ ممبری برای ریم یافت نشد یا دسترسی ادمین ندارید.", "#F59E0B")
@@ -1035,7 +1123,7 @@ async def main(page: ft.Page):
 
             on_dlg_cb = lambda: (draw_groups(), safe_up())
             rg_btn, _ = make_btn("🔄 بروزرسانی لیست گپ‌ها", _rel_groups, height=38, expand=True)
-            chk_btn, _ = make_btn("🔍 بررسی دسترسی گپ", lambda e: inspect_group((gid_in.value or st["kick_target_id"] or "").strip(), st["kick_target_title"] or (gid_in.value or "").strip()), bgcolor=RED_DARK, height=38, expand=True)
+            chk_btn, _ = make_btn("🔍 بررسی مجدد ممبرها", lambda e: inspect_group((gid_in.value or st["kick_target_id"] or "").strip(), st["kick_target_title"] or (gid_in.value or "").strip()), bgcolor=RED_DARK, height=38, expand=True)
             kbtn, kl = make_btn("⛔ توقف ریم ممبرها" if st["kick_running"] else "🗑️ ریم کامل کل ممبرهای گپ", _tog_kick, bgcolor=RED_DARK if st["kick_running"] else RED_PRIMARY, height=46)
             draw_groups()
             return ft.Container(
